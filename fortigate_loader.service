@@ -1,0 +1,17 @@
+[Unit]
+Description=FortiGate Log [Elasticsearch Loader
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/net/analyzer/scripts
+ExecStart=/home/net/analyzer/env/bin/python fortigate_loader.py
+Restart=always
+RestartSec=5
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=fortigate-loader
+
+[Install]
+WantedBy=multi-user.target

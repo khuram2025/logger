@@ -1,0 +1,93 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    background-color: #f0f2f5;
+    color: #333;
+    font-size: 14px;
+}
+
+.main-header {
+    background-color: #343a40;
+    color: #f8f9fa;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 50px;
+}
+
+.main-nav-links a {
+    color: #adb5bd;
+    text-decoration: none;
+    padding: 15px 15px;
+    font-size: 14px;
+}
+
+.main-nav-links a:hover, .main-nav-links a.active {
+    color: #fff;
+}
+.main-nav-links a.active {
+    background-color: #ff7f0e; /* Orange for Pools */
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+}
+
+.user-actions .icon-button {
+    background: none;
+    border: none;
+    color: #adb5bd;
+    font-size: 18px;
+    margin-left: 15px;
+    cursor: pointer;
+    position: relative;
+}
+.user-actions .icon-button .badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    background-color: #28a745; /* Green badge */
+    color: white;
+    border-radius: 50%;
+    padding: 2px 5px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.user-actions .user-menu {
+    color: #adb5bd;
+    margin-left: 15px;
+    font-size: 14px;
+}
+
+.sub-header {
+    background-color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.sub-header h1 {
+    font-size: 20px;
+    margin: 0;
+    font-weight: 500;
+    color: #495057;
+}
+
+.content-tabs {
+    margin-left: 30px;
+}
+
+.content-tabs .tab-link {
+    color: #495057;
+    text-decoration: none;
+    padding: 10px 15px;
+    margin-right: 5px;
+    font-size: 14px;
+    border-bottom: 3px solid transparent;
+}
+
+/* ... (rest of the CSS from <style> in index.html) ... */

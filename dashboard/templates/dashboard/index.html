@@ -1,0 +1,408 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebVS-pool Logs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{% static 'base.css' %}">
+   
+</head>
+<body>
+    <header class="main-header">
+        <div class="main-nav-links">
+            <a href="#" class="active">Dashboard</a>
+            <a href="#">Applications</a>
+            <a href="#">Virtual Services</a>
+            <a href="#">Pools</a>
+            <a href="#">Pool Groups</a>
+        </div>
+        <div class="user-actions">
+            <button class="icon-button">
+                <i class="fas fa-bell"></i>
+                <span class="badge">100</span>
+            </button>
+            <button class="icon-button"><i class="fas fa-question-circle"></i></button>
+            <button class="icon-button"><i class="fas fa-cog"></i></button>
+            <div class="user-menu">
+                admin (admin) <i class="fas fa-caret-down"></i>
+            </div>
+        </div>
+    </header>
+
+    <nav class="sub-header">
+        <h1>Pool: WebVS-pool</h1>
+        <div class="content-tabs">
+            <a href="#" class="tab-link">Analytics</a>
+            <a href="#" class="tab-link active">Logs</a>
+            <a href="#" class="tab-link">Health</a>
+            <a href="#" class="tab-link">Servers</a>
+            <a href="#" class="tab-link">Events</a>
+            <a href="#" class="tab-link">Alerts</a>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <main class="main-content-area">
+            <div class="logs-content-header">
+                <div class="controls-bar">
+                    <div class="search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search" />
+                    </div>
+                    <div class="log-summary">
+                        Total: <span id="total-logs">40196</span> Logs (Log Throttling is ON)
+                    </div>
+                    <div class="date-range-display">
+                        Aug 13, 2019 10:06 AM - Aug 20, 2019 10:06 AM
+                    </div>
+                    <div class="action-buttons">
+                        <button class="icon-text-button"><i class="fas fa-sync-alt"></i></button>
+                        <button class="icon-text-button"><i class="fas fa-search-plus"></i></button>
+                        <button class="icon-text-button"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                     <div class="dropdown-button">
+                        Displaying Past Week <i class="fas fa-caret-down"></i>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div class="logs-table-container">
+                <table class="logs-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>WAF</th>
+                            <th>Client IP</th>
+                            <th>URI</th>
+                            <th>Request</th>
+                            <th>Response</th>
+                            <th>Length</th>
+                            <th>Duration</th>
+                            <th>Timeline</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <!-- Log rows will be inserted here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+        <aside class="sidebar-right">
+            <div class="sidebar-section">
+                <div class="sidebar-header non-collapsible">
+                    <span>Summaries</span>
+                    <i class="fas fa-caret-down"></i>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header collapsible-header" data-target="log-analytics-content">
+                    <span>Log Analytics</span>
+                    <i class="fas fa-minus"></i>
+                </div>
+                <div id="log-analytics-content" class="collapsible-content open">
+                    <a href="#">WAF Tags</a>
+                    <a href="#" class="active" id="wafRulesLink">WAF Rules</a>
+                    <a href="#">WAF Groups</a>
+                    <a href="#">WAF Latency</a>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header collapsible-header" data-target="client-analytics-content">
+                    <span>Client Analytics</span>
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div id="client-analytics-content" class="collapsible-content">
+                    <a href="#">Browser</a>
+                    <a href="#">Client OS</a>
+                    <a href="#">Device</a>
+                    <a href="#">IP Address</a>
+                    <a href="#">Location</a>
+                    <a href="#">End to End</a>
+                    <a href="#">User ID</a>
+                </div>
+            </div>
+             <div class="sidebar-section">
+                <div class="sidebar-header collapsible-header" data-target="lb-analytics-content">
+                    <span>Load Balancer Analytics</span>
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div id="lb-analytics-content" class="collapsible-content">
+                    <a href="#">VS IP Address</a>
+                    <a href="#">Server IP Address</a>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="wafRulesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>WAF Rules</h3>
+                <button class="close-modal-button" data-target="wafRulesModal">×</button>
+            </div>
+            <div class="modal-body">
+                <p>This is a placeholder for WAF Rules content.</p>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Sidebar Accordion
+            const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+            collapsibleHeaders.forEach(header => {
+                header.addEventListener('click', function () {
+                    const contentId = this.dataset.target;
+                    const content = document.getElementById(contentId);
+                    const icon = this.querySelector('i');
+                    content.classList.toggle('open');
+                    if (content.classList.contains('open')) {
+                        icon.classList.remove('fa-plus');
+                        icon.classList.add('fa-minus');
+                    } else {
+                        icon.classList.remove('fa-minus');
+                        icon.classList.add('fa-plus');
+                    }
+                });
+            });
+            document.querySelectorAll('.collapsible-content.open').forEach(openContent => {
+                const header = document.querySelector(`.collapsible-header[data-target="${openContent.id}"]`);
+                if (header) {
+                    const icon = header.querySelector('i');
+                    icon.classList.remove('fa-plus');
+                    icon.classList.add('fa-minus');
+                }
+            });
+
+            // Sample Log Data with detailed fields
+            const logData = [
+                { 
+                    ts: "08/20 10:06:21 AM", waf: "FLAGGED", ip: "10.114.223.70", uri: "/", req: "GET", res: "200", len: "214 B", dur: 67, tl: "|||",
+                    clientRTT: "63ms", serverRTTLB: "2ms", appResponse: "1ms", dataTransfer: "< 1ms", totalTime: "67ms",
+                    clientIPFull: "10.114.223.70:50490", location: "Internal", os: "Windows 7", device: "Computer", browser: "Firefox", startTime: "2019-08-20, 10:06:21:27 AM",
+                    virtualServiceIP: "10.61.4.66:80", serverConnIP: "10.61.4.65:15269", requestID: "4TV-itkT-sNxv", endTime: "2019-08-20, 10:06:21:33 AM",
+                    serviceEngine: "10.61.4.51 (vcpu 0)", responseLength: "214 B", persistenceSessionID: "3472328296751262328",
+                    significance: "WAF Match: WAF matched the transaction",
+                    serverIPDetail: "WebVS-pool : Web Server 1 (10.61.4.1:80)",
+                    reqHost: "10.61.4.66", reqLine: "GET HTTP/1.1 ( 314 B )", reqURI: "/", reqUserAgent: "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:56.0) Gecko/20100101 Firefox/56.0",
+                    resContentType: "text/html", resOther: "Other response details..."
+                },
+                // Add more unique sample data for other rows if needed, or they will show similar details on expansion
+                 { ts: "08/20 10:05:04 AM", waf: "PASSED", ip: "10.114.223.70", uri: "/", req: "GET", res: "200", len: "214 B", dur: 69, tl: "|||", clientRTT: "65ms", serverRTTLB: "3ms", appResponse: "2ms", dataTransfer: "1ms", totalTime: "69ms", clientIPFull: "10.114.223.70:50491", location: "Internal", os: "Windows 10", device: "Desktop", browser: "Chrome", startTime: "2019-08-20, 10:05:00 AM", virtualServiceIP: "10.61.4.66:80", serverConnIP: "10.61.4.65:15270", requestID: "5TY-jklU-tNyP", endTime: "2019-08-20, 10:05:04 AM", serviceEngine: "10.61.4.52 (vcpu 1)", responseLength: "214 B", persistenceSessionID: "9876543210987654321", significance: "No WAF match", serverIPDetail: "WebVS-pool : Web Server 2 (10.61.4.2:80)", reqHost: "10.61.4.66", reqLine: "GET /page HTTP/1.1 ( 350 B )", reqURI: "/page", reqUserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36", resContentType: "application/json", resOther: "JSON data..." },
+            ];
+             // Fill remaining logData with simplified versions for brevity in this example
+            const baseDetailedLog = logData[0]; // Use the first detailed log as a template
+            const additionalLogs = [
+                { ts: "08/20 10:04:51 AM", waf: "PASSED", ip: "10.114.223.71", uri: "/test", req: "GET", res: "200", len: "300 B", dur: 68, tl: "|||" },
+                { ts: "08/20 10:03:54 AM", waf: "PASSED", ip: "10.114.223.72", uri: "/", req: "POST", res: "201", len: "10 B", dur: 52, tl: "|||" },
+                { ts: "08/20 10:03:52 AM", waf: "PASSED", ip: "10.114.223.70", uri: "/data", req: "GET", res: "200", len: "500 B", dur: 50, tl: "|||" },
+                { ts: "08/20 10:03:51 AM", waf: "PASSED", ip: "10.114.223.73", uri: "/", req: "GET", res: "200", len: "214 B", dur: 50, tl: "|||" },
+                { ts: "08/20 10:03:46 AM", waf: "PASSED", ip: "10.114.223.70", uri: "/api", req: "PUT", res: "200", len: "50 B", dur: 53, tl: "|||" },
+                { ts: "08/20 10:03:38 AM", waf: "FLAGGED", ip: "10.114.223.74", uri: "/admin", req: "GET", res: "403", len: "100 B", dur: 51, tl: "|||" },
+                { ts: "08/20 9:38:35 AM", waf: "FLAGGED", ip: "10.114.223.70", uri: "/", req: "GET", res: "200", len: "214 B", dur: 52, tl: "|||" },
+                { ts: "08/20 9:38:29 AM", waf: "FLAGGED", ip: "10.114.223.75", uri: "/login", req: "POST", res: "200", len: "150 B", dur: 68, tl: "|||" },
+                { ts: "08/20 9:38:04 AM", waf: "FLAGGED", ip: "10.114.223.70", uri: "/", req: "GET", res: "200", len: "214 B", dur: 69, tl: "|||" },
+            ];
+            additionalLogs.forEach(log => {
+                logData.push({...baseDetailedLog, ...log}); // Merge with base for detail fields
+            });
+
+
+            const logsTableBody = document.getElementById('logsTableBody');
+            const maxDuration = Math.max(...logData.map(log => log.dur), 100); 
+
+            logData.forEach((log, index) => {
+                const row = logsTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${log.ts}</td>
+                    <td><span class="status-label ${log.waf === 'FLAGGED' ? 'status-flagged' : 'status-passed'}">${log.waf}</span></td>
+                    <td>${log.ip}</td>
+                    <td>${log.uri}</td>
+                    <td>${log.req}</td>
+                    <td>${log.res}</td>
+                    <td>${log.len}</td>
+                    <td>
+                        <div class="duration-cell">
+                            <span>${log.dur}ms</span>
+                            <div class="duration-bar" style="width: ${Math.max(10, (log.dur / maxDuration) * 80)}%;"></div>
+                        </div>
+                    </td>
+                    <td>${log.tl}</td>
+                    <td><button class="expand-log-button" data-log-index="${index}"><i class="fas fa-plus"></i></button></td>
+                `;
+            });
+
+            // Log Row Expansion
+            logsTableBody.addEventListener('click', function(event) {
+                const target = event.target.closest('.expand-log-button');
+                if (target) {
+                    const logIndex = parseInt(target.dataset.logIndex);
+                    const log = logData[logIndex];
+                    const icon = target.querySelector('i');
+                    const currentRow = target.closest('tr');
+                    
+                    const existingDetailRow = currentRow.nextElementSibling;
+                    if (existingDetailRow && existingDetailRow.classList.contains('expanded-log-details')) {
+                        existingDetailRow.remove();
+                        icon.classList.remove('fa-minus');
+                        icon.classList.add('fa-plus');
+                    } else {
+                        const detailRow = logsTableBody.insertRow(currentRow.rowIndex); // Insert after current row
+                        detailRow.classList.add('expanded-log-details');
+                        const cell = detailRow.insertCell();
+                        cell.colSpan = 10; 
+
+                        // Using template literals for the complex HTML structure
+                        cell.innerHTML = `
+                            <div class="expanded-log-content">
+                                <div class="metrics-summary-bar">
+                                    <div class="metric-item">
+                                        <i class="fas fa-user-circle metric-icon icon-client"></i>
+                                        <span class="metric-label">Client RTT</span>
+                                        <span class="metric-value">${log.clientRTT || 'N/A'}</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <i class="fas fa-network-wired metric-icon icon-lb"></i>
+                                        <span class="metric-label">Server RTT LB</span>
+                                        <span class="metric-value">${log.serverRTTLB || 'N/A'}</span>
+                                    </div>
+                                     <div class="metric-item">
+                                        <i class="fas fa-server metric-icon icon-server"></i>
+                                        <span class="metric-label">App Response</span>
+                                        <span class="metric-value">${log.appResponse || 'N/A'}</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <i class="fas fa-cubes metric-icon icon-appdata"></i>
+                                        <span class="metric-label">Data Transfer</span>
+                                        <span class="metric-value">${log.dataTransfer || 'N/A'}</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label" style="margin-top: 29px;">Total Time</span> <!-- Adjusted for no icon -->
+                                        <span class="metric-value">${log.totalTime || 'N/A'}</span>
+                                    </div>
+                                    <div class="metric-item">
+                                         <span class="metric-label" style="margin-top: 29px;">Response Code</span>
+                                        <span class="metric-value response-code-value ${parseInt(log.res) >= 200 && parseInt(log.res) < 300 ? 'status-passed' : 'status-flagged'}">${log.res || 'N/A'}</span>
+                                    </div>
+                                </div>
+                                <div class="detailed-info-grid">
+                                    <div class="info-column">
+                                        <p><strong>Client IP:</strong> ${log.clientIPFull || 'N/A'}</p>
+                                        <p><strong>Location:</strong> ${log.location || 'N/A'}</p>
+                                        <p><strong>Operating System:</strong> <i class="fab fa-windows"></i> ${log.os || 'N/A'}</p>
+                                        <p><strong>Device:</strong> <i class="fas fa-desktop"></i> ${log.device || 'N/A'}</p>
+                                        <p><strong>Browser:</strong> <i class="fab fa-firefox"></i> ${log.browser || 'N/A'}</p>
+                                        <p><strong>Start time:</strong> ${log.startTime || 'N/A'}</p>
+                                    </div>
+                                    <div class="info-column">
+                                        <p><strong>Virtual Service IP:</strong> ${log.virtualServiceIP || 'N/A'}</p>
+                                        <p><strong>Server Conn IP:</strong> ${log.serverConnIP || 'N/A'}</p>
+                                        <p><strong>Request ID:</strong> ${log.requestID || 'N/A'}</p>
+                                        <p><strong>End time:</strong> ${log.endTime || 'N/A'}</p>
+                                        <p><strong>Service Engine:</strong> ${log.serviceEngine || 'N/A'}</p>
+                                        <p><strong>Response Length:</strong> ${log.responseLength || 'N/A'}</p>
+                                        <p><strong>Persistence Session ID:</strong> ${log.persistenceSessionID || 'N/A'}</p>
+                                        <p><strong>Significance:</strong> ${log.significance || 'N/A'}</p>
+                                    </div>
+                                    <div class="info-column server-ip-column">
+                                        <p><strong>Server IP:</strong> ${log.serverIPDetail || 'N/A'}</p>
+                                    </div>
+                                </div>
+                                <div class="view-headers-container">
+                                    <a href="#" class="view-all-headers-link">View All Headers</a>
+                                </div>
+                                <div class="log-details-tabs-container">
+                                    <div class="log-details-tabs" data-log-index="${logIndex}">
+                                        <button class="tab-button active" data-tab="request-info-tab-${logIndex}">Request Information</button>
+                                        <button class="tab-button" data-tab="response-info-tab-${logIndex}">Response Information</button>
+                                    </div>
+                                    <div id="request-info-tab-${logIndex}" class="tab-content active">
+                                        <p><strong>Host:</strong> ${log.reqHost || 'N/A'}</p>
+                                        <p><strong>Request:</strong> ${log.reqLine || 'N/A'}</p>
+                                        <p><strong>URI:</strong> ${log.reqURI || 'N/A'}</p>
+                                        <p><strong>User Agent:</strong> ${log.reqUserAgent || 'N/A'}</p>
+                                    </div>
+                                    <div id="response-info-tab-${logIndex}" class="tab-content">
+                                        <p><strong>Content Type:</strong> ${log.resContentType || 'N/A'}</p>
+                                        <p><strong>Other Details:</strong> ${log.resOther || 'Placeholder for other response details.'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Add event listeners for the new tabs
+                        const tabContainer = cell.querySelector(`.log-details-tabs[data-log-index="${logIndex}"]`);
+                        if (tabContainer) {
+                            tabContainer.addEventListener('click', function(e) {
+                                if (e.target.classList.contains('tab-button')) {
+                                    const targetTabId = e.target.dataset.tab;
+                                    
+                                    // Deactivate other tabs and content in this specific expanded row
+                                    tabContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                                    const parentContent = tabContainer.closest('.expanded-log-content');
+                                    parentContent.querySelectorAll('.log-details-tabs-container .tab-content').forEach(content => content.classList.remove('active'));
+                                    
+                                    // Activate clicked tab and content
+                                    e.target.classList.add('active');
+                                    document.getElementById(targetTabId).classList.add('active');
+                                }
+                            });
+                        }
+                        icon.classList.remove('fa-plus');
+                        icon.classList.add('fa-minus');
+                    }
+                }
+            });
+
+
+            // Chart.js Configuration
+            const ctx = document.getElementById('logsChart').getContext('2d');
+            new Chart(ctx, { /* ... Chart config remains the same ... */ 
+                type: 'bar',
+                data: {
+                    labels: ['Wed 14', '', 'Thu 15', '', 'Fri 16', '', 'Sat 17', '', 'Aug 18', '', 'Mon 19', '', 'Tue 20'],
+                    datasets: [{
+                        label: 'Non-Significant Logs',
+                        data: [100, 150, 120, 180, 200, 220, 300, 250, 4000, 4200, 1000, 800, 2000],
+                        backgroundColor: '#4CAF50',
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.7
+                    }, {
+                        label: 'Significant Logs',
+                        data: [20, 30, 25, 35, 40, 45, 600, 50, 2000, 2100, 500, 400, 1000],
+                        backgroundColor: '#FF9800',
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } }, y: { stacked: true, beginAtZero: true, grid: { color: '#e9ecef' }, ticks: { font: { size: 10 }, callback: function(value) { if (value >= 1000) return (value/1000) + 'k'; return value; } } } },
+                    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }
+                }
+            });
+
+            // Modal Handling
+            const wafRulesLink = document.getElementById('wafRulesLink');
+            const modal = document.getElementById('wafRulesModal');
+            const closeModalButtons = document.querySelectorAll('.close-modal-button');
+
+            wafRulesLink.addEventListener('click', function(e) { e.preventDefault(); modal.style.display = "block"; });
+            closeModalButtons.forEach(button => { button.addEventListener('click', function() { document.getElementById(this.dataset.target).style.display = "none"; }); });
+            window.addEventListener('click', function(event) { if (event.target == modal) { modal.style.display = "none"; } });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,624 @@
+/* FortiGate Logs Dashboard Styles */
+:root {
+    --primary: #007bff; /* Modern Bootstrap blue */
+    --primary-hover: #0069d9;
+    --primary-light: rgba(0, 123, 255, 0.1);
+    --secondary: #6c757d; /* Bootstrap secondary */
+    --secondary-hover: #5a6268;
+    --success: #28a745; /* Bootstrap success */
+    --danger: #dc3545; /* Bootstrap danger */
+    --warning: #ffc107; /* Bootstrap warning */
+    --info: #17a2b8;   /* Bootstrap info */
+    --light: #f8f9fc; /* Softer off-white */
+    --dark: #343a40;  /* Bootstrap dark */
+    --border-color: #dee2e6; /* Bootstrap border color */
+    --card-bg: #ffffff;
+    --card-border-color: #e9ecef;
+    --card-shadow: 0 0.4rem 1.2rem rgba(0,0,0,0.05);
+    --card-shadow-sm: 0 0.2rem 0.6rem rgba(0,0,0,0.04);
+    --text-muted: #6c757d;
+
+    --font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+/* Base Styles */
+body {
+    font-family: var(--font-family-sans-serif);
+    background-color: #f4f6f9; /* Slightly different, softer background */
+    margin: 0;
+    padding: 0;
+    color: var(--dark);
+    line-height: 1.6;
+}
+
+/* Layout */
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100vw;
+    overflow-x: hidden;
+}
+
+.main-content {
+    flex: 1 1 0;
+    padding: 2rem;
+    min-width: 0;
+    max-width: calc(100vw - 320px);
+    box-sizing: border-box;
+    overflow-x: auto;
+    background: #f4f6f9;
+} 
+
+.sidebar {
+    flex: 0 0 320px;
+    min-width: 250px;
+    max-width: 340px;
+    background-color: #fff;
+    height: 100vh;
+    padding: 2rem;
+    border-left: 1px solid var(--card-border-color);
+    box-shadow: -5px 0 15px -5px rgba(0,0,0,0.05);
+    overflow-y: auto;
+    z-index: 1;
+    position: relative;
+    top: 0;
+    right: 0;
+}
+
+/* Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem; /* Increased margin */
+}
+
+.dashboard-header h1 {
+    font-size: 1.85rem; /* Slightly larger */
+    font-weight: 600;
+    margin: 0;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.75rem; /* Increased gap */
+}
+
+/* General Card Style (can be used for .content-card and sidebar sections) */
+.card-modern {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: 0.5rem; /* Rounded corners */
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem; /* Consistent margin */
+}
+
+/* Content Card for Table */
+.content-card { /* Keep this name as it's in HTML, but apply modern styles */
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: 0.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+    overflow: hidden; /* Important if table has its own radius or borders */
+}
+
+.content-card-header { /* Optional: if you want a header within this card */
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--card-border-color);
+    background-color: #f7f9fc; /* Very light gray for header */
+}
+
+.content-card-header h5 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.content-card-body {
+    padding: 1.5rem;
+}
+
+
+/* Table */
+.table-container {
+    overflow-x: auto;
+}
+
+.logs-table {
+    width: 1000px;
+    border-collapse: collapse;
+    table-layout: fixed;
+} 
+
+.logs-table th,
+.logs-table td {
+    padding: 0.25rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    vertical-align: middle;
+}
+.logs-table th:nth-child(1), .logs-table td:nth-child(1) { width: 160px; }
+.logs-table th:nth-child(2), .logs-table td:nth-child(2) { width: 170px; }
+.logs-table th:nth-child(3), .logs-table td:nth-child(3) { width: 170px; }
+.logs-table th:nth-child(4), .logs-table td:nth-child(4) { width: 90px; }
+.logs-table th:nth-child(5), .logs-table td:nth-child(5) { width: 90px; }
+.logs-table th:nth-child(6), .logs-table td:nth-child(6) { width: 70px; }
+
+.logs-table th {
+    background-color: #f8f9fa; /* Light gray for header */
+    font-weight: 600;
+    font-size: 0.8rem; /* Smaller, more modern */
+    text-transform: uppercase; /* Common modern table header style */
+    color: var(--text-muted);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Adjust column widths if needed, these might need tweaking after padding changes */
+/* Removing fixed widths to allow browser auto-sizing */
+/*
+.logs-table th:nth-child(1), .logs-table td:nth-child(1) { /* Timestamp */
+/*    width: 140px; /* Adjusted */
+/*}
+/* .logs-table th:nth-child(2), .logs-table td:nth-child(2), /* Source IP */
+/* .logs-table th:nth-child(3), .logs-table td:nth-child(3) { /* Destination IP */
+/*    width: 120px; /* Adjusted */
+/*}
+/* .logs-table th:nth-child(4), .logs-table td:nth-child(4) { /* Destination Port */
+/*    width: 80px; /* Adjusted */
+/*}
+/* .logs-table th:nth-child(5), .logs-table td:nth-child(5) { /* Action */
+/*    width: 100px; /* Adjusted for badges */
+/*}
+/* .logs-table th.details-col, .logs-table td.details-cell { /* Details column */
+/*    width: 60px;
+/*}
+*/
+
+@media (max-width: 900px) {
+    .logs-table th, .logs-table td {
+        font-size: 0.85rem; /* Adjusted */
+        padding: 0.75rem 0.5rem; /* Adjusted */
+    }
+    /* Re-evaluate mobile column widths if necessary */
+}
+
+.logs-table tbody tr:hover {
+    background-color: var(--primary-light); /* Subtle hover */
+}
+
+.logs-table .details-col { /* Already in HTML */
+    text-align: center;
+}
+
+.logs-table .details-cell { /* Already in HTML */
+    text-align: center;
+}
+
+.expand-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 0.35rem; /* Slightly more padding */
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+.expand-btn:hover {
+    color: var(--primary-hover);
+}
+
+.expand-btn i {
+    font-size: 1.1rem; /* Slightly larger icon */
+    transition: transform 0.2s ease; /* Smoother icon rotation */
+}
+
+.expand-btn[aria-expanded="true"] i {
+    transform: rotate(90deg);
+}
+
+.details-row {
+    background-color: #fcfdff; /* Very light blue, almost white */
+}
+
+.details-content {
+    padding: 1.5rem; /* More padding */
+}
+
+.details-content h6 {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Wider items */
+    gap: 1rem; /* Increased gap */
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--card-bg); /* Give items a background */
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--card-border-color);
+}
+
+.detail-label {
+    font-size: 0.75rem; /* Smaller label */
+    color: var(--text-muted);
+    font-weight: 500; /* Adjusted weight */
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+}
+
+.detail-value {
+    font-size: 0.9rem;
+    word-break: break-all; /* Prevent overflow */
+}
+
+.no-data {
+    text-align: center;
+    padding: 2.5rem; /* More padding */
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+/* Action Badges */
+.action-badge {
+    padding: 0.3em 0.65em;
+    font-size: 0.78rem; /* Slightly larger */
+    font-weight: 600;
+    border-radius: 0.25rem;
+    text-align: center;
+    display: inline-block;
+    color: #fff; /* Default white text */
+    line-height: 1; /* Ensure consistent height */
+    min-width: 60px; /* Minimum width for badges */
+}
+.action-badge.action-close { background-color: var(--danger); }
+.action-badge.action-accept { background-color: var(--success); }
+.action-badge.action-timeout { background-color: var(--warning); color: var(--dark); }
+.action-badge.action-server-rst, 
+.action-badge.action-client-rst { background-color: var(--info); color: var(--dark); }
+.action-badge.action-default { background-color: var(--secondary); color: #fff; } /* For unstyled actions */
+
+
+/* Pagination */
+.pagination-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 2rem; /* Increased margin */
+    padding: 1rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: 0.375rem;
+    box-shadow: var(--card-shadow-sm);
+}
+
+.pagination {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.75rem 0;
+}
+
+.page-item {
+    margin: 0 0.25rem;
+}
+
+.page-link {
+    padding: 0.5rem 0.85rem; /* More padding */
+    margin-left: -1px; /* For Bootstrap-like connected items */
+    line-height: 1.25;
+    color: var(--primary);
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out;
+}
+
+.page-link:hover {
+    color: var(--primary-hover);
+    background-color: #e9ecef; /* Light hover */
+    border-color: #dee2e6;
+}
+
+.page-item:first-child .page-link {
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.page-item:last-child .page-link {
+    border-top-right-radius: 0.25rem;
+    border-bottom-right-radius: 0.25rem;
+}
+
+.page-item.active .page-link {
+    z-index: 3;
+    color: #fff;
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.page-item.disabled .page-link {
+    color: var(--text-muted);
+    pointer-events: none;
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.pagination-info {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* Sidebar Sections (Filters & Quick Stats as Cards) */
+.sidebar .filters-form,
+.sidebar .sidebar-section { /* Target existing classes */
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: 0.375rem; /* Standardized radius */
+    padding: 1.5rem;
+    margin-bottom: 1.5rem; /* Space between cards */
+    box-shadow: var(--card-shadow-sm); /* Lighter shadow for sidebar cards */
+}
+
+.sidebar h5, /* For "Filters" title */
+.sidebar .sidebar-section h6 { /* For "Quick Stats" title */
+    font-size: 1.15rem; /* Slightly larger */
+    font-weight: 600;
+    margin-top: 0; /* Remove default margin if any */
+    margin-bottom: 1.25rem; /* Space below title */
+    color: var(--dark);
+}
+
+
+.filter-group {
+    margin-bottom: 1.25rem; /* Increased space */
+}
+
+.filter-group label {
+    display: block; /* Ensure label is on its own line */
+    font-weight: 500;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem; /* Space between label and input */
+    color: var(--dark);
+}
+
+.filter-group input[type="text"],
+.filter-group input[type="date"],
+.filter-group select {
+    display: block; /* Full width */
+    width: 100%;
+    padding: 0.6rem 0.85rem; /* Adjusted padding */
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--dark);
+    background-color: var(--card-bg); /* Ensure it matches card bg if transparent */
+    background-clip: padding-box;
+    border: 1px solid #ced4da; /* Standard border */
+    appearance: none; /* Remove default system appearance */
+    border-radius: 0.25rem; /* Standard border radius */
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.filter-group input[type="text"]:focus,
+.filter-group input[type="date"]:focus,
+.filter-group select:focus {
+    border-color: var(--primary);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem var(--primary-light);
+}
+
+.filter-group select { /* Add arrow for select */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+}
+
+
+.input-with-clear {
+    position: relative;
+}
+
+.clear-btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--secondary);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    font-size: 1.2rem; /* Larger X icon */
+    line-height: 1;
+}
+.clear-btn:hover {
+    color: var(--dark);
+}
+.clear-btn i {
+    vertical-align: middle;
+}
+
+
+.filter-actions {
+    display: flex;
+    gap: 0.75rem; /* Space between buttons */
+    margin-top: 1.5rem; /* Space above buttons */
+}
+
+.btn-apply,
+.btn-clear {
+    flex-grow: 1; /* Make buttons take equal width */
+    padding: 0.6rem 1rem; /* Consistent padding */
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 0.25rem;
+    border: 1px solid transparent;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out;
+    text-align: center;
+    cursor: pointer;
+}
+
+.btn-apply {
+    background-color: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+.btn-apply:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.btn-clear {
+    background-color: var(--secondary);
+    color: #fff;
+    border-color: var(--secondary);
+}
+.btn-clear:hover {
+    background-color: var(--secondary-hover);
+    border-color: var(--secondary-hover);
+}
+
+/* Sidebar Quick Stats */
+.sidebar-section h6 { /* Already targeted above for title styling */
+    /* Styles for title already defined */
+}
+
+.stats-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 0; /* Increased padding */
+    border-bottom: 1px solid var(--card-border-color);
+}
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.stat-value {
+    font-size: 1.1rem; /* More prominent */
+    font-weight: 600;
+    color: var(--primary);
+    background-color: var(--primary-light); /* Use light primary as badge background */
+    padding: 0.3rem 0.6rem; /* Padding for the badge */
+    border-radius: 0.25rem; /* Rounded corners for the badge */
+}
+
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) { /* Adjust breakpoint if sidebar overlaps main content too early */
+    .main-content {
+        margin-right: 0; /* Remove margin when sidebar might start to overlap or for smaller screens */
+    }
+     /* Consider making sidebar toggleable at this point if needed */
+}
+
+
+@media (max-width: 992px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+    .main-content {
+        padding: 1.5rem;
+        width: 100vw;
+        max-width: 100vw;
+        overflow-x: auto;
+    }
+    .sidebar {
+        width: 100vw;
+        min-width: 0;
+        max-width: 100vw;
+        height: auto;
+        border-left: none;
+        border-top: 1px solid var(--card-border-color);
+        box-shadow: none;
+        padding: 1.5rem;
+    }
+}
+    .sidebar {
+        /* Example: Make sidebar an overlay on smaller screens, requires JS to toggle */
+        /* position: fixed; left: -320px; transition: left 0.3s ease-in-out; box-shadow: none; border-right: 1px solid var(--card-border-color); */
+        /* For now, let's assume it just stays fixed or you handle toggling elsewhere */
+        width: 280px; /* Narrower sidebar */
+        padding: 1.5rem;
+    }
+    .dashboard-header h1 {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem; /* Space between title and buttons when stacked */
+    }
+    .action-buttons {
+        width: 100%;
+        justify-content: flex-start; /* Align buttons to start */
+    }
+    .details-grid {
+        grid-template-columns: 1fr; /* Single column for details on small screens */
+    }
+    .sidebar {
+        /* Full width or significant portion if it's an overlay */
+        /* width: 100%; left: -100%; */
+    }
+    .filter-actions {
+        flex-direction: column; /* Stack filter buttons */
+    }
+    .btn-apply, .btn-clear {
+        width: 100%;
+    }
+}
+
+/* Ensure Bootstrap columns or other specific elements are not overly constrained by max-width */
+/* Example: if some table columns are still too narrow: */
+/*
+.logs-table th:nth-child(X), .logs-table td:nth-child(X) {
+    min-width: YYYpx !important;
+}
+*/
+
+/* Scrollbar styling (optional, modern touch) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
