@@ -348,17 +348,17 @@
                                 </div>
                                 <div class="detailed-info-grid">
                                     <div class="info-column">
-                                        <p><strong>Source IP:</strong> ${log.clientIPFull || 'N/A'}</p>
-                                        <p><strong>Location:</strong> ${log.location || 'N/A'}</p>
-                                        <p><strong>Operating System:</strong> <i class="fab fa-windows"></i> ${log.os || 'N/A'}</p>
+                                        <p><strong>Source IP:</strong> ${log.srcip || 'N/A'}</p>
+                                        <p><strong>Source Port:</strong> ${log.srcport || log.location || 'N/A'}</p>
+                                        <p><strong>Source Interface</strong> <i class="fab fa-windows"></i> ${log.os || 'N/A'}</p>
                                         <p><strong>Device:</strong> <i class="fas fa-desktop"></i> ${log.device || 'N/A'}</p>
                                         <p><strong>Browser:</strong> <i class="fab fa-firefox"></i> ${log.browser || 'N/A'}</p>
                                         <p><strong>Start time:</strong> ${log.startTime || 'N/A'}</p>
                                     </div>
                                     <div class="info-column">
-                                        <p><strong>Virtual Service IP:</strong> ${log.virtualServiceIP || 'N/A'}</p>
-                                        <p><strong>Server Conn IP:</strong> ${log.serverConnIP || 'N/A'}</p>
-                                        <p><strong>Request ID:</strong> ${log.requestID || 'N/A'}</p>
+                                        <p><strong>Destination IP:</strong> ${log.dstip || 'N/A'}</p>
+                                        <p><strong>Destination Port:</strong> ${log.dstport || 'N/A'}</p>
+                                        <p><strong>Destination Interface :</strong> ${log.requestID || 'N/A'}</p>
                                         <p><strong>End time:</strong> ${log.endTime || 'N/A'}</p>
                                         <p><strong>Service Engine:</strong> ${log.serviceEngine || 'N/A'}</p>
                                         <p><strong>Response Length:</strong> ${log.responseLength || 'N/A'}</p>
