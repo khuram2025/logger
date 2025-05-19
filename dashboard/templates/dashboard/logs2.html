@@ -1,4 +1,3 @@
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -9,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{% static 'base.css' %}">
-   
 </head>
 <body>
     <header class="main-header">
@@ -54,10 +52,11 @@
                         <input type="text" placeholder="Search" />
                     </div>
                     <div class="log-summary">
-                        Total: <span id="total-logs">40196</span> Logs (Log Throttling is ON)
+                        Total: <span id="total-logs">{{ total_logs_count|default:"0" }}</span> Logs 
+                        {% if total_logs_count|default:0 > 1000 %}(Log Throttling may be ON){% endif %}
                     </div>
                     <div class="date-range-display">
-                        Aug 13, 2019 10:06 AM - Aug 20, 2019 10:06 AM
+                        Aug 13, 2019 10:06 AM - Aug 20, 2019 10:06 AM <!-- TODO: Make this dynamic -->
                     </div>
                     <div class="action-buttons">
                         <button class="icon-text-button"><i class="fas fa-sync-alt"></i></button>
@@ -65,12 +64,13 @@
                         <button class="icon-text-button"><i class="fas fa-download"></i> Export</button>
                     </div>
                      <div class="dropdown-button">
-                        Displaying Past Week <i class="fas fa-caret-down"></i>
+                        Displaying Past Week <i class="fas fa-caret-down"></i> <!-- TODO: Make this dynamic -->
                     </div>
                 </div>
             </div>
 
-
+            <!-- If you want a chart, add a canvas element here, e.g.: -->
+            <!-- <canvas id="logsChart" style="width:100%;max-width:700px;height:200px;margin-bottom:20px;"></canvas> -->
 
             <div class="logs-table-container">
                 <table class="logs-table">
@@ -84,65 +84,81 @@
                             <th>Protocol</th>
                             <th>Received Bytes</th>
                             <th>Transmitted Bytes</th>
-                            <th>Duration</th>
-                            <th>Details</th>
-                            <th></th>
+                            <th>Duration</th> <!-- Corresponds to log_item.duration_display -->
+                            <th>Details</th>  <!-- Corresponds to the div with bar and text -->
+                            <th></th> <!-- For the expand button -->
                         </tr>
                     </thead>
-                    {% for log in logs %}
                     <tbody id="logsTableBody">
-                        {% for log in logs %}
+                        {% for log_item in logs_for_display %}
                         <tr>
-                            <td>{{ log.ts }}</td>
-                            <td><span class="status-label {% if log.action == 'DROP' %}status-flagged{% else %}status-passed{% endif %}">{{ log.action }}</span></td>
-                            <td>{{ log.srcip }}</td>
-                            <td>{{ log.dstip }}</td>
-                            <td>{{ log.dstport }}</td>
-                            <td>{{ log.proto }}</td>
-                            <td>{{ log.rcvdbyte }}</td>
-                            <td>{{ log.sentbyte }}</td>
-                            <td>{{ log.duration }}</td>
-                            <td>
+                            <td>{{ log_item.ts_display }}</td>
+                            <td><span class="status-label {% if log_item.action == 'DROP' or log_item.action == 'FLAGGED' %}status-flagged{% else %}status-passed{% endif %}">{{ log_item.action }}</span></td>
+                            <td>{{ log_item.srcip }}</td>
+                            <td>{{ log_item.dstip }}</td>
+                            <td>{{ log_item.dstport_val }}</td>
+                            <td>{{ log_item.proto_str }}</td>
+                            <td>{{ log_item.rcvdbyte_display }}</td>
+                            <td>{{ log_item.sentbyte_display }}</td>
+                            <td>{{ log_item.duration_display }}</td> {# For the "Duration" column header #}
+                            <td> {# For the "Details" column header #}
                                 <div class="duration-cell">
-                                    <span>{{ log.dur }}ms</span>
-                                    <div class="duration-bar" style="width: 60%;"></div>
+                                    <span>{{ log_item.duration_display }}</span>
+                                    {# Placeholder width. For dynamic width based on max_duration on page, calculate in view or update with JS #}
+                                    <div class="duration-bar" style="width: {{ log_item.duration_ms | default:0 }}%;"></div>
                                 </div>
                             </td>
-                            <td>{{ log.tl }}</td>
                             <td><button class="expand-log-button" data-log-index="{{ forloop.counter0 }}"><i class="fas fa-plus"></i></button></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" style="text-align: center; padding: 20px;">No logs found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
-                    {% endfor %}
                 </table>
                 <!-- Pagination Bar -->
+                {% if total_pages > 1 %}
                 <div class="pagination-bar" style="display: flex; justify-content: center; align-items: center; margin: 24px 0;">
                     <nav aria-label="Logs pagination">
                         <ul class="pagination" style="display: flex; gap: 4px; list-style: none; padding: 0;">
                             {% if current_page > 1 %}
-                            <li><a class="pagination-link" href="?page={{ current_page|add:'-1' }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">&laquo; Previous</a></li>
+                            <li><a class="pagination-link" href="?page={{ current_page|add:'-1' }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">« Previous</a></li>
                             {% else %}
-                            <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">&laquo; Previous</span></li>
+                            <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">« Previous</span></li>
                             {% endif %}
-                            {% for i in total_pages|make_list %}
-                                {% with page_num=forloop.counter %}
-                                <li>
-                                    {% if page_num == current_page %}
-                                        <span class="pagination-link active" style="padding: 6px 12px; border: 1px solid #007bff; background: #007bff; color: #fff; border-radius: 4px;">{{ page_num }}</span>
-                                    {% else %}
-                                        <a class="pagination-link" href="?page={{ page_num }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a>
-                                    {% endif %}
-                                </li>
-                                {% endwith %}
+                            
+                            {% for page_num in page_range %}
+                                {% if page_num == current_page %}
+                                    <li><span class="pagination-link active" style="padding: 6px 12px; border: 1px solid #007bff; background: #007bff; color: #fff; border-radius: 4px;">{{ page_num }}</span></li>
+                                {% else %}
+                                    <li><a class="pagination-link" href="?page={{ page_num }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a></li>
+                                {% endif %}
                             {% endfor %}
+                             {% if total_pages > 5 and current_page < total_pages|add:"-2" %} {# Ellipsis if many pages #}
+                                <li><span style="padding: 6px 12px;">...</span></li>
+                                <li><a class="pagination-link" href="?page={{ total_pages }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ total_pages }}</a></li>
+                            {% elif total_pages > 5 and current_page >= total_pages|add:"-2" and current_page != total_pages %}
+                                <!-- Show last few pages if close to end -->
+                                {% for i in total_pages|rjust:" "|slice:"-3:" %} 
+                                    {% with page_num=forloop.counter0|add:total_pages|add:"-2" %}
+                                        {% if page_num > 5 and page_num != current_page and page_num <= total_pages %}
+                                        <li><a class="pagination-link" href="?page={{ page_num }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a></li>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endfor %}
+                            {% endif %}
+
+
                             {% if current_page < total_pages %}
-                            <li><a class="pagination-link" href="?page={{ current_page|add:'1' }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">Next &raquo;</a></li>
+                            <li><a class="pagination-link" href="?page={{ current_page|add:'1' }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">Next »</a></li>
                             {% else %}
-                            <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">Next &raquo;</span></li>
+                            <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">Next »</span></li>
                             {% endif %}
                         </ul>
                     </nav>
                 </div>
+                {% endif %}
         </main>
 
         <aside class="sidebar-right">
@@ -206,7 +222,6 @@
         </div>
     </div>
 
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Sidebar Accordion
@@ -235,223 +250,194 @@
                 }
             });
 
-            // Sample Log Data with detailed fields
-            const logData = [
-                { 
-                    ts: "08/20 10:06:21 AM", waf: "FLAGGED", ip: "{{ source_ip }}", uri: "/", req: "GET", res: "200", len: "214 B", dur: 67, tl: "|||",
-                    clientRTT: "63ms", serverRTTLB: "2ms", appResponse: "1ms", dataTransfer: "< 1ms", totalTime: "67ms",
-                    clientIPFull: "10.114.223.70:50490", location: "Internal", os: "Windows 7", device: "Computer", browser: "Firefox", startTime: "2019-08-20, 10:06:21:27 AM",
-                    virtualServiceIP: "10.61.4.66:80", serverConnIP: "10.61.4.65:15269", requestID: "4TV-itkT-sNxv", endTime: "2019-08-20, 10:06:21:33 AM",
-                    serviceEngine: "10.61.4.51 (vcpu 0)", responseLength: "214 B", persistenceSessionID: "3472328296751262328",
-                    significance: "WAF Match: WAF matched the transaction",
-                    serverIPDetail: "WebVS-pool : Web Server 1 (10.61.4.1:80)",
-                    reqHost: "10.61.4.66", reqLine: "GET HTTP/1.1 ( 314 B )", reqURI: "/", reqUserAgent: "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:56.0) Gecko/20100101 Firefox/56.0",
-                    resContentType: "text/html", resOther: "Other response details..."
-                },
-                // Add more unique sample data for other rows if needed, or they will show similar details on expansion
-                 { ts: "08/20 10:05:04 AM", waf: "PASSED", ip: "10.114.223.70", uri: "/", req: "GET", res: "200", len: "214 B", dur: 69, tl: "|||", clientRTT: "65ms", serverRTTLB: "3ms", appResponse: "2ms", dataTransfer: "1ms", totalTime: "69ms", clientIPFull: "10.114.223.70:50491", location: "Internal", os: "Windows 10", device: "Desktop", browser: "Chrome", startTime: "2019-08-20, 10:05:00 AM", virtualServiceIP: "10.61.4.66:80", serverConnIP: "10.61.4.65:15270", requestID: "5TY-jklU-tNyP", endTime: "2019-08-20, 10:05:04 AM", serviceEngine: "10.61.4.52 (vcpu 1)", responseLength: "214 B", persistenceSessionID: "9876543210987654321", significance: "No WAF match", serverIPDetail: "WebVS-pool : Web Server 2 (10.61.4.2:80)", reqHost: "10.61.4.66", reqLine: "GET /page HTTP/1.1 ( 350 B )", reqURI: "/page", reqUserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36", resContentType: "application/json", resOther: "JSON data..." },
-            ];
-             // Fill remaining logData with simplified versions for brevity in this example
-            const baseDetailedLog = logData[0]; // Use the first detailed log as a template
-            const additionalLogs = [
-                { ts: "08/20 10:04:51 AM", waf: "PASSED", ip: "10.114.223.71", uri: "/test", req: "GET", res: "200", len: "300 B", dur: 68, tl: "|||" },
-                { ts: "08/20 10:03:54 AM", waf: "PASSED", ip: "10.114.223.72", uri: "/", req: "POST", res: "201", len: "10 B", dur: 52, tl: "|||" },
-                { ts: "08/20 10:03:52 AM", waf: "PASSED", ip: "10.114.223.70", uri: "/data", req: "GET", res: "200", len: "500 B", dur: 50, tl: "|||" },
-                { ts: "08/20 10:03:51 AM", waf: "PASSED", ip: "10.114.223.73", uri: "/", req: "GET", res: "200", len: "214 B", dur: 50, tl: "|||" },
-                { ts: "08/20 10:03:46 AM", waf: "PASSED", ip: "10.114.223.70", uri: "/api", req: "PUT", res: "200", len: "50 B", dur: 53, tl: "|||" },
-                { ts: "08/20 10:03:38 AM", waf: "FLAGGED", ip: "10.114.223.74", uri: "/admin", req: "GET", res: "403", len: "100 B", dur: 51, tl: "|||" },
-                { ts: "08/20 9:38:35 AM", waf: "FLAGGED", ip: "10.114.223.70", uri: "/", req: "GET", res: "200", len: "214 B", dur: 52, tl: "|||" },
-                { ts: "08/20 9:38:29 AM", waf: "FLAGGED", ip: "10.114.223.75", uri: "/login", req: "POST", res: "200", len: "150 B", dur: 68, tl: "|||" },
-                { ts: "08/20 9:38:04 AM", waf: "FLAGGED", ip: "10.114.223.70", uri: "/", req: "GET", res: "200", len: "214 B", dur: 69, tl: "|||" },
-            ];
-            additionalLogs.forEach(log => {
-                logData.push({...baseDetailedLog, ...log}); // Merge with base for detail fields
-            });
-
-
+            // Initialize logData from Django context
+            const logData = JSON.parse('{{ logs_json_for_expansion|escapejs|default:"[]" }}');
+            
             const logsTableBody = document.getElementById('logsTableBody');
-            const maxDuration = Math.max(...logData.map(log => log.dur), 100); 
-
-            logData.forEach((log, index) => {
-                const row = logsTableBody.insertRow();
-                row.innerHTML = `
-                    <td>${log.ts}</td>
-                    <td><span class="status-label ${log.waf === 'FLAGGED' ? 'status-flagged' : 'status-passed'}">${log.waf}</span></td>
-                    <td>${log.ip}</td>
-                    <td>${log.uri}</td>
-                    <td>${log.req}</td>
-                    <td>${log.res}</td>
-                    <td>${log.len}</td>
-                    <td>
-                        <div class="duration-cell">
-                            <span>${log.dur}ms</span>
-                            <div class="duration-bar" style="width: ${Math.max(10, (log.dur / maxDuration) * 80)}%;"></div>
-                        </div>
-                    </td>
-                    <td>${log.tl}</td>
-                    <td><button class="expand-log-button" data-log-index="${index}"><i class="fas fa-plus"></i></button></td>
-                `;
-            });
+            
+            // Optional: Calculate maxDuration if you want to use it for something dynamically in JS
+            // const maxDuration = logData.length > 0 ? Math.max(...logData.map(log => log.duration_ms || 0), 100) : 100;
 
             // Log Row Expansion
             logsTableBody.addEventListener('click', function(event) {
                 const target = event.target.closest('.expand-log-button');
                 if (target) {
                     const logIndex = parseInt(target.dataset.logIndex);
-                    const log = logData[logIndex];
-                    const icon = target.querySelector('i');
-                    const currentRow = target.closest('tr');
-                    
-                    const existingDetailRow = currentRow.nextElementSibling;
-                    if (existingDetailRow && existingDetailRow.classList.contains('expanded-log-details')) {
-                        existingDetailRow.remove();
-                        icon.classList.remove('fa-minus');
-                        icon.classList.add('fa-plus');
-                    } else {
-                        const detailRow = logsTableBody.insertRow(currentRow.rowIndex); // Insert after current row
-                        detailRow.classList.add('expanded-log-details');
-                        const cell = detailRow.insertCell();
-                        cell.colSpan = 10; 
-
-                        // Using template literals for the complex HTML structure
-                        cell.innerHTML = `
-                            <div class="expanded-log-content">
-                                <div class="metrics-summary-bar">
-                                    <div class="metric-item">
-                                        <i class="fas fa-user-circle metric-icon icon-client"></i>
-                                        <span class="metric-label">Client RTT</span>
-                                        <span class="metric-value">${log.clientRTT || 'N/A'}</span>
-                                    </div>
-                                    <div class="metric-item">
-                                        <i class="fas fa-network-wired metric-icon icon-lb"></i>
-                                        <span class="metric-label">Server RTT LB</span>
-                                        <span class="metric-value">${log.serverRTTLB || 'N/A'}</span>
-                                    </div>
-                                     <div class="metric-item">
-                                        <i class="fas fa-server metric-icon icon-server"></i>
-                                        <span class="metric-label">App Response</span>
-                                        <span class="metric-value">${log.appResponse || 'N/A'}</span>
-                                    </div>
-                                    <div class="metric-item">
-                                        <i class="fas fa-cubes metric-icon icon-appdata"></i>
-                                        <span class="metric-label">Data Transfer</span>
-                                        <span class="metric-value">${log.dataTransfer || 'N/A'}</span>
-                                    </div>
-                                    <div class="metric-item">
-                                        <span class="metric-label" style="margin-top: 29px;">Total Time</span> <!-- Adjusted for no icon -->
-                                        <span class="metric-value">${log.totalTime || 'N/A'}</span>
-                                    </div>
-                                    <div class="metric-item">
-                                         <span class="metric-label" style="margin-top: 29px;">Response Code</span>
-                                        <span class="metric-value response-code-value ${parseInt(log.res) >= 200 && parseInt(log.res) < 300 ? 'status-passed' : 'status-flagged'}">${log.res || 'N/A'}</span>
-                                    </div>
-                                </div>
-                                <div class="detailed-info-grid">
-                                    <div class="info-column">
-                                        <p><strong>Source IP:</strong> ${log.srcip || 'N/A'}</p>
-                                        <p><strong>Source Port:</strong> ${log.srcport || log.location || 'N/A'}</p>
-                                        <p><strong>Source Interface</strong> <i class="fab fa-windows"></i> ${log.os || 'N/A'}</p>
-                                        <p><strong>Device:</strong> <i class="fas fa-desktop"></i> ${log.device || 'N/A'}</p>
-                                        <p><strong>Browser:</strong> <i class="fab fa-firefox"></i> ${log.browser || 'N/A'}</p>
-                                        <p><strong>Start time:</strong> ${log.startTime || 'N/A'}</p>
-                                    </div>
-                                    <div class="info-column">
-                                        <p><strong>Destination IP:</strong> ${log.dstip || 'N/A'}</p>
-                                        <p><strong>Destination Port:</strong> ${log.dstport || 'N/A'}</p>
-                                        <p><strong>Destination Interface :</strong> ${log.requestID || 'N/A'}</p>
-                                        <p><strong>End time:</strong> ${log.endTime || 'N/A'}</p>
-                                        <p><strong>Service Engine:</strong> ${log.serviceEngine || 'N/A'}</p>
-                                        <p><strong>Response Length:</strong> ${log.responseLength || 'N/A'}</p>
-                                        <p><strong>Persistence Session ID:</strong> ${log.persistenceSessionID || 'N/A'}</p>
-                                        <p><strong>Significance:</strong> ${log.significance || 'N/A'}</p>
-                                    </div>
-                                    <div class="info-column server-ip-column">
-                                        <p><strong>Server IP:</strong> ${log.serverIPDetail || 'N/A'}</p>
-                                    </div>
-                                </div>
-                                <div class="view-headers-container">
-                                    <a href="#" class="view-all-headers-link">View All Headers</a>
-                                </div>
-                                <div class="log-details-tabs-container">
-                                    <div class="log-details-tabs" data-log-index="${logIndex}">
-                                        <button class="tab-button active" data-tab="request-info-tab-${logIndex}">Request Information</button>
-                                        <button class="tab-button" data-tab="response-info-tab-${logIndex}">Response Information</button>
-                                    </div>
-                                    <div id="request-info-tab-${logIndex}" class="tab-content active">
-                                        <p><strong>Host:</strong> ${log.reqHost || 'N/A'}</p>
-                                        <p><strong>Request:</strong> ${log.reqLine || 'N/A'}</p>
-                                        <p><strong>URI:</strong> ${log.reqURI || 'N/A'}</p>
-                                        <p><strong>User Agent:</strong> ${log.reqUserAgent || 'N/A'}</p>
-                                    </div>
-                                    <div id="response-info-tab-${logIndex}" class="tab-content">
-                                        <p><strong>Content Type:</strong> ${log.resContentType || 'N/A'}</p>
-                                        <p><strong>Other Details:</strong> ${log.resOther || 'Placeholder for other response details.'}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                    if (logIndex >= 0 && logIndex < logData.length) {
+                        const log = logData[logIndex]; // Get data from our JS array
+                        const icon = target.querySelector('i');
+                        const currentRow = target.closest('tr');
                         
-                        // Add event listeners for the new tabs
-                        const tabContainer = cell.querySelector(`.log-details-tabs[data-log-index="${logIndex}"]`);
-                        if (tabContainer) {
-                            tabContainer.addEventListener('click', function(e) {
-                                if (e.target.classList.contains('tab-button')) {
-                                    const targetTabId = e.target.dataset.tab;
-                                    
-                                    // Deactivate other tabs and content in this specific expanded row
-                                    tabContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-                                    const parentContent = tabContainer.closest('.expanded-log-content');
-                                    parentContent.querySelectorAll('.log-details-tabs-container .tab-content').forEach(content => content.classList.remove('active'));
-                                    
-                                    // Activate clicked tab and content
-                                    e.target.classList.add('active');
-                                    document.getElementById(targetTabId).classList.add('active');
-                                }
+                        const existingDetailRow = currentRow.nextElementSibling;
+                        if (existingDetailRow && existingDetailRow.classList.contains('expanded-log-details')) {
+                            existingDetailRow.remove();
+                            icon.classList.remove('fa-minus');
+                            icon.classList.add('fa-plus');
+                        } else {
+                            // Remove any other open detail rows in this tbody
+                            const allDetailRows = logsTableBody.querySelectorAll('.expanded-log-details');
+                            allDetailRows.forEach(row => row.remove());
+                            const allPlusButtons = logsTableBody.querySelectorAll('.expand-log-button i.fa-minus');
+                            allPlusButtons.forEach(i => {
+                                i.classList.remove('fa-minus');
+                                i.classList.add('fa-plus');
                             });
+
+
+                            // Create the expanded details row and cell
+                            const detailRow = document.createElement('tr');
+                            detailRow.classList.add('expanded-log-details');
+                            const cell = document.createElement('td');
+                            cell.colSpan = 11; // Adjusted to match number of columns in table header
+
+                            // Using template literals for the complex HTML structure
+                            // Ensure keys (e.g., log.clientRTT) match those in logs_json_for_expansion
+                            cell.innerHTML = `
+                                <div class="expanded-log-content">
+                                    <div class="metrics-summary-bar">
+                                        <div class="metric-item">
+                                            <i class="fas fa-user-circle metric-icon icon-client"></i>
+                                            <span class="metric-label">Client RTT</span>
+                                            <span class="metric-value">${log.clientRTT || 'N/A'}</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <i class="fas fa-network-wired metric-icon icon-lb"></i>
+                                            <span class="metric-label">Server RTT LB</span>
+                                            <span class="metric-value">${log.serverRTTLB || 'N/A'}</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <i class="fas fa-server metric-icon icon-server"></i>
+                                            <span class="metric-label">App Response</span>
+                                            <span class="metric-value">${log.appResponse || 'N/A'}</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <i class="fas fa-cubes metric-icon icon-appdata"></i>
+                                            <span class="metric-label">Data Transfer</span>
+                                            <span class="metric-value">${log.dataTransfer || 'N/A'}</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <span class="metric-label" style="margin-top: 29px;">Total Time</span>
+                                            <span class="metric-value">${log.totalTime || 'N/A'}</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <span class="metric-label" style="margin-top: 29px;">Response Code</span>
+                                            <span class="metric-value response-code-value ${parseInt(log.responseCode) >= 200 && parseInt(log.responseCode) < 300 ? 'status-passed' : 'status-flagged'}">${log.responseCode || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="detailed-info-grid">
+                                        <div class="info-column">
+                                            <p><strong>Source IP:</strong> ${log.srcip || 'N/A'}</p>
+                                            <p><strong>Source Port:</strong> ${log.srcport_val || log.location || 'N/A'}</p>
+                                            <p><strong>Source Interface</strong> <i class="fab fa-windows"></i> ${log.sourceInterfaceOS || 'N/A'}</p>
+                                            <p><strong>Device:</strong> <i class="fas fa-desktop"></i> ${log.device || 'N/A'}</p>
+                                            <p><strong>Browser:</strong> <i class="fab fa-firefox"></i> ${log.browser || 'N/A'}</p>
+                                            <p><strong>Start time:</strong> ${log.startTime || 'N/A'}</p>
+                                        </div>
+                                        <div class="info-column">
+                                            <p><strong>Destination IP:</strong> ${log.dstip || 'N/A'}</p>
+                                            <p><strong>Destination Port:</strong> ${log.dstport_val || 'N/A'}</p>
+                                            <p><strong>Destination Interface :</strong> ${log.requestID || 'N/A'}</p>
+                                            <p><strong>End time:</strong> ${log.endTime || 'N/A'}</p>
+                                            <p><strong>Service Engine:</strong> ${log.serviceEngine || 'N/A'}</p>
+                                            <p><strong>Response Length:</strong> ${log.responseLengthDisplay || 'N/A'}</p>
+                                            <p><strong>Persistence Session ID:</strong> ${log.persistenceSessionID || 'N/A'}</p>
+                                            <p><strong>Significance:</strong> ${log.significance || 'N/A'}</p>
+                                        </div>
+                                        <div class="info-column server-ip-column">
+                                            <p><strong>Server IP:</strong> ${log.serverIPDetail || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    <div class="view-headers-container">
+                                        <a href="#" class="view-all-headers-link">View All Headers</a>
+                                    </div>
+                                    <div class="log-details-tabs-container">
+                                        <div class="log-details-tabs" data-log-index="${logIndex}">
+                                            <button class="tab-button active" data-tab="response-info-tab-${logIndex}">Response Information</button>
+                                            <!-- Add more tab buttons here if needed -->
+                                        </div>
+                                        <div id="response-info-tab-${logIndex}" class="tab-content active">
+                                            <p><strong>Content Type:</strong> ${log.resContentType || 'N/A'}</p>
+                                            <p><strong>Other Details:</strong> ${log.resOtherDetails || 'Placeholder for other response details.'}</p>
+                                        </div>
+                                        <!-- Add more tab content divs here if needed -->
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // Insert the detail row directly after the clicked row
+                            detailRow.appendChild(cell);
+                            logsTableBody.insertBefore(detailRow, currentRow.nextSibling);
+
+                            // Add event listeners for the new tabs
+                            const tabContainer = cell.querySelector(`.log-details-tabs[data-log-index="${logIndex}"]`);
+                            if (tabContainer) {
+                                tabContainer.addEventListener('click', function(e) {
+                                    if (e.target.classList.contains('tab-button')) {
+                                        const targetTabId = e.target.dataset.tab;
+                                        
+                                        tabContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                                        const parentContent = tabContainer.closest('.expanded-log-content');
+                                        parentContent.querySelectorAll('.log-details-tabs-container .tab-content').forEach(content => content.classList.remove('active'));
+                                        
+                                        e.target.classList.add('active');
+                                        const targetContentElement = document.getElementById(targetTabId);
+                                        if (targetContentElement) {
+                                            targetContentElement.classList.add('active');
+                                        }
+                                    }
+                                });
+                            }
+                            icon.classList.remove('fa-plus');
+                            icon.classList.add('fa-minus');
                         }
-                        icon.classList.remove('fa-plus');
-                        icon.classList.add('fa-minus');
+                    } else {
+                        console.error("Log data not found for index:", logIndex, "Max index:", logData.length -1);
                     }
                 }
             });
 
+            // Chart.js Configuration (Only if canvas element exists)
+            const canvasCtx = document.getElementById('logsChart');
+            if (canvasCtx) {
+                const ctx = canvasCtx.getContext('2d');
+                new Chart(ctx, { 
+                    type: 'bar',
+                    data: {
+                        labels: ['Wed 14', '', 'Thu 15', '', 'Fri 16', '', 'Sat 17', '', 'Aug 18', '', 'Mon 19', '', 'Tue 20'], // TODO: Dynamic labels
+                        datasets: [{
+                            label: 'Non-Significant Logs', // TODO: Dynamic data
+                            data: [100, 150, 120, 180, 200, 220, 300, 250, 4000, 4200, 1000, 800, 2000],
+                            backgroundColor: '#4CAF50',
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.7
+                        }, {
+                            label: 'Significant Logs', // TODO: Dynamic data
+                            data: [20, 30, 25, 35, 40, 45, 600, 50, 2000, 2100, 500, 400, 1000],
+                            backgroundColor: '#FF9800',
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false, // Allow chart to shrink
+                        scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } }, y: { stacked: true, beginAtZero: true, grid: { color: '#e9ecef' }, ticks: { font: { size: 10 }, callback: function(value) { if (value >= 1000) return (value/1000) + 'k'; return value; } } } },
+                        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }
+                    }
+                });
+            }
 
-            // Chart.js Configuration
-            const ctx = document.getElementById('logsChart').getContext('2d');
-            new Chart(ctx, { /* ... Chart config remains the same ... */ 
-                type: 'bar',
-                data: {
-                    labels: ['Wed 14', '', 'Thu 15', '', 'Fri 16', '', 'Sat 17', '', 'Aug 18', '', 'Mon 19', '', 'Tue 20'],
-                    datasets: [{
-                        label: 'Non-Significant Logs',
-                        data: [100, 150, 120, 180, 200, 220, 300, 250, 4000, 4200, 1000, 800, 2000],
-                        backgroundColor: '#4CAF50',
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.7
-                    }, {
-                        label: 'Significant Logs',
-                        data: [20, 30, 25, 35, 40, 45, 600, 50, 2000, 2100, 500, 400, 1000],
-                        backgroundColor: '#FF9800',
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.7
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } }, y: { stacked: true, beginAtZero: true, grid: { color: '#e9ecef' }, ticks: { font: { size: 10 }, callback: function(value) { if (value >= 1000) return (value/1000) + 'k'; return value; } } } },
-                    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }
-                }
-            });
 
             // Modal Handling
             const wafRulesLink = document.getElementById('wafRulesLink');
             const modal = document.getElementById('wafRulesModal');
             const closeModalButtons = document.querySelectorAll('.close-modal-button');
 
-            wafRulesLink.addEventListener('click', function(e) { e.preventDefault(); modal.style.display = "block"; });
-            closeModalButtons.forEach(button => { button.addEventListener('click', function() { document.getElementById(this.dataset.target).style.display = "none"; }); });
-            window.addEventListener('click', function(event) { if (event.target == modal) { modal.style.display = "none"; } });
+            if (wafRulesLink && modal) {
+                wafRulesLink.addEventListener('click', function(e) { e.preventDefault(); modal.style.display = "block"; });
+                closeModalButtons.forEach(button => { button.addEventListener('click', function() { document.getElementById(this.dataset.target).style.display = "none"; }); });
+                window.addEventListener('click', function(event) { if (event.target == modal) { modal.style.display = "none"; } });
+            }
         });
     </script>
 </body>
