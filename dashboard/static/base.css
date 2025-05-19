@@ -281,6 +281,9 @@ body {
     font-weight: bold;
     color: white;
 }
+.status-accept { background-color: #48BB78; } /* Green */
+.status-close { background-color: #E53E3E; } /* Red */
+.status-other { background-color: #FFD600; color: #333; } /* Yellow with dark text for contrast */
 .status-flagged { background-color: #E53E3E; } 
 .status-passed { background-color: #48BB78; } 
 

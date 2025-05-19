@@ -93,7 +93,11 @@
                         {% for log_item in logs_for_display %}
                         <tr>
                             <td>{{ log_item.ts_display }}</td>
-                            <td><span class="status-label {% if log_item.action == 'DROP' or log_item.action == 'FLAGGED' %}status-flagged{% else %}status-passed{% endif %}">{{ log_item.action }}</span></td>
+                            <td>
+  <span class="status-label{% if log_item.action|default:""|lower == 'accept' %} status-accept{% elif log_item.action|default:""|lower == 'close' %} status-close{% else %} status-other{% endif %}">
+    {{ log_item.action|default:"N/A" }}
+  </span>
+</td>
                             <td>{{ log_item.srcip }}</td>
                             <td>{{ log_item.dstip }}</td>
                             <td>{{ log_item.dstport_val }}</td>
