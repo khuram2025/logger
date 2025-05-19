@@ -69,7 +69,7 @@ def clickhouse_logs_view(request):
     # Adjust the SELECT statement to include all base fields you have
     query = f"""
         SELECT
-            timestamp, srcip, dstip, dstport, action, proto,
+            timestamp, raw_message, srcip, dstip, dstport, action, proto,
             rcvdbyte, sentbyte, duration
         FROM fortigate_traffic
         ORDER BY timestamp DESC
@@ -85,14 +85,17 @@ def clickhouse_logs_view(request):
     for db_row in db_rows:
         # Unpack basic fields (adjust indices based on your SELECT statement)
         ts_obj = db_row[0]
-        srcip_val = db_row[1]
-        dstip_val = db_row[2]
-        dstport_val = db_row[3]
-        action_val = db_row[4] # This might map to 'waf' status (e.g. "FLAGGED", "PASSED")
-        proto_num = db_row[5]
-        rcvdbyte_val = db_row[6]
-        sentbyte_val = db_row[7]
-        duration_val = db_row[8] if db_row[8] is not None else 0
+        raw_message_val = db_row[1]
+        srcip_val = db_row[2]
+        dstip_val = db_row[3]
+        dstport_val = db_row[4]
+        action_val = db_row[5]
+        proto_num = db_row[6]
+        rcvdbyte_val = db_row[7]
+        sentbyte_val = db_row[8]
+        duration_val = db_row[9] if db_row[9] is not None else 0
+
+        # DEBUG: Print the raw_message value for each row
 
         # --- Format and Prepare Log Entry ---
         ts_display_str = ts_obj.strftime('%Y-%m-%d %H:%M:%S') if hasattr(ts_obj, 'strftime') else str(ts_obj)
@@ -119,6 +122,7 @@ def clickhouse_logs_view(request):
             'responseLengthDisplay': rcvdbyte_display_str, # Example: Use received bytes for response length
                                                            # Or use a dedicated response length field if available.
                                                            # Corresponds to `log.len` in JS table and `log.responseLength` in expansion
+            'raw_message': raw_message_val,    # Pass raw_message to frontend
 
             # Detailed fields for JavaScript expansion (Populate these from your data)
             'clientRTT': "N/A",                 # TODO: Fetch or derive
@@ -158,6 +162,12 @@ def clickhouse_logs_view(request):
         if end - start < 4:
             start = max(end - 4, 1)
         page_range = range(start, end + 1)
+
+    # DEBUG: Print the first processed log entry sent to the frontend
+    if processed_logs_for_template:
+        print("DEBUG: First log entry sent to frontend:", processed_logs_for_template[0])
+    else:
+        print("DEBUG: No logs processed for frontend.")
 
     context = {
         'logs_for_display': processed_logs_for_template, # For Django template to render table rows

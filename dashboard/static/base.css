@@ -287,6 +287,48 @@ body {
 .status-flagged { background-color: #E53E3E; } 
 .status-passed { background-color: #48BB78; } 
 
+/* Raw message styling */
+.raw-message-section {
+    margin-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 15px;
+}
+
+.raw-message-section h4 {
+    margin-bottom: 10px;
+    color: #4a5568;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.raw-message {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #2d3748;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Make response details section more organized */
+.response-info-section {
+    margin-bottom: 15px;
+}
+
+.response-info-section h4 {
+    margin: 0 0 10px 0;
+    color: #4a5568;
+    font-size: 14px;
+    font-weight: 600;
+}
+
 .duration-cell {
     display: flex;
     align-items: center;

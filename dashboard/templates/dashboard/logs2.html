@@ -1,4 +1,5 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,53 +166,7 @@
                 {% endif %}
         </main>
 
-        <aside class="sidebar-right">
-            <div class="sidebar-section">
-                <div class="sidebar-header non-collapsible">
-                    <span>Summaries</span>
-                    <i class="fas fa-caret-down"></i>
-                </div>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-header collapsible-header" data-target="log-analytics-content">
-                    <span>Log Analytics</span>
-                    <i class="fas fa-minus"></i>
-                </div>
-                <div id="log-analytics-content" class="collapsible-content open">
-                    <a href="#">WAF Tags</a>
-                    <a href="#" class="active" id="wafRulesLink">WAF Rules</a>
-                    <a href="#">WAF Groups</a>
-                    <a href="#">WAF Latency</a>
-                </div>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-header collapsible-header" data-target="client-analytics-content">
-                    <span>Client Analytics</span>
-                    <i class="fas fa-plus"></i>
-                </div>
-                <div id="client-analytics-content" class="collapsible-content">
-                    <a href="#">Browser</a>
-                    <a href="#">Client OS</a>
-                    <a href="#">Device</a>
-                    <a href="#">IP Address</a>
-                    <a href="#">Location</a>
-                    <a href="#">End to End</a>
-                    <a href="#">User ID</a>
-                </div>
-            </div>
-             <div class="sidebar-section">
-                <div class="sidebar-header collapsible-header" data-target="lb-analytics-content">
-                    <span>Load Balancer Analytics</span>
-                    <i class="fas fa-plus"></i>
-                </div>
-                <div id="lb-analytics-content" class="collapsible-content">
-                    <a href="#">VS IP Address</a>
-                    <a href="#">Server IP Address</a>
-                </div>
-            </div>
-        </aside>
+        {% include 'dashboard/partials/sidebar.html' %}
     </div>
 
     <div id="wafRulesModal" class="modal">
@@ -360,8 +315,15 @@
                                             <!-- Add more tab buttons here if needed -->
                                         </div>
                                         <div id="response-info-tab-${logIndex}" class="tab-content active">
-                                            <p><strong>Content Type:</strong> ${log.resContentType || 'N/A'}</p>
-                                            <p><strong>Other Details:</strong> ${log.resOtherDetails || 'Placeholder for other response details.'}</p>
+                                            <div class="response-info-section">
+                                                <h4>Response Details</h4>
+                                                <p><strong>Content Type:</strong> ${log.resContentType || 'N/A'}</p>
+                                                <p><strong>Other Details:</strong> ${log.resOtherDetails || 'N/A'}</p>
+                                            </div>
+                                            <div class="raw-message-section">
+                                                <h4>Raw Message</h4>
+                                                <pre class="raw-message">${log.raw_message || 'No raw message available'}</pre>
+                                            </div>
                                         </div>
                                         <!-- Add more tab content divs here if needed -->
                                     </div>
