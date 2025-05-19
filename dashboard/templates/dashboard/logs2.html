@@ -48,6 +48,8 @@
         <main class="main-content-area">
             <div class="logs-content-header">
                 <div class="controls-bar">
+                    {# Reusable filter dropdown for time range selection #}
+                    {% include 'dashboard/partials/filter_dropdown.html' %}
                     <div class="search-container">
                         <i class="fas fa-search"></i>
                         <input type="text" placeholder="Search" />
@@ -64,9 +66,7 @@
                         <button class="icon-text-button"><i class="fas fa-search-plus"></i></button>
                         <button class="icon-text-button"><i class="fas fa-download"></i> Export</button>
                     </div>
-                     <div class="dropdown-button">
-                        Displaying Past Week <i class="fas fa-caret-down"></i> <!-- TODO: Make this dynamic -->
-                    </div>
+                     
                 </div>
             </div>
 

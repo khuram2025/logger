@@ -1,0 +1,31 @@
+<!-- Reusable time filter dropdown. Usage: include this partial where needed. Pass context vars if needed for default values/JS hooks. -->
+<div class="filter-dropdown-container">
+    <label for="time-filter" class="filter-label"><i class="fas fa-clock"></i> Filter:</label>
+    <select id="time-filter" class="filter-dropdown-select">
+        <option value="last_hour">Last hour</option>
+        <option value="last_24_hours">Last 24 hours</option>
+        <option value="last_7_days">Last 7 Days</option>
+        <option value="last_30_days">Last 30 Days</option>
+        <option value="custom">Custom...</option>
+    </select>
+    <div id="custom-date-range" class="custom-date-range" style="display: none;">
+        <input type="datetime-local" id="custom-start" class="custom-date-input" placeholder="Start date & time">
+        <span class="date-separator">&ndash;</span>
+        <input type="datetime-local" id="custom-end" class="custom-date-input" placeholder="End date & time">
+        <button class="apply-custom-btn">Apply</button>
+    </div>
+</div>
+<script>
+    // Toggle custom date range fields
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterSelect = document.getElementById('time-filter');
+        const customRange = document.getElementById('custom-date-range');
+        filterSelect.addEventListener('change', function () {
+            if (filterSelect.value === 'custom') {
+                customRange.style.display = 'flex';
+            } else {
+                customRange.style.display = 'none';
+            }
+        });
+    });
+</script>

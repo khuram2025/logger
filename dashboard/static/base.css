@@ -151,7 +151,84 @@ body {
     transition: max-height 0.3s ease-out;
 }
 .collapsible-content.open {
-    max-height: 500px; /* Adjust as needed */
+    max-height: 500px; /* Filter Dropdown Styles */
+.filter-dropdown-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(52, 58, 64, 0.06);
+    padding: 8px 16px;
+    margin-right: 18px;
+    margin-bottom: 0;
+    font-size: 14px;
+}
+.filter-label {
+    color: #343a40;
+    font-weight: 500;
+    margin-right: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.filter-dropdown-select {
+    padding: 8px 10px 8px 30px; /* Match search box */
+    border: 1px solid #ced4da;  /* Match search box */
+    border-radius: 4px;
+    background: #f8f9fa;
+    color: #343a40;
+    font-size: 13px;            /* Match search box */
+    outline: none;
+    transition: border 0.2s;
+    height: 36px;               /* Approximate height for visual match */
+    appearance: none;           /* Remove default browser styling */
+    min-width: 140px;
+}
+.filter-dropdown-select:focus {
+    border-color: #ff7f0e;
+}
+.filter-dropdown-select:focus {
+    border-color: #ff7f0e;
+}
+.custom-date-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 10px;
+}
+.custom-date-input {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 13px;
+    background: #f8f9fa;
+    color: #343a40;
+    outline: none;
+    width: 170px;
+}
+.apply-custom-btn {
+    background: #ff7f0e;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-left: 8px;
+}
+.apply-custom-btn:hover {
+    background: #e06700;
+}
+.date-separator {
+    color: #adb5bd;
+    font-size: 16px;
+    margin: 0 2px;
+}
+/* End Filter Dropdown Styles */
+
     padding-bottom: 10px;
 }
 
