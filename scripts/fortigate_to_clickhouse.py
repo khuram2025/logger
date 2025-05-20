@@ -98,6 +98,12 @@ def parse_line(line: str) -> dict:
             data[field] = int(val)
         except Exception:
             data[field] = 0
+            
+    # Handle IP addresses - ensure they're not empty
+    if 'srcip' in data and not data['srcip']:
+        data['srcip'] = '0.0.0.0'
+    if 'dstip' in data and not data['dstip']:
+        data['dstip'] = '0.0.0.0'
 
     # Assign defaults
     for field in ALL_FIELDS:
@@ -119,26 +125,58 @@ class LogHandler(FileSystemEventHandler):
         self.buffer = buffer
         self.buffer_lock = buffer_lock
         self.process_batch_func = process_batch_func
-        self._fp = open(self.filepath, 'r')
-        self._fp.seek(0, os.SEEK_END)  # Only process new lines
+        self._open_file()
+        
+    def _open_file(self):
+        """Open or reopen the log file and position at the end"""
+        try:
+            if hasattr(self, '_fp') and self._fp:
+                self._fp.close()
+            self._fp = open(self.filepath, 'r')
+            self._fp.seek(0, os.SEEK_END)  # Only process new lines
+            logging.info(f"Opened log file: {self.filepath} (position: {self._fp.tell()})")
+        except Exception as e:
+            logging.error(f"Error opening log file: {e}")
+            
+    def _check_file_rotation(self):
+        """Check if the file has been rotated and reopen if needed"""
+        try:
+            # Check if file exists and has been rotated
+            if not os.path.exists(self.filepath) or os.stat(self.filepath).st_ino != os.fstat(self._fp.fileno()).st_ino:
+                logging.info("Log rotation detected. Reopening log file.")
+                self._open_file()
+                return True
+        except Exception as e:
+            logging.error(f"Error checking file rotation: {e}")
+            self._open_file()
+            return True
+        return False
 
     def on_modified(self, event):
         if event.src_path != self.filepath:
             return
+            
+        # Check for file rotation before reading
+        self._check_file_rotation()
+        
         while True:
-            line = self._fp.readline()
-            if not line:
+            try:
+                line = self._fp.readline()
+                if not line:
+                    break
+                with self.buffer_lock:
+                    self.buffer.append(line)
+                    if len(self.buffer) >= BATCH_SIZE:
+                        self.process_batch_func()
+            except Exception as e:
+                logging.error(f"Error reading log line: {e}")
+                self._open_file()
                 break
-            with self.buffer_lock:
-                self.buffer.append(line)
-                if len(self.buffer) >= BATCH_SIZE:
-                    self.process_batch_func()
 
     def on_moved(self, event):
-        if event.src_path == self.filepath:
-            self._fp.close()
-            self._fp = open(self.filepath, 'r')
-            self._fp.seek(0, os.SEEK_END)
+        if event.src_path == self.filepath or event.dest_path == self.filepath:
+            logging.info(f"File move detected: {event.src_path} -> {event.dest_path}")
+            self._open_file()
 
 
 # ── Main Ingestion Loop ──────────────────────────────────────────────────────
@@ -172,11 +210,20 @@ def main():
                 logging.info(f"Inserted {len(rows)} rows to ClickHouse.")
             except Exception as e:
                 logging.error(f"Batch insert error: {e}")
+                # Log a sample of the problematic data to help diagnose
+                if rows:
+                    sample_row = rows[0]
+                    logging.error(f"Sample row that caused error: {dict(zip(ALL_FIELDS, sample_row))}")
 
+    # Create file handler and observer
     handler = LogHandler(LOG_FILE, buffer, buffer_lock, process_batch)
     observer = Observer()
     observer.schedule(handler, path=os.path.dirname(LOG_FILE) or '.', recursive=False)
     observer.start()
+    
+    # Log initial status
+    logging.info(f"Monitoring log file: {LOG_FILE}")
+    logging.info(f"ClickHouse connection: {CH_HOST}:{CH_PORT}, DB: {CH_DB}")
 
     def flush_and_exit(signum, frame):
         logging.info("Shutting down. Flushing remaining logs...")
@@ -188,10 +235,12 @@ def main():
     signal.signal(signal.SIGINT, flush_and_exit)
     signal.signal(signal.SIGTERM, flush_and_exit)
 
-    # Periodically flush buffer in case of low log volume
+    # Periodically flush buffer and check file rotation
     try:
         while True:
             time.sleep(BATCH_FLUSH_INTERVAL)
+            # Force check for file rotation periodically
+            handler._check_file_rotation()
             process_batch()
     except KeyboardInterrupt:
         flush_and_exit(None, None)
