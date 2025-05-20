@@ -86,14 +86,15 @@
     }
 }
 </style>
+<form method="get" id="time-filter-form">
 <div class="filter-dropdown-container">
     <label for="time-filter" class="filter-label"><i class="fas fa-clock"></i> Filter:</label>
-    <select id="time-filter" class="filter-dropdown-select">
-        <option value="last_hour">Last hour</option>
-        <option value="last_24_hours">Last 24 hours</option>
-        <option value="last_7_days">Last 7 Days</option>
-        <option value="last_30_days">Last 30 Days</option>
-        <option value="custom">Custom...</option>
+    <select id="time-filter" name="time_range" class="filter-dropdown-select" onchange="document.getElementById('time-filter-form').submit();">
+        <option value="last_hour" {% if selected_time_range == 'last_hour' %}selected{% endif %}>Last hour</option>
+        <option value="last_24_hours" {% if selected_time_range == 'last_24_hours' %}selected{% endif %}>Last 24 hours</option>
+        <option value="last_7_days" {% if selected_time_range == 'last_7_days' %}selected{% endif %}>Last 7 Days</option>
+        <option value="last_30_days" {% if selected_time_range == 'last_30_days' %}selected{% endif %}>Last 30 Days</option>
+        <option value="custom" {% if selected_time_range == 'custom' %}selected{% endif %}>Custom Range</option>
     </select>
     <div id="custom-date-range" class="custom-date-range" style="display: none;">
         <div class="date-time-group">

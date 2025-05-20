@@ -1,0 +1,9 @@
+<nav class="sub-header">
+    
+    <div class="content-tabs">
+        <a href="{% url 'top_summary' %}" class="tab-link {% if active_tab == 'top_summary' %}active{% endif %}">Top Summary</a>
+        <a href="{% url 'clickhouse_logs' %}" class="tab-link {% if active_tab == 'logs' %}active{% endif %}">Logs</a>
+        <a href="#" class="tab-link {% if active_tab == 'health' %}active{% endif %}">Health</a>
+        
+    </div>
+</nav>

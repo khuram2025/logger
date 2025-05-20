@@ -1,0 +1,56 @@
+{% extends 'dashboard/base.html' %}
+
+{% load humanize %}
+{% load bytes_humanize %}
+{% block title %}Top Summary{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='top_summary' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+{% block content %}
+
+{% include 'dashboard/partials/filter_dropdown.html' %}
+
+<div class="content-card" style="max-width:1100px;margin:2rem auto 0;box-shadow:var(--card-shadow);border-radius:10px;background:#fff;padding:2rem;">
+    <h2 style="margin-bottom:2rem;font-weight:600;">Top 10 Traffic Summary</h2>
+    <div class="table-responsive">
+        <table class="logs-table">
+            <thead>
+                <tr>
+                    <th>Source IP</th>
+                    <th>Destination IP</th>
+                    <th>Destination Port</th>
+                    <th>Total Sent Bytes</th>
+                    <th>Total Received Bytes</th>
+                    <th>Total Bytes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in top_summary %}
+                <tr>
+                    <td><strong>{{ entry.srcip }}</strong></td>
+                    <td><strong>{{ entry.dstip }}</strong></td>
+                    <td>{{ entry.dstport }}</td>
+                    <td>
+    <span title="{{ entry.total_sent|intcomma }} bytes">{{ entry.total_sent|bytes_humanize }}</span>
+    <br><small style="color:#888">({{ entry.total_sent|intcomma }})</small>
+</td>
+<td>
+    <span title="{{ entry.total_rcvd|intcomma }} bytes">{{ entry.total_rcvd|bytes_humanize }}</span>
+    <br><small style="color:#888">({{ entry.total_rcvd|intcomma }})</small>
+</td>
+<td style="font-weight:600;">
+    <span title="{{ entry.total_bytes|intcomma }} bytes">{{ entry.total_bytes|bytes_humanize }}</span>
+    <br><small style="color:#888">({{ entry.total_bytes|intcomma }})</small>
+</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center">No summary data found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

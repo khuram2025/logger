@@ -5,11 +5,9 @@ import math
 from clickhouse_driver import Client
 import os
 import json
+from datetime import datetime, timedelta
 
-
-PAGE_SIZE = 50
-
-# ClickHouse connection settings (sync with fortigate_to_clickhouse.py)
+# ClickHouse connection settings
 CH_HOST = os.getenv('CH_HOST', 'localhost')
 CH_PORT = int(os.getenv('CH_PORT', '9000'))
 CH_USER = os.getenv('CH_USER', 'default')
@@ -20,6 +18,69 @@ PAGE_SIZE = 50
 def dmu_view(request):
     # Renders the static UI template
     return render(request, 'dashboard/index.html')
+
+def top_summary_view(request):
+    client = Client(
+        host=CH_HOST,
+        port=CH_PORT,
+        user=CH_USER,
+        password=CH_PASSWORD,
+        database=CH_DB
+    )
+    # Get time_range from GET params
+    time_range = request.GET.get('time_range', 'last_hour')
+    now = datetime.now()
+    if time_range == 'last_24_hours':
+        since = now - timedelta(hours=24)
+    elif time_range == 'last_7_days':
+        since = now - timedelta(days=7)
+    elif time_range == 'last_30_days':
+        since = now - timedelta(days=30)
+    elif time_range == 'custom':
+        # Custom range not yet implemented; fallback to last hour
+        since = now - timedelta(hours=1)
+    else:
+        since = now - timedelta(hours=1)
+
+    # ClickHouse expects ISO format
+    since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+
+    query = f'''
+        SELECT
+            srcip,
+            dstip,
+            dstport,
+            sum(sentbyte) AS total_sent,
+            sum(rcvdbyte) AS total_rcvd,
+            sum(sentbyte) + sum(rcvdbyte) AS total_bytes
+        FROM fortigate_traffic
+        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+        GROUP BY srcip, dstip, dstport
+        ORDER BY total_bytes DESC
+        LIMIT 10
+    '''
+    
+    try:
+        rows = client.execute(query)
+    except Exception:
+        rows = []
+        
+    top_summary = [
+        {
+            'srcip': row[0],
+            'dstip': row[1],
+            'dstport': row[2],
+            'total_sent': row[3],
+            'total_rcvd': row[4],
+            'total_bytes': row[5],
+        }
+        for row in rows
+    ]
+    return render(request, 'dashboard/top_summary.html', {
+        'top_summary': top_summary,
+        'selected_time_range': time_range
+    })
+
 
 PROTO_MAP = {
     1: 'ICMP', 6: 'TCP', 17: 'UDP', 47: 'GRE',
@@ -46,40 +107,56 @@ def clickhouse_logs_view(request):
         database=CH_DB
     )
 
-    # Get client's real IP (for display or other purposes, not directly used in log data here)
+    # Get client's real IP (for display or other purposes)
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         viewer_ip = x_forwarded_for.split(',')[0]
     else:
         viewer_ip = request.META.get('REMOTE_ADDR')
 
+    # --- Time Filter ---
+    time_range = request.GET.get('time_range', 'last_hour')
+    now = datetime.utcnow()  # Use UTC to match ClickHouse 'now()'
+    if time_range == 'last_24_hours':
+        since = now - timedelta(hours=24)
+    elif time_range == 'last_7_days':
+        since = now - timedelta(days=7)
+    elif time_range == 'last_30_days':
+        since = now - timedelta(days=30)
+    elif time_range == 'custom':
+        # Custom range logic can be added here in the future
+        since = now - timedelta(hours=1)
+    else:
+        since = now - timedelta(hours=1)
+    since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+
     # --- Pagination ---
     page = int(request.GET.get('page', 1))
     try:
-        total_logs_count_result = client.execute("SELECT count() FROM fortigate_traffic")
+        # Total logs count for the current filter
+        total_logs_count_result = client.execute(f"SELECT count() FROM fortigate_traffic WHERE timestamp >= parseDateTimeBestEffort('{since_str}')")
         total_logs_count = total_logs_count_result[0][0] if total_logs_count_result else 0
-    except Exception as e:
-        print(f"Error fetching total log count: {e}")
-        total_logs_count = 0 # Fallback or handle error appropriately
+    except Exception:
+        total_logs_count = 0  # Fallback on error
 
     total_pages = (total_logs_count + PAGE_SIZE - 1) // PAGE_SIZE if PAGE_SIZE > 0 else 1
     offset = (page - 1) * PAGE_SIZE
 
     # --- Fetch current page of logs from ClickHouse ---
-    # Adjust the SELECT statement to include all base fields you have
     query = f"""
         SELECT
             timestamp, raw_message, srcip, dstip, dstport, action, proto,
             rcvdbyte, sentbyte, duration
         FROM fortigate_traffic
+        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
         ORDER BY timestamp DESC
         LIMIT {PAGE_SIZE} OFFSET {offset}
     """
+    
     try:
         db_rows = client.execute(query)
-    except Exception as e:
-        print(f"Error fetching logs: {e}")
-        db_rows = [] # Fallback or handle error
+    except Exception:
+        db_rows = []  # Fallback on error
 
     processed_logs_for_template = []
     for db_row in db_rows:
@@ -163,12 +240,6 @@ def clickhouse_logs_view(request):
             start = max(end - 4, 1)
         page_range = range(start, end + 1)
 
-    # DEBUG: Print the first processed log entry sent to the frontend
-    if processed_logs_for_template:
-        print("DEBUG: First log entry sent to frontend:", processed_logs_for_template[0])
-    else:
-        print("DEBUG: No logs processed for frontend.")
-
     context = {
         'logs_for_display': processed_logs_for_template, # For Django template to render table rows
         'logs_json_for_expansion': json.dumps(processed_logs_for_template, default=str), # For JS `logData`
@@ -177,6 +248,7 @@ def clickhouse_logs_view(request):
         'total_pages': total_pages,
         'total_logs_count': total_logs_count,
         'page_range': page_range,
+        'selected_time_range': time_range, # Pass to template for dropdown selection
         # Pass any other context variables your template needs
     }
     return render(request, 'dashboard/logs2.html', context)

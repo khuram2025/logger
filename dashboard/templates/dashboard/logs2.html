@@ -1,32 +1,15 @@
+{% extends 'dashboard/base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebVS-pool Logs</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="{% static 'base.css' %}">
-</head>
-<body>
-    {% include 'dashboard/header.html' %}
+{% block title %}Logs{% endblock %}
 
-    <nav class="sub-header">
-        <h1>Pool: WebVS-pool</h1>
-        <div class="content-tabs">
-            <a href="#" class="tab-link">Analytics</a>
-            <a href="#" class="tab-link active">Logs</a>
-            <a href="#" class="tab-link">Health</a>
-            <a href="#" class="tab-link">Servers</a>
-            <a href="#" class="tab-link">Events</a>
-            <a href="#" class="tab-link">Alerts</a>
-        </div>
-    </nav>
+{% block subheader %}
+    {% with active_tab='logs' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
 
-    <div class="page-container">
-        <main class="main-content-area">
+{% block content %}
             <div class="logs-content-header">
                 <div class="controls-bar logs-controls-row">
                     <div class="logs-controls-group">
@@ -183,11 +166,9 @@
                     </nav>
                 </div>
                 {% endif %}
-        </main>
+{% endblock %}
 
-        {% include 'dashboard/partials/sidebar.html' %}
-    </div>
-
+{% block extra_scripts %}
     <div id="wafRulesModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -201,6 +182,9 @@
     </div>
 
     <script>
+        // Pass the logs data from Django to JavaScript
+        const logData = {{ logs_json_for_expansion|safe }};
+        
         document.addEventListener('DOMContentLoaded', function () {
             // Sidebar Accordion
             const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
@@ -425,5 +409,4 @@
             }
         });
     </script>
-</body>
-</html>
+{% endblock %}
