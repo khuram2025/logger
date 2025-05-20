@@ -11,26 +11,7 @@
     <link rel="stylesheet" href="{% static 'base.css' %}">
 </head>
 <body>
-    <header class="main-header">
-        <div class="main-nav-links">
-            <a href="#" class="active">Dashboard</a>
-            <a href="#">Applications</a>
-            <a href="#">Virtual Services</a>
-            <a href="#">Pools</a>
-            <a href="#">Pool Groups</a>
-        </div>
-        <div class="user-actions">
-            <button class="icon-button">
-                <i class="fas fa-bell"></i>
-                <span class="badge">100</span>
-            </button>
-            <button class="icon-button"><i class="fas fa-question-circle"></i></button>
-            <button class="icon-button"><i class="fas fa-cog"></i></button>
-            <div class="user-menu">
-                admin (admin) <i class="fas fa-caret-down"></i>
-            </div>
-        </div>
-    </header>
+    {% include 'dashboard/header.html' %}
 
     <nav class="sub-header">
         <h1>Pool: WebVS-pool</h1>
@@ -47,27 +28,65 @@
     <div class="page-container">
         <main class="main-content-area">
             <div class="logs-content-header">
-                <div class="controls-bar">
-                    {# Reusable filter dropdown for time range selection #}
-                    {% include 'dashboard/partials/filter_dropdown.html' %}
-                    <div class="search-container">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Search" />
+                <div class="controls-bar logs-controls-row">
+                    <div class="logs-controls-group">
+                        <div class="search-container">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Search" />
+                        </div>
+                        <div class="log-summary">
+                            Total: <span id="total-logs">{{ total_logs_count|default:"0" }}</span> Logs 
+                            {% if total_logs_count|default:0 > 1000 %}(Log Throttling may be ON){% endif %}
+                        </div>
+                        <div class="date-range-display">
+                            Aug 13, 2019 10:06 AM - Aug 20, 2019 10:06 AM <!-- TODO: Make this dynamic -->
+                        </div>
+                        <div class="action-buttons">
+                            <button class="icon-text-button"><i class="fas fa-sync-alt"></i></button>
+                            <button class="icon-text-button"><i class="fas fa-search-plus"></i></button>
+                            <button class="icon-text-button"><i class="fas fa-download"></i> Export</button>
+                        </div>
                     </div>
-                    <div class="log-summary">
-                        Total: <span id="total-logs">{{ total_logs_count|default:"0" }}</span> Logs 
-                        {% if total_logs_count|default:0 > 1000 %}(Log Throttling may be ON){% endif %}
+                    <div class="logs-controls-filter">
+                        {% include 'dashboard/partials/filter_dropdown.html' %}
                     </div>
-                    <div class="date-range-display">
-                        Aug 13, 2019 10:06 AM - Aug 20, 2019 10:06 AM <!-- TODO: Make this dynamic -->
-                    </div>
-                    <div class="action-buttons">
-                        <button class="icon-text-button"><i class="fas fa-sync-alt"></i></button>
-                        <button class="icon-text-button"><i class="fas fa-search-plus"></i></button>
-                        <button class="icon-text-button"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                     
                 </div>
+                <style>
+                .logs-controls-row {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 1.5rem;
+                    flex-wrap: wrap;
+                }
+                .logs-controls-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 1.2rem;
+                    flex-wrap: wrap;
+                }
+                .logs-controls-filter {
+                    min-width: 260px;
+                    display: flex;
+                    justify-content: flex-end;
+                }
+                @media (max-width: 900px) {
+                    .logs-controls-row {
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 0.8rem;
+                    }
+                    .logs-controls-group {
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 0.7rem;
+                    }
+                    .logs-controls-filter {
+                        justify-content: flex-start;
+                    }
+                }
+                </style>
+
             </div>
 
             <!-- If you want a chart, add a canvas element here, e.g.: -->

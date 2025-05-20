@@ -1,4 +1,91 @@
-<!-- Reusable time filter dropdown. Usage: include this partial where needed. Pass context vars if needed for default values/JS hooks. -->
+<!-- Modern & Professional Time Filter Dropdown -->
+<style>
+.filter-dropdown-container {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+.filter-label {
+    font-weight: 600;
+    color: #333;
+    margin-right: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.filter-dropdown-select {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: #f9f9f9;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+.filter-dropdown-select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+.custom-date-range {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f5f6fa;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    margin-left: 1rem;
+}
+.custom-date-input {
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid #d1d5db;
+    font-size: 0.98rem;
+    background: #fff;
+    transition: border-color 0.2s;
+}
+.custom-date-input:focus {
+    border-color: #007bff;
+    outline: none;
+}
+.apply-custom-btn {
+    background: linear-gradient(90deg, #007bff 0%, #0056b3 100%);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 0.45rem 1.1rem;
+    margin-left: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+.apply-custom-btn:hover {
+    background: linear-gradient(90deg, #0056b3 0%, #007bff 100%);
+}
+.date-separator {
+    font-size: 1.15rem;
+    color: #888;
+    margin: 0 0.2rem;
+}
+@media (max-width: 700px) {
+    .filter-dropdown-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.8rem;
+    }
+    .custom-date-range {
+        flex-direction: column;
+        gap: 0.4rem;
+        margin-left: 0;
+    }
+}
+</style>
 <div class="filter-dropdown-container">
     <label for="time-filter" class="filter-label"><i class="fas fa-clock"></i> Filter:</label>
     <select id="time-filter" class="filter-dropdown-select">
@@ -9,11 +96,104 @@
         <option value="custom">Custom...</option>
     </select>
     <div id="custom-date-range" class="custom-date-range" style="display: none;">
-        <input type="datetime-local" id="custom-start" class="custom-date-input" placeholder="Start date & time">
+        <div class="date-time-group">
+            <label class="date-label">
+                <i class="fas fa-calendar-alt"></i>
+                <input type="date" id="custom-start-date" class="custom-date-input" aria-label="Start date">
+            </label>
+            <label class="time-label">
+                <i class="fas fa-clock"></i>
+                <input type="time" id="custom-start-time" class="custom-time-input" aria-label="Start time">
+            </label>
+        </div>
         <span class="date-separator">&ndash;</span>
-        <input type="datetime-local" id="custom-end" class="custom-date-input" placeholder="End date & time">
+        <div class="date-time-group">
+            <label class="date-label">
+                <i class="fas fa-calendar-alt"></i>
+                <input type="date" id="custom-end-date" class="custom-date-input" aria-label="End date">
+            </label>
+            <label class="time-label">
+                <i class="fas fa-clock"></i>
+                <input type="time" id="custom-end-time" class="custom-time-input" aria-label="End time">
+            </label>
+        </div>
         <button class="apply-custom-btn">Apply</button>
     </div>
+    <style>
+    .custom-date-range {
+        gap: 1rem;
+        background: #f7fafd;
+        border-radius: 8px;
+        padding: 0.7rem 1.2rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .date-time-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #fff;
+        border-radius: 6px;
+        padding: 0.3rem 0.8rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .date-label, .time-label {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 1rem;
+        color: #007bff;
+    }
+    .custom-date-input, .custom-time-input {
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #d1d5db;
+        font-size: 0.98rem;
+        background: #fff;
+        transition: border-color 0.2s;
+        margin-left: 0.2rem;
+    }
+    .custom-date-input:focus, .custom-time-input:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+    .apply-custom-btn {
+        margin-left: 1rem;
+        margin-top: 0;
+    }
+    @media (max-width: 700px) {
+        .custom-date-range {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.7rem;
+        }
+        .date-time-group {
+            flex-direction: column;
+            gap: 0.3rem;
+            padding: 0.3rem 0.3rem;
+        }
+        .apply-custom-btn {
+            margin-left: 0;
+            margin-top: 0.7rem;
+        }
+    }
+    </style>
+    <script>
+    // Toggle custom date range fields
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterSelect = document.getElementById('time-filter');
+        const customRange = document.getElementById('custom-date-range');
+        filterSelect.addEventListener('change', function () {
+            if (filterSelect.value === 'custom') {
+                customRange.style.display = 'flex';
+            } else {
+                customRange.style.display = 'none';
+            }
+        });
+    });
+    </script>
+
 </div>
 <script>
     // Toggle custom date range fields
