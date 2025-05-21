@@ -39,7 +39,7 @@ LOG_FILE    = '/var/log/fortigate.log'
 
 # ── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG for more verbose logging
     format='%(asctime)s %(levelname)s %(message)s',
     handlers=[logging.StreamHandler()]
 )
@@ -62,6 +62,11 @@ NUMERIC_FIELDS = {
     'sentdelta', 'rcvddelta', 'durationdelta', 'sentpktdelta', 'rcvdpktdelta'
 }
 
+IP_FIELDS = {
+    'srcip', 'dstip', 'gateway', 'nexthop', 'dstserver', 'srcserver',
+    'assignip', 'nat_ip', 'transip', 'unnip', 'locip', 'remip'
+}
+
 ALL_FIELDS = [
     'timestamp', 'raw_message', 'devname', 'devid', 'eventtime', 'tz',
     'logid', 'type', 'subtype', 'level', 'vd', 'srcip', 'srcport',
@@ -78,46 +83,73 @@ def parse_line(line: str) -> dict:
     Missing numeric fields default to 0; others to empty string.
     """
     data = {}
-    for key, val in KV_PATTERN.findall(line):
-        data[key] = val.strip('"')
-
-    # Build timestamp & raw_message
-    date = data.get('date', '')
-    t    = data.get('time', '')
-    timestamp_str = f"{date} {t}"
     try:
-        data['timestamp'] = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S") if date and t else None
-    except Exception:
-        data['timestamp'] = None
-    data['raw_message'] = line.rstrip('\n')
-
-    # Ensure all numeric fields are integers
-    for field in NUMERIC_FIELDS:
-        val = data.get(field, 0)
+        for key, val in KV_PATTERN.findall(line):
+            data[key] = val.strip('"')
+    
+        # Build timestamp & raw_message
+        date = data.get('date', '')
+        t    = data.get('time', '')
+        timestamp_str = f"{date} {t}"
         try:
-            data[field] = int(val)
+            data['timestamp'] = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S") if date and t else None
         except Exception:
-            data[field] = 0
+            data['timestamp'] = None
+        data['raw_message'] = line.rstrip('\n')
+    
+        # Ensure all numeric fields are integers
+        for field in NUMERIC_FIELDS:
+            val = data.get(field, 0)
+            try:
+                data[field] = int(val)
+            except Exception:
+                data[field] = 0
+                
+        # Critical IP fields must have valid values
+        # Handle srcip and dstip fields which are IPv4 in ClickHouse schema
+        for field in ['srcip', 'dstip']:
+            if field not in data or not data[field] or data[field].strip() == '':
+                data[field] = '0.0.0.0'
+            # Ensure IP format is valid
+            parts = data[field].split('.')
+            if len(parts) != 4:
+                data[field] = '0.0.0.0'
+    
+        # Handle all other IP-like fields that might exist in the data
+        for field in IP_FIELDS:
+            if field in data and (not data[field] or data[field].strip() == ''):
+                data[field] = '0.0.0.0'
+    
+        # Assign defaults
+        for field in ALL_FIELDS:
+            if field not in data:
+                data[field] = 0 if field in NUMERIC_FIELDS else ''
+                if field in ['srcip', 'dstip']:
+                    data[field] = '0.0.0.0'
+    
+        # Remove intermediate date/time keys
+        data.pop('date', None)
+        data.pop('time', None)
+    except Exception as e:
+        logging.error(f"Error parsing line: {e}\nLine: {line}")
+        # Provide fallback values for critical fields
+        if 'timestamp' not in data:
+            data['timestamp'] = datetime.now()
+        if 'raw_message' not in data:
+            data['raw_message'] = line.rstrip('\n')
+        for field in ['srcip', 'dstip']:
+            if field not in data:
+                data[field] = '0.0.0.0'
+        for field in NUMERIC_FIELDS:
+            if field not in data:
+                data[field] = 0
             
-    # Handle IP addresses - ensure they're not empty
-    if 'srcip' in data and not data['srcip']:
-        data['srcip'] = '0.0.0.0'
-    if 'dstip' in data and not data['dstip']:
-        data['dstip'] = '0.0.0.0'
-
-    # Assign defaults
-    for field in ALL_FIELDS:
-        if field not in data:
-            data[field] = 0 if field in NUMERIC_FIELDS else ''
-
-    # Remove intermediate date/time keys
-    data.pop('date', None)
-    data.pop('time', None)
     return data
 
 # ── Log Handler for Watchdog ────────────────────────────────────────────────
 BATCH_SIZE = 500
-BATCH_FLUSH_INTERVAL = 2  # seconds
+BATCH_FLUSH_INTERVAL = 1  # seconds - reduced for more frequent checks
+FILE_CHECK_INTERVAL = 1   # seconds - explicit interval for file size checks
 
 class LogHandler(FileSystemEventHandler):
     def __init__(self, filepath, buffer, buffer_lock, process_batch_func):
@@ -154,24 +186,35 @@ class LogHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         if event.src_path != self.filepath:
+            logging.debug(f"Ignoring event for different path: {event.src_path}")
             return
             
+        logging.debug(f"File modification detected for: {self.filepath}")
         # Check for file rotation before reading
         self._check_file_rotation()
         
+        lines_read = 0
         while True:
             try:
                 line = self._fp.readline()
                 if not line:
                     break
+                lines_read += 1
                 with self.buffer_lock:
                     self.buffer.append(line)
+                    logging.debug(f"Buffer size now: {len(self.buffer)}")
                     if len(self.buffer) >= BATCH_SIZE:
+                        logging.debug(f"Buffer reached batch size {BATCH_SIZE}, processing batch")
                         self.process_batch_func()
             except Exception as e:
                 logging.error(f"Error reading log line: {e}")
                 self._open_file()
                 break
+        
+        if lines_read > 0:
+            logging.info(f"Read {lines_read} new lines from {self.filepath}")
+        else:
+            logging.debug("No new lines read from file")
 
     def on_moved(self, event):
         if event.src_path == self.filepath or event.dest_path == self.filepath:
@@ -213,7 +256,36 @@ def main():
                 # Log a sample of the problematic data to help diagnose
                 if rows:
                     sample_row = rows[0]
-                    logging.error(f"Sample row that caused error: {dict(zip(ALL_FIELDS, sample_row))}")
+                    sample_dict = dict(zip(ALL_FIELDS, sample_row))
+                    logging.error(f"Sample row that caused error: {sample_dict}")
+                    
+                    # Additional debugging - check the specific values of srcip and dstip
+                    srcip_idx = ALL_FIELDS.index('srcip')
+                    dstip_idx = ALL_FIELDS.index('dstip')
+                    logging.error(f"srcip value: '{rows[0][srcip_idx]}', type: {type(rows[0][srcip_idx])}")
+                    logging.error(f"dstip value: '{rows[0][dstip_idx]}', type: {type(rows[0][dstip_idx])}")
+                    
+                    # Try to insert valid records where possible by filtering out problematic rows
+                    valid_rows = []
+                    for r in rows:
+                        try:
+                            # Check if srcip and dstip are valid
+                            srcip = r[ALL_FIELDS.index('srcip')]
+                            dstip = r[ALL_FIELDS.index('dstip')]
+                            if srcip and isinstance(srcip, str) and '.' in srcip and dstip and isinstance(dstip, str) and '.' in dstip:
+                                valid_rows.append(r)
+                        except Exception:
+                            continue
+                    
+                    if valid_rows:
+                        try:
+                            CLIENT.execute(insert_query, valid_rows)
+                            logging.info(f"Inserted {len(valid_rows)} filtered valid rows to ClickHouse.")
+                        except Exception as e2:
+                            logging.error(f"Failed to insert filtered rows: {e2}")
+                    else:
+                        logging.warning("No valid rows found after filtering")
+
 
     # Create file handler and observer
     handler = LogHandler(LOG_FILE, buffer, buffer_lock, process_batch)
@@ -235,13 +307,64 @@ def main():
     signal.signal(signal.SIGINT, flush_and_exit)
     signal.signal(signal.SIGTERM, flush_and_exit)
 
+    # Track last processed position and size
+    last_check_time = time.time()
+    last_size = os.path.getsize(LOG_FILE) if os.path.exists(LOG_FILE) else 0
+    last_position = handler._fp.tell()
+    
     # Periodically flush buffer and check file rotation
     try:
         while True:
-            time.sleep(BATCH_FLUSH_INTERVAL)
-            # Force check for file rotation periodically
-            handler._check_file_rotation()
+            current_time = time.time()
+            should_check_file = (current_time - last_check_time) >= FILE_CHECK_INTERVAL
+            
+            if should_check_file:
+                last_check_time = current_time
+                # Force check for file rotation periodically
+                handler._check_file_rotation()
+                
+                # Check if the file has been modified recently
+                try:
+                    # Always check file size regardless of modification time
+                    file_size = os.path.getsize(LOG_FILE)
+                    current_pos = handler._fp.tell()
+                    
+                    # Log detailed information about file state
+                    mtime = os.path.getmtime(LOG_FILE)
+                    time_diff = current_time - mtime
+                    size_diff = file_size - last_size
+                    pos_diff = current_pos - last_position
+                    
+                    logging.debug(f"File check: last_modified={time_diff:.2f}s ago, size={file_size}, position={current_pos}")
+                    logging.debug(f"Changes since last check: size_delta={size_diff}, position_delta={pos_diff}")
+                    
+                    # If there's unread data, force a read
+                    if file_size > current_pos:
+                        unread_bytes = file_size - current_pos
+                        logging.info(f"Detected {unread_bytes} unread bytes in log file, triggering read")
+                        # Simulate a file modification event
+                        handler.on_modified(type('obj', (object,), {'src_path': LOG_FILE}))
+                    elif size_diff > 0 and pos_diff == 0:
+                        # File grew but our position didn't change - this indicates we missed some events
+                        logging.warning(f"File grew by {size_diff} bytes but position unchanged. Forcing read.")
+                        handler.on_modified(type('obj', (object,), {'src_path': LOG_FILE}))
+                    
+                    # Update tracking variables
+                    last_size = file_size
+                    last_position = current_pos
+                    
+                except Exception as e:
+                    logging.error(f"Error checking file: {e}")
+            
+            # Process any buffered logs regardless of buffer size
+            with buffer_lock:
+                if buffer:
+                    buffer_size = len(buffer)
+                    if buffer_size > 0:
+                        logging.debug(f"Flushing buffer with {buffer_size} entries due to interval timer")
+            
             process_batch()
+            time.sleep(BATCH_FLUSH_INTERVAL)
     except KeyboardInterrupt:
         flush_and_exit(None, None)
 
