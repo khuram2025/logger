@@ -65,12 +65,14 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
     });
 
-    // Log Row Expansion
+    // Log Row Expansion - COMMENTED OUT as per task instructions
+    // This was conflicting with the inline script in logs2.html
+    /*
     logsTableBody.addEventListener('click', function(event) {
         const target = event.target.closest('.expand-log-button');
         if (target) {
             const logIndex = parseInt(target.dataset.logIndex);
-            const log = logData[logIndex];
+            const log = logData[logIndex]; // This logData would be the sample one if not careful
             const icon = target.querySelector('i');
             const currentRow = target.closest('tr');
             
@@ -80,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 icon.classList.remove('fa-minus');
                 icon.classList.add('fa-plus');
             } else {
-                const detailRow = logsTableBody.insertRow(currentRow.rowIndex);
+                const detailRow = logsTableBody.insertRow(currentRow.rowIndex); // Error if logsTableBody is null
                 detailRow.classList.add('expanded-log-details');
                 const cell = detailRow.insertCell();
                 cell.colSpan = 10; // Span all columns
@@ -90,10 +92,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
+    */
 
     // Chart.js Configuration
-    const ctx = document.getElementById('logsChart').getContext('2d');
-    const logsChart = new Chart(ctx, {
+    // Ensure logsChart element exists before trying to get context
+    const chartElement = document.getElementById('logsChart');
+    if (chartElement) {
+        const ctx = chartElement.getContext('2d');
+    const logsChart = new Chart(chartElement.getContext('2d'), { // Use chartElement here
         type: 'bar',
         data: {
             labels: ['Wed 14', '', 'Thu 15', '', 'Fri 16', '', 'Sat 17', '', 'Aug 18', '', 'Mon 19', '', 'Tue 20'],
@@ -154,22 +160,25 @@ document.addEventListener('DOMContentLoaded', function () {
     // Modal Handling
     const wafRulesLink = document.getElementById('wafRulesLink');
     const modal = document.getElementById('wafRulesModal');
-    const closeModalButtons = document.querySelectorAll('.close-modal-button');
+    
+    if (wafRulesLink && modal) { // Check if elements exist
+        const closeModalButtons = document.querySelectorAll('.close-modal-button');
 
-    wafRulesLink.addEventListener('click', function(e) {
-        e.preventDefault();
-        modal.style.display = 'block';
-    });
-
-    closeModalButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            modal.style.display = 'none';
+        wafRulesLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            modal.style.display = 'block';
         });
-    });
 
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    };
+        closeModalButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+        });
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+    }
 });

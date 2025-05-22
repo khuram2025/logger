@@ -1,0 +1,76 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Policy Tuning{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='policy_tuning' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4"> {# Or use existing page styling classes from other templates #}
+    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Policy Tuning</h2>
+
+    <!-- Time Filter Form -->
+    <form method="get" action="{% url 'policy_tuning' %}" class="mb-4 p-4 bg-white shadow-md rounded-lg">
+        <div class="flex items-center space-x-3">
+            <label for="time_filter" class="block text-sm font-medium text-gray-700">Time Range:</label>
+            <select name="time_filter" id="time_filter" onchange="this.form.submit()" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                <option value="1h" {% if selected_time_filter == '1h' %}selected{% endif %}>Last 1 Hour</option>
+                <option value="6h" {% if selected_time_filter == '6h' %}selected{% endif %}>Last 6 Hours</option>
+                <option value="24h" {% if selected_time_filter == '24h' %}selected{% endif %}>Last 24 Hours</option>
+                <option value="7d" {% if selected_time_filter == '7d' %}selected{% endif %}>Last 7 Days</option>
+                {# Add 'custom' option if custom range pickers are planned for future, but not implemented yet
+                <option value="custom" {% if selected_time_filter == 'custom' %}selected{% endif %}>Custom Range</option>
+                #}
+            </select>
+            {# For custom range, you'd add input fields for start and end time here. Example:
+            {% if selected_time_filter == 'custom' %}
+                <input type="datetime-local" name="start_time" value="{{ custom_start_time }}" class="mt-1 ... rounded-md">
+                <input type="datetime-local" name="end_time" value="{{ custom_end_time }}" class="mt-1 ... rounded-md">
+                <button type="submit" class="px-4 py-2 ... rounded-md">Apply Custom</button>
+            {% endif %}
+            #}
+            <noscript><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Apply Filter</button></noscript>
+        </div>
+    </form>
+
+    {% if db_error %}
+    <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
+        <span class="font-medium">Database Error:</span> {{ db_error }}
+    </div>
+    {% endif %}
+
+    <!-- Aggregated Data Table -->
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source IP</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination IP</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination Port</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Protocol</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hits</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for item in policy_data %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.srcip }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.dstip }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.dstport }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.proto_str }}</td> {# Assumes proto_str is provided by the view #}
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.hits }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">No data found for the selected time range.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -6,35 +6,39 @@ from .forms import RsyslogHostForm, LogRetentionPolicyForm
 from django.conf import settings # For BASE_DIR
 import subprocess
 import os
+from .db_utils import get_clickhouse_client, CH_DB as CLICKHOUSE_DB_NAME # Import the new utility and CH_DB
+# Make sure CH_DB from db_utils is appropriately named to avoid conflict if another CH_DB is defined locally.
 
 import re
 import math
-from clickhouse_driver import Client
-import os
+# from clickhouse_driver import Client # No longer directly needed here if using db_utils
+# os is imported multiple times, consolidate (already done by removing one)
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta # Ensure datetime and timedelta are imported
 
-# ClickHouse connection settings
-CH_HOST = os.getenv('CH_HOST', 'localhost')
-CH_PORT = int(os.getenv('CH_PORT', '9000'))
-CH_USER = os.getenv('CH_USER', 'default')
-CH_PASSWORD = os.getenv('CH_PASSWORD', 'Read@123')
-CH_DB = os.getenv('CH_DB', 'network_logs')
 PAGE_SIZE = 50
+
+# Protocol Map for PolicyTuningView and potentially others
+PROTO_MAP_GENERAL = {1: "ICMP", 6: "TCP", 17: "UDP", 47: "GRE", 50: "ESP", 51: "AH", 58: "ICMPv6"}
+
 
 def dmu_view(request):
     # Renders the static UI template
     return render(request, 'dashboard/index.html')
 
 def top_summary_view(request):
-    client = Client(
-        host=CH_HOST,
-        port=CH_PORT,
-        user=CH_USER,
-        password=CH_PASSWORD,
-        database=CH_DB
-    )
-    # Get time_range from GET params
+    client = get_clickhouse_client()
+    if not client:
+        # Handle error - perhaps render a page indicating DB connection failure
+        # For now, returning an empty list or specific error context
+        top_summary = []
+        messages.error(request, "Database connection failed. Cannot load top summary.")
+        return render(request, 'dashboard/top_summary.html', {
+            'top_summary': top_summary,
+            'selected_time_range': request.GET.get('time_range', 'last_hour'),
+            'error_message': "Database connection failed."
+        })
+        
     time_range = request.GET.get('time_range', 'last_hour')
     now = datetime.now()
     if time_range == 'last_24_hours':
@@ -106,13 +110,20 @@ def format_bytes(num_bytes):
     return f"{num:.1f} PB"
 
 def clickhouse_logs_view(request):
-    client = Client(
-        host=CH_HOST,
-        port=CH_PORT,
-        user=CH_USER,
-        password=CH_PASSWORD,
-        database=CH_DB
-    )
+    client = get_clickhouse_client()
+    if not client:
+        messages.error(request, "Database connection failed. Cannot load logs.")
+        return render(request, 'dashboard/logs2.html', {
+            'logs_for_display': [],
+            'logs_json_for_expansion': "[]",
+            'viewer_ip': request.META.get('REMOTE_ADDR'),
+            'current_page': 1,
+            'total_pages': 0,
+            'total_logs_count': 0,
+            'page_range': range(1,1),
+            'selected_time_range': request.GET.get('time_range', 'last_hour'),
+            'error_message': "Database connection failed."
+        })
 
     # Get client's real IP (for display or other purposes)
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -485,4 +496,93 @@ class SystemConfigView(View):
             messages.error(request, "Error applying system configurations: The script timed out.")
         except Exception as e:
             messages.error(request, f"An unexpected error occurred while applying system configurations: {e}")
+
+
+class PolicyTuningView(View):
+    template_name = 'dashboard/policy_tuning.html'
+    
+    # Define PROTO_MAP here or use the module-level one
+    PROTO_MAP = PROTO_MAP_GENERAL 
+
+    def get(self, request, *args, **kwargs):
+        time_filter = request.GET.get('time_filter', '1h') # Default to '1h'
+        custom_start_time_str = request.GET.get('start_time')
+        custom_end_time_str = request.GET.get('end_time')
+
+        end_dt = datetime.now()
+        if time_filter == '1h':
+            start_dt = end_dt - timedelta(hours=1)
+        elif time_filter == '6h':
+            start_dt = end_dt - timedelta(hours=6)
+        elif time_filter == '24h':
+            start_dt = end_dt - timedelta(hours=24)
+        elif time_filter == '7d':
+            start_dt = end_dt - timedelta(days=7)
+        elif time_filter == 'custom' and custom_start_time_str and custom_end_time_str:
+            try:
+                start_dt = datetime.strptime(custom_start_time_str, '%Y-%m-%dT%H:%M:%S')
+                end_dt = datetime.strptime(custom_end_time_str, '%Y-%m-%dT%H:%M:%S')
+            except ValueError:
+                messages.error(request, "Invalid custom time format. Please use YYYY-MM-DDTHH:MM:SS.")
+                # Fallback to default if custom time is invalid
+                end_dt = datetime.now()
+                start_dt = end_dt - timedelta(hours=1)
+                time_filter = '1h' # Reset time_filter to default
+        else: # Default / fallback
+            start_dt = end_dt - timedelta(hours=1)
+            time_filter = '1h'
+
+        clickhouse_client = get_clickhouse_client()
+        processed_results = []
+        db_error = None
+
+        if clickhouse_client:
+            try:
+                query = f"""
+                    SELECT srcip, dstip, dstport, proto, COUNT(*) AS hits
+                    FROM {CLICKHOUSE_DB_NAME}.fortigate_traffic 
+                    WHERE timestamp >= %(start_dt)s AND timestamp <= %(end_dt)s
+                    GROUP BY srcip, dstip, dstport, proto
+                    ORDER BY hits DESC
+                    LIMIT 100
+                """
+                params = {'start_dt': start_dt, 'end_dt': end_dt}
+                
+                # Execute query. 
+                # The `execute` method with `with_column_types=True` returns a tuple: (rows_data, column_info)
+                # rows_data is a list of tuples. column_info is a list of tuples like (name, type).
+                query_results_with_types = clickhouse_client.execute(query, params, with_column_types=True)
+                
+                if query_results_with_types and query_results_with_types[0]: # Check if there are data rows
+                    data_rows = query_results_with_types[0] # This is the list of data tuples
+                    column_names = [col_info[0] for col_info in query_results_with_types[1]] # Extract column names
+
+                    for row_tuple in data_rows:
+                        row_dict = dict(zip(column_names, row_tuple))
+                        # Ensure 'proto' key exists before trying to access it, and handle potential None
+                        proto_val = row_dict.get('proto')
+                        row_dict['proto_str'] = self.PROTO_MAP.get(proto_val, str(proto_val) if proto_val is not None else 'N/A')
+                        processed_results.append(row_dict)
+                else:
+                    # No data returned from query, processed_results remains empty
+                    pass 
+                    
+            except Exception as e:
+                db_error = f"Error executing ClickHouse query: {e}"
+                messages.error(request, db_error) # Show error to user via Django messages
+                processed_results = [] # Clear results on error
+        else:
+            db_error = "Database connection failed. Cannot fetch policy tuning data."
+            messages.error(request, db_error)
+            processed_results = []
+
+        context = {
+            'policy_data': processed_results,
+            'selected_time_filter': time_filter,
+            'custom_start_time': custom_start_time_str if time_filter == 'custom' else start_dt.strftime('%Y-%m-%dT%H:%M:%S'),
+            'custom_end_time': custom_end_time_str if time_filter == 'custom' else end_dt.strftime('%Y-%m-%dT%H:%M:%S'),
+            'db_error': db_error,
+            # Pass other necessary context variables if any
+        }
+        return render(request, self.template_name, context)
 
