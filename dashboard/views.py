@@ -1,4 +1,11 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.views import View
+from django.contrib import messages
+from .models import RsyslogHost, LogRetentionPolicy
+from .forms import RsyslogHostForm, LogRetentionPolicyForm
+from django.conf import settings # For BASE_DIR
+import subprocess
+import os
 
 import re
 import math
@@ -252,4 +259,119 @@ def clickhouse_logs_view(request):
         # Pass any other context variables your template needs
     }
     return render(request, 'dashboard/logs2.html', context)
+
+
+class SystemConfigView(View):
+    template_name = 'dashboard/system_config.html'
+
+    def get(self, request, *args, **kwargs):
+        rsyslog_hosts = RsyslogHost.objects.all()
+        log_retention_policy, _ = LogRetentionPolicy.objects.get_or_create(pk=1) # Assuming singleton
+
+        rsyslog_form = RsyslogHostForm()
+        log_retention_form = LogRetentionPolicyForm(instance=log_retention_policy)
+
+        context = {
+            'rsyslog_hosts': rsyslog_hosts,
+            'log_retention_policy': log_retention_policy,
+            'rsyslog_form': rsyslog_form,
+            'log_retention_form': log_retention_form,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        if 'add_rsyslog_host' in request.POST:
+            form = RsyslogHostForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Rsyslog host added successfully.')
+            else:
+                messages.error(request, 'Error adding rsyslog host. Please check the address.')
+        
+        elif 'delete_rsyslog_host' in request.POST:
+            host_id = request.POST.get('host_id')
+            try:
+                host_to_delete = RsyslogHost.objects.get(pk=host_id)
+                host_to_delete.delete()
+                messages.success(request, f'Rsyslog host "{host_to_delete.address}" deleted successfully.')
+            except RsyslogHost.DoesNotExist:
+                messages.error(request, 'Error deleting rsyslog host: Host not found.')
+            except Exception as e:
+                messages.error(request, f'Error deleting rsyslog host: {e}')
+
+        elif 'update_log_retention' in request.POST:
+            log_retention_policy, _ = LogRetentionPolicy.objects.get_or_create(pk=1) # Ensure it exists
+            form = LogRetentionPolicyForm(request.POST, instance=log_retention_policy)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Log retention policy updated successfully.')
+                self.apply_system_configurations(request) # Apply changes
+            else:
+                # Construct a detailed error message
+                error_details = []
+                for field, errors in form.errors.items():
+                    error_details.append(f"{field.replace('_', ' ').capitalize()}: {', '.join(errors)}")
+                messages.error(request, f'Error updating log retention policy: {". ".join(error_details)}')
+        
+        # If rsyslog host was added or deleted, also apply changes
+        if 'add_rsyslog_host' in request.POST or 'delete_rsyslog_host' in request.POST:
+            if not any(m.level == messages.ERROR for m in messages.get_messages(request)): # Only apply if DB ops were successful
+                 self.apply_system_configurations(request)
+
+
+        return redirect('system_config')
+
+    def apply_system_configurations(self, request):
+        """
+        Retrieves current DB configurations and calls the apply_sys_config.py script.
+        """
+        all_hosts = RsyslogHost.objects.all()
+        all_host_addresses = [host.address for host in all_hosts]
+        
+        # Assuming LogRetentionPolicy is a singleton, or you have a way to get the relevant one.
+        # Using get_or_create to ensure there's always a policy to read from.
+        policy, _ = LogRetentionPolicy.objects.get_or_create(pk=1)
+
+        # IMPORTANT: The path to apply_sys_config.py must be an absolute path.
+        # For sudo execution, relative paths or paths relying on the current user's PATH might not work.
+        # settings.BASE_DIR gives the project root. Adjust if your script is elsewhere.
+        # In a real deployment, this path should be hardcoded or configured reliably.
+        script_path = os.path.join(settings.BASE_DIR, 'scripts', 'apply_sys_config.py')
+        
+        if not os.path.exists(script_path):
+            messages.error(request, f"Error: System configuration script not found at {script_path}. Please check the path.")
+            return
+
+        command = [
+            'sudo', 
+            script_path,
+            '--ips', ','.join(all_host_addresses) if all_host_addresses else "",
+            '--logrotate-enabled', str(policy.enabled).lower(),
+            '--logrotate-interval', policy.interval,
+            '--logrotate-max-size', policy.max_size if policy.max_size else "",
+            '--logrotate-keep', str(policy.keep_rotations)
+        ]
+
+        try:
+            # IMPORTANT: The web server's user (e.g., www-data) needs passwordless sudo permission 
+            # for the specific script 'apply_sys_config.py'.
+            # This should be configured in /etc/sudoers.d/ using a line like:
+            # www-data ALL=(ALL) NOPASSWD: /path/to/your/project/scripts/apply_sys_config.py
+            print(f"Executing command: {' '.join(command)}") # For debugging
+            process = subprocess.run(command, capture_output=True, text=True, check=False, timeout=60) # Added timeout
+
+            if process.returncode == 0:
+                messages.success(request, f"System configurations applied successfully. Output: {process.stdout.strip()}")
+            else:
+                error_message = f"Error applying system configurations (code: {process.returncode})."
+                if process.stdout:
+                    error_message += f" Stdout: {process.stdout.strip()}"
+                if process.stderr:
+                    error_message += f" Stderr: {process.stderr.strip()}"
+                messages.error(request, error_message)
+        
+        except subprocess.TimeoutExpired:
+            messages.error(request, "Error applying system configurations: The script timed out.")
+        except Exception as e:
+            messages.error(request, f"An unexpected error occurred while applying system configurations: {e}")
 
