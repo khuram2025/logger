@@ -43,68 +43,83 @@ You'll need a way to send syslog messages from different IP addresses to test th
 3.  Click the "Add Host" button.
 4.  **Verification:**
     *   **UI:** The IP address should appear in the "Current Hosts" list on the page. A success message should be displayed.
-    *   **System File:** Open `/etc/rsyslog.d/fortigate.conf` on your server (requires sudo).
-        *   Look for the block managed by FWAnalyzer:
+    *   **UI:** The IP address should appear in the "Current Whitelisted Hosts" table. A success message should be displayed. The "Log Size" for this new IP should initially be small or "N/A" (if no logs yet). "Last Seen" might show "Never" or an old date. "Status" might be "Inactive".
+    *   **Rsyslog System File:** Open `/etc/rsyslog.d/90-fwanalyzer-hosts.conf` (or the filename specified in `scripts/apply_sys_config.py` as `FWANALYZER_RSYSLOG_CONF_FILE`) on your server (requires sudo).
+        *   Look for the block managed by FWAnalyzer (between `# BEGIN FWANALYZER MANAGED RSYSLOG CONFIG` and `# END FWANALYZER MANAGED RSYSLOG CONFIG` markers).
+        *   Confirm the presence of these templates:
             ```
-            # BEGIN FWANALYZER MANAGED HOSTS
-            if ($fromhost-ip == '192.168.1.100') then { # Or your IP, or multiple IPs
-                action(
-                    type="omfile"
-                    file="/var/log/fortigate.log"
-                    template="FortiGateRaw"
-                )
+            template(name="FWAnalyzerRawMsg" type="string" string="%rawmsg-after-pri%\\n")
+            template(name="FWAnalyzerPerHostFile" type="string" string="/var/log/fwanalyzer-hosts/%FROMHOST-IP%.log")
+            ```
+        *   Confirm your new IP is present in the `if (...)` condition:
+            ```
+            if ($fromhost-ip == '192.168.1.100') then {
+                action(type="omfile" dynaFile="FWAnalyzerPerHostFile" template="FWAnalyzerRawMsg")
                 stop
             }
-            # END FWANALYZER MANAGED HOSTS
             ```
-        *   Confirm your new IP is present in the `if (...)` condition.
     *   **Rsyslog Service:** The script attempts to reload rsyslog. Check its status: `sudo systemctl status rsyslog`. Look for recent reload messages.
-    *   **Log Processing:** Send a test syslog message from the whitelisted IP.
+    *   **Log Directory Creation:** Verify the directory `/var/log/fwanalyzer-hosts/` exists:
+        ```bash
+        ls -ld /var/log/fwanalyzer-hosts/
+        ```
+        (Check its permissions too; it should be writable by the syslog user/group).
+    *   **Log Processing & Per-Host File Creation:** Send a test syslog message from the whitelisted IP.
         Example using `logger` (run from the machine with the whitelisted IP, assuming it can reach the rsyslog server):
         ```bash
-        logger -n <your_rsyslog_server_ip> -P 514 -T "This is a test log from 192.168.1.100" 
+        logger -n <your_rsyslog_server_ip> -P 514 -T "This is a per-host test log from 192.168.1.100" 
         ```
-        Then, check the `/var/log/fortigate.log` file on your rsyslog server:
+        Then, check for the individual log file in `/var/log/fwanalyzer-hosts/`:
         ```bash
-        sudo tail -f /var/log/fortigate.log 
+        sudo ls -l /var/log/fwanalyzer-hosts/
+        sudo tail -f /var/log/fwanalyzer-hosts/192.168.1.100.log 
         ```
-        You should see your test message.
+        You should see your test message in the `192.168.1.100.log` file.
+    *   **UI Update (after a minute or page refresh):**
+        *   Refresh the "System Configuration" page.
+        *   The "Log Size" for `192.168.1.100` should update to reflect the size of the new log file.
+        *   The "Status" should change to "Active".
+        *   The "Last Seen" time should update to the current time (or very recent).
 
 ### B. Adding Another Whitelisted IP
 
 1.  Add a second IP address (e.g., `192.168.1.101`) following the same steps as above.
 2.  **Verification:**
-    *   **UI:** Both IPs should now be listed.
-    *   **System File:** `/etc/rsyslog.d/fortigate.conf` should now include both IPs in the condition:
+    *   **UI:** Both IPs should now be listed, each with its own log size, status, and last seen time.
+    *   **Rsyslog System File:** `/etc/rsyslog.d/90-fwanalyzer-hosts.conf` should now include both IPs in the condition:
         ```
         if ($fromhost-ip == '192.168.1.100' or $fromhost-ip == '192.168.1.101') then { ... }
         ```
-    *   **Log Processing:** Send test logs from both IPs and verify they appear in `/var/log/fortigate.log`.
+    *   **Log Processing:** Send test logs from both IPs. Verify that:
+        *   `192.168.1.100.log` gets logs from `192.168.1.100`.
+        *   `192.168.1.101.log` gets logs from `192.168.1.101`.
+        *   Refresh the UI to see updated sizes, "Active" status, and "Last Seen" times for both.
 
 ### C. Deleting a Whitelisted IP
 
-1.  In the "Current Hosts" list, find one of the IPs you added (e.g., `192.168.1.100`).
+1.  In the "Current Whitelisted Hosts" table, find one of the IPs you added (e.g., `192.168.1.100`).
 2.  Click the "Delete" button next to it. Confirm if prompted.
 3.  **Verification:**
-    *   **UI:** The IP should be removed from the list. The other IP (`192.168.1.101`) should remain.
-    *   **System File:** `/etc/rsyslog.d/fortigate.conf` should be updated to only include the remaining IP:
+    *   **UI:** The IP `192.168.1.100` should be removed from the list. The other IP (`192.168.1.101`) should remain.
+    *   **Rsyslog System File:** `/etc/rsyslog.d/90-fwanalyzer-hosts.conf` should be updated to only include the remaining IP:
         ```
         if ($fromhost-ip == '192.168.1.101') then { ... }
         ```
     *   **Log Processing:**
-        *   Send a test log from the remaining IP (`192.168.1.101`). It **should** appear in `/var/log/fortigate.log`.
-        *   Send a test log from the deleted IP (`192.168.1.100`). It **should NOT** appear in `/var/log/fortigate.log`.
+        *   Send a test log from the remaining IP (`192.168.1.101`). It **should** appear in `/var/log/fwanalyzer-hosts/192.168.1.101.log`.
+        *   The individual log file `/var/log/fwanalyzer-hosts/192.168.1.100.log` will **remain on the filesystem** (rsyslog doesn't delete it), but no new logs should be added to it.
+        *   After some time (e.g., > 24 hours, or if you manually make the file older), its status on the UI might revert to "Inactive" if it were re-added, but since it's deleted from UI, it won't be shown.
 
 ### D. Deleting All Whitelisted IPs
 
 1.  Delete the last remaining IP from the list.
 2.  **Verification:**
-    *   **UI:** The "Current Hosts" list should indicate no hosts are configured.
-    *   **System File:** `/etc/rsyslog.d/fortigate.conf` should now contain a condition that is effectively always false:
+    *   **UI:** The "Current Whitelisted Hosts" table should indicate no hosts are configured.
+    *   **Rsyslog System File:** `/etc/rsyslog.d/90-fwanalyzer-hosts.conf` should still define the templates but the condition block will be effectively always false:
         ```
         if ($fromhost-ip == '255.255.255.255' and $fromhost-ip == '255.255.255.254') then { ... }
         ```
-    *   **Log Processing:** Send test logs from any of the previously whitelisted IPs. None should appear in `/var/log/fortigate.log`.
+    *   **Log Processing:** Send test logs from any of the previously whitelisted IPs. None should appear in any files within `/var/log/fwanalyzer-hosts/`. (The old files will still be there but won't be updated).
 
 ### E. Testing Invalid IP Input
 
@@ -126,9 +141,9 @@ You'll need a way to send syslog messages from different IP addresses to test th
 3.  Click "Save Retention Policy".
 4.  **Verification:**
     *   **UI:** The form fields should retain your saved values. A success message should be displayed.
-    *   **System File:** Check the content of `/etc/logrotate.d/fwanalyzer-fortigate` (this is the filename defined in `scripts/apply_sys_config.py`). It should look like this:
+    *   **System File:** Check the content of `/etc/logrotate.d/fwanalyzer-hosts` (or the filename specified in `scripts/apply_sys_config.py` as `FWANALYZER_LOGROTATE_CONF_FILE`). It should now target the per-host log directory:
         ```
-        /var/log/fortigate.log {
+        /var/log/fwanalyzer-hosts/*.log {
             daily
             size 10M
             rotate 3
@@ -138,55 +153,54 @@ You'll need a way to send syslog messages from different IP addresses to test th
             delaycompress
         }
         ```
+    *   **UI Note:** The "Current FortiGate Log Size" displayed on the UI still refers to the main `/var/log/fortigate.log`. This is separate from the per-host log sizes.
 
 ### B. Testing Log Rotation (Requires Generating Logs and Time)
 
-This is the most complex part to test immediately as logrotate typically runs on a daily cron schedule.
+This testing is now for the individual log files in `/var/log/fwanalyzer-hosts/`.
 
-1.  **Generate Logs:** Ensure enough logs are being sent to `/var/log/fortigate.log` to exceed the `10M` size limit. If you don't have live FortiGate traffic, you might need to script sending a large volume of test messages.
+1.  **Generate Logs for Whitelisted IPs:** Ensure enough logs are being sent from your whitelisted IPs (e.g., `192.168.1.101`) to their respective files in `/var/log/fwanalyzer-hosts/` to exceed the `10M` size limit for at least one of them.
     ```bash
-    # Example: send many logs (be careful with this on a shared system)
-    # You might need to run this from a whitelisted IP if rsyslog rules are active
-    for i in $(seq 1 200000); do logger -n <your_rsyslog_server_ip> -P 514 -T "Large volume test log entry $i"; done 
+    # Example: send many logs to 192.168.1.101.log
+    for i in $(seq 1 200000); do logger -n <your_rsyslog_server_ip> -P 514 -T "Large volume test log entry $i for 192.168.1.101"; done 
     ```
-    Check the size of `/var/log/fortigate.log`: `ls -lh /var/log/fortigate.log`.
+    Check the size of individual log files: `ls -lh /var/log/fwanalyzer-hosts/`.
 
 2.  **Force Logrotate (Option 1):**
-    *   To test the rotation without waiting for the cron job, you can force logrotate to run:
+    *   To test the rotation for the per-host logs:
         ```bash
-        sudo logrotate -f /etc/logrotate.d/fwanalyzer-fortigate 
-        # or sudo logrotate -f /etc/logrotate.conf (if you want to run all logrotate jobs)
+        sudo logrotate -f /etc/logrotate.d/fwanalyzer-hosts 
         ```
-    *   After running, check the `/var/log/` directory:
+    *   After running, check the `/var/log/fwanalyzer-hosts/` directory:
         ```bash
-        ls -l /var/log/fortigate*
+        ls -l /var/log/fwanalyzer-hosts/
         ```
-        You should see rotated files like `fortigate.log.1`, `fortigate.log.2.gz`, etc., depending on how many times it has rotated and your `keep_rotations` setting. The current `fortigate.log` should be smaller if it was rotated due_to size.
+        You should see rotated files like `192.168.1.101.log.1`, `192.168.1.101.log.2.gz`, etc., for any file that met the rotation criteria. The original files (e.g., `192.168.1.101.log`) should be smaller if they were rotated.
 
 3.  **Wait for Scheduled Rotation (Option 2):**
-    *   Simply wait for the system's daily cron job that runs logrotate (usually early morning).
-    *   Check the logs the next day.
+    *   As before, wait for the system's daily cron job.
+    *   Check the `/var/log/fwanalyzer-hosts/` directory the next day.
 
-4.  **Verify Rotation Count:** Over a few days (or by forcing rotation multiple times and adjusting file timestamps if you're very advanced), verify that no more than 3 rotated logs (`fortigate.log.1`, `fortigate.log.2.gz`, `fortigate.log.3.gz`) are kept, plus the active `fortigate.log`.
+4.  **Verify Rotation Count:** For each IP that has rotated, verify that no more than 3 rotated logs are kept, plus the active log file for that IP.
 
 ### C. Changing Log Retention Policy
 
-1.  Change the policy:
+1.  Change the policy in the UI:
     *   **Max Size:** `20M`
     *   **Keep Rotations:** `5`
 2.  Click "Save Retention Policy".
 3.  **Verification:**
     *   **UI:** Values should be updated.
-    *   **System File:** `/etc/logrotate.d/fwanalyzer-fortigate` should reflect these new values.
-    *   Testing the actual rotation behavior will again require generating logs and waiting/forcing rotation.
+    *   **System File:** `/etc/logrotate.d/fwanalyzer-hosts` should reflect these new values (still targeting `/var/log/fwanalyzer-hosts/*.log`).
+    *   Test rotation behavior as above; it will now apply to all `*.log` files in the directory with the new settings.
 
 ### D. Disabling Log Retention
 
-1.  Uncheck the "Enabled" box.
+1.  Uncheck the "Enabled" box in the UI.
 2.  Click "Save Retention Policy".
 3.  **Verification:**
     *   **UI:** "Enabled" should be unchecked.
-    *   **System File:** The file `/etc/logrotate.d/fwanalyzer-fortigate` should be **deleted**. Check with `ls /etc/logrotate.d/fwanalyzer-fortigate`.
+    *   **System File:** The file `/etc/logrotate.d/fwanalyzer-hosts` should be **deleted**. Check with `ls /etc/logrotate.d/fwanalyzer-hosts`.
 
 ### E. Testing Invalid Log Retention Input
 

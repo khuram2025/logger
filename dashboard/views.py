@@ -271,11 +271,122 @@ class SystemConfigView(View):
         rsyslog_form = RsyslogHostForm()
         log_retention_form = LogRetentionPolicyForm(instance=log_retention_policy)
 
+        # Fetch rsyslog status
+        rsyslog_status_str = "Status Unavailable" # Default
+        script_path = os.path.join(settings.BASE_DIR, 'scripts', 'apply_sys_config.py')
+        if not os.path.exists(script_path):
+            messages.error(request, f"Error: System configuration script not found at {script_path} for status check.")
+            rsyslog_status_str = "Error: Script not found"
+        else:
+            try:
+                command = ['sudo', script_path, '--get-rsyslog-status']
+                process = subprocess.run(command, capture_output=True, text=True, check=False, timeout=15)
+                if process.returncode == 0 and process.stdout:
+                    rsyslog_status_str = process.stdout.strip()
+                else:
+                    error_detail = process.stderr.strip() if process.stderr else "No stderr output."
+                    if process.returncode !=0 :
+                         rsyslog_status_str = f"Error fetching status (code {process.returncode}): {error_detail}"
+                    else: # stdout was empty but return code 0
+                         rsyslog_status_str = "Status Unknown (empty output from script)"
+
+            except subprocess.TimeoutExpired:
+                rsyslog_status_str = "Error: Timeout while fetching rsyslog status."
+            except Exception as e:
+                rsyslog_status_str = f"Error: Exception while fetching rsyslog status ({e})."
+
+
+        # Fetch FortiGate log file size
+        fortigate_log_size_str = "Size Unavailable" # Default
+        fortigate_log_path = "/var/log/fortigate.log" # Define the target log file path
+        # script_path is already defined above for rsyslog status check
+
+        if not os.path.exists(script_path):
+            # This error would have been caught by rsyslog status check already if script_path is the issue
+            # but good to have a specific check if this part were to run independently.
+            # messages.error(request, f"Error: System configuration script not found at {script_path} for file size check.")
+            fortigate_log_size_str = "Error: Script not found"
+        else:
+            try:
+                command_size = ['sudo', script_path, '--get-file-size', fortigate_log_path]
+                process_size = subprocess.run(command_size, capture_output=True, text=True, check=False, timeout=15)
+                if process_size.returncode == 0 and process_size.stdout:
+                    fortigate_log_size_str = process_size.stdout.strip()
+                else:
+                    error_detail_size = process_size.stderr.strip() if process_size.stderr else "No stderr output."
+                    if process_size.returncode !=0 :
+                         fortigate_log_size_str = f"Error fetching size (code {process_size.returncode}): {error_detail_size}"
+                    else: # stdout was empty but return code 0
+                         fortigate_log_size_str = "Size Unknown (empty output from script)"
+            
+            except subprocess.TimeoutExpired:
+                fortigate_log_size_str = "Error: Timeout while fetching file size."
+            except Exception as e:
+                fortigate_log_size_str = f"Error: Exception while fetching file size ({e})."
+
+
+        # --- Per-Host Log Details ---
+        FWANALYZER_HOST_LOG_DIR = "/var/log/fwanalyzer-hosts/" # As specified
+        whitelisted_hosts_details = []
+        all_db_hosts = RsyslogHost.objects.all()
+
+        for host_obj in all_db_hosts:
+            host_log_file_path = os.path.join(FWANALYZER_HOST_LOG_DIR, f"{host_obj.address}.log")
+            size_str = "N/A"
+            mtime_timestamp = 0.0
+            active_bool = False
+
+            if os.path.exists(script_path): # Check if helper script exists
+                # Get file size
+                try:
+                    cmd_size = ['sudo', script_path, '--get-file-size', host_log_file_path]
+                    proc_size = subprocess.run(cmd_size, capture_output=True, text=True, check=False, timeout=10)
+                    if proc_size.returncode == 0 and proc_size.stdout:
+                        size_str = proc_size.stdout.strip()
+                    else:
+                        size_str = "Error"
+                        # Optionally log proc_size.stderr to Django logs for admin troubleshooting
+                except Exception as e:
+                    size_str = f"Exception getting size: {type(e).__name__}"
+
+                # Get last modified time
+                try:
+                    cmd_mtime = ['sudo', script_path, '--get-last-modified-time', host_log_file_path]
+                    proc_mtime = subprocess.run(cmd_mtime, capture_output=True, text=True, check=False, timeout=10)
+                    if proc_mtime.returncode == 0 and proc_mtime.stdout:
+                        mtime_str = proc_mtime.stdout.strip()
+                        if mtime_str.isdigit() and mtime_str != "0": # "0" means file not found by script
+                            mtime_timestamp = float(mtime_str)
+                            # Check if active in the last 24 hours (86400 seconds)
+                            if (datetime.now().timestamp() - mtime_timestamp) < (24 * 60 * 60):
+                                active_bool = True
+                        elif mtime_str == "0": # File not found or error reported as "0" by script
+                             pass # Keep mtime_timestamp = 0.0, active_bool = False
+                        else: # Script returned error string
+                            # Optionally log proc_mtime.stdout to Django logs
+                            pass 
+                except Exception as e:
+                    # Optionally log exception e
+                    pass # Keep mtime_timestamp = 0.0
+            else: # script_path does not exist
+                size_str = "Error: Script missing"
+                # mtime_timestamp remains 0.0
+
+            whitelisted_hosts_details.append({
+                'address': host_obj.address,
+                'id': host_obj.id,
+                'size': size_str,
+                'is_active': active_bool,
+                'last_seen_timestamp': mtime_timestamp, # Store the float timestamp
+            })
+
         context = {
-            'rsyslog_hosts': rsyslog_hosts,
+            'whitelisted_hosts_details': whitelisted_hosts_details,
             'log_retention_policy': log_retention_policy,
             'rsyslog_form': rsyslog_form,
             'log_retention_form': log_retention_form,
+            'rsyslog_status': rsyslog_status_str,
+            'fortigate_log_size': fortigate_log_size_str, # This is the main /var/log/fortigate.log size
         }
         return render(request, self.template_name, context)
 
