@@ -1,0 +1,179 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Grouped Logs{% endblock %}
+
+{% block extra_head %}
+<style>
+.sort-link {
+  color: inherit; /* Make link color same as parent (th) */
+  text-decoration: none; /* Remove underline */
+}
+.sort-link:hover {
+  text-decoration: underline; /* Optional: underline on hover */
+}
+</style>
+{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='grouped_logs' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+<div class="logs-content-header">
+    <div class="controls-bar logs-controls-row">
+        <div class="logs-controls-group">
+            <div class="log-summary">
+                Displayed Subnet Groups: <span id="total-groups">{{ displayed_subnet_groups_count|default:0 }}</span> (Total fine-grained groups: {{ total_grouped_logs_count|default:0 }})
+            </div>
+            <div class="date-range-display">
+                <!-- This can be made dynamic if needed -->
+                Displaying groups for: {{ selected_time_range_display }}
+            </div>
+        </div>
+        <div class="logs-controls-filter">
+            {% include 'dashboard/partials/filter_dropdown.html' %}
+        </div>
+    </div>
+</div>
+
+<div class="logs-table-container" style="overflow-x: auto;">
+    <table class="logs-table">
+        <thead>
+            <tr>
+                <th>Source Subnet / IP</th>
+                <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=dstip&sort_order={% if sort_by == 'dstip' and sort_order == 'asc' %}desc{% else %}asc{% endif %}">Destination IP {% if sort_by == 'dstip' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
+                <th>Destination Port</th>
+                <th>Action</th>
+                <th>Protocol(s)</th>
+                <th>Total Sent</th>
+                <th>Total Received</th>
+                <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=last_seen&sort_order={% if sort_by == 'last_seen' and sort_order == 'asc' %}desc{% else %}asc{% endif %}">Last Seen {% if sort_by == 'last_seen' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
+                <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=count&sort_order={% if sort_by == 'count' and sort_order == 'asc' %}desc{% else %}asc{% endif %}">Count {% if sort_by == 'count' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
+            </tr>
+        </thead>
+        <tbody id="groupedLogsTableBody">
+            {% for group in grouped_logs %}
+            <tr class="subnet-summary-row" data-group-id="{{ group.group_id }}" style="cursor: pointer; background-color: #f9f9f9;">
+                <td><span class="toggle-icon">[+]</span> {{ group.src_subnet_display }}</td>
+                <td>{{ group.dstip }}</td>
+                <td>{{ group.dstport }}</td>
+                <td>{{ group.action }}</td>
+                <td>{{ group.proto_display }}</td>
+                <td>{{ group.total_sent_display }}</td>
+                <td>{{ group.total_rcvd_display }}</td>
+                <td>{{ group.last_seen_display }}</td>
+                <td>{{ group.event_count }}</td>
+            </tr>
+            {% for detail in group.details %}
+            <tr class="subnet-detail-row {{ group.group_id }}" style="display: none; background-color: #fff;">
+                <td style="padding-left: 30px;">{{ detail.srcip }}</td>
+                <td>{{ detail.dstip }}</td>
+                <td>{{ detail.dstport }}</td>
+                <td>{{ detail.action }}</td>
+                <td>{{ detail.proto }}</td>
+                <td>{{ detail.total_sent_display }}</td>
+                <td>{{ detail.total_rcvd_display }}</td>
+                <td>{{ detail.last_seen_display }}</td>
+                <td>{{ detail.event_count }}</td>
+            </tr>
+            {% endfor %}
+            {% empty %}
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 20px;">No grouped logs found for the selected period.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination Bar -->
+    {% if total_pages > 1 %}
+    <div class="pagination-bar" style="display: flex; justify-content: center; align-items: center; margin: 24px 0;">
+        <nav aria-label="Grouped logs pagination">
+            <ul class="pagination" style="display: flex; gap: 4px; list-style: none; padding: 0;">
+                {% if current_page > 1 %}
+                <li><a class="pagination-link" href="?page={{ current_page|add:'-1' }}&time_range={{ selected_time_range }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">« Previous</a></li>
+                {% else %}
+                <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">« Previous</span></li>
+                {% endif %}
+                
+                {% for page_num in page_range %}
+                    {% if page_num == current_page %}
+                        <li><span class="pagination-link active" style="padding: 6px 12px; border: 1px solid #007bff; background: #007bff; color: #fff; border-radius: 4px;">{{ page_num }}</span></li>
+                    {% else %}
+                        <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ page_num }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if current_page < total_pages %}
+                <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ current_page|add:'1' }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">Next »</a></li>
+                {% else %}
+                <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">Next »</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filterSelect = document.getElementById('time-filter');
+    const customRangeContainer = document.getElementById('custom-date-range'); // Assuming this ID is in filter_dropdown.html
+    const timeFilterForm = document.getElementById('time-filter-form'); // Assuming this ID is in filter_dropdown.html
+
+    if (filterSelect && customRangeContainer) {
+        // Show/hide custom range based on selection
+        function toggleCustomRange() {
+            if (filterSelect.value === 'custom') {
+                customRangeContainer.style.display = 'flex'; // Or 'block' or whatever its default display is
+            } else {
+                customRangeContainer.style.display = 'none';
+            }
+        }
+        filterSelect.addEventListener('change', toggleCustomRange);
+        toggleCustomRange(); // Call on page load
+    }
+
+    // Ensure form submission for time range changes
+    if (timeFilterForm && filterSelect) {
+        filterSelect.addEventListener('change', function() {
+            timeFilterForm.submit();
+        });
+    }
+
+    // Expand/collapse for subnet groups
+    const summaryRows = document.querySelectorAll('.subnet-summary-row');
+    summaryRows.forEach(row => {
+        row.addEventListener('click', function() {
+            const groupId = this.dataset.groupId;
+            const detailRows = document.querySelectorAll('.subnet-detail-row.' + groupId);
+            const toggleIcon = this.querySelector('.toggle-icon');
+
+            let allHidden = true;
+            detailRows.forEach(detailRow => {
+                if (detailRow.style.display !== 'none') {
+                    allHidden = false;
+                }
+            });
+
+            if (allHidden) {
+                detailRows.forEach(detailRow => {
+                    detailRow.style.display = 'table-row';
+                });
+                if (toggleIcon) toggleIcon.textContent = '[-]';
+            } else {
+                detailRows.forEach(detailRow => {
+                    detailRow.style.display = 'none';
+                });
+                if (toggleIcon) toggleIcon.textContent = '[+]';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

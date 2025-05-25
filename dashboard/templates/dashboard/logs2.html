@@ -35,6 +35,26 @@
                     </div>
                 </div>
                 <style>
+                .status-label {
+                    padding: 0.2em 0.6em;
+                    border-radius: 0.25em;
+                    font-weight: bold;
+                    font-size: 0.85em;
+                    text-transform: capitalize;
+                }
+                .status-deny {
+                    background-color: #dc3545; /* Red */
+                    color: white;
+                }
+                .status-accept {
+                    background-color: #28a745; /* Green */
+                    color: white;
+                }
+                .status-other {
+                    background-color: #ffc107; /* Yellow */
+                    color: black;
+                }
+
                 .logs-controls-row {
                     display: flex;
                     align-items: center;
@@ -97,10 +117,13 @@
                         <tr>
                             <td>{{ log_item.ts_display }}</td>
                             <td>
-  <span class="status-label{% if log_item.action|default:""|lower == 'accept' %} status-accept{% elif log_item.action|default:""|lower == 'close' %} status-close{% else %} status-other{% endif %}">
-    {{ log_item.action|default:"N/A" }}
-  </span>
-</td>
+                                <span class="status-label 
+                                    {% if log_item.action|default:""|lower == 'deny' %}status-deny
+                                    {% elif log_item.action|default:""|lower == 'accept' %}status-accept
+                                    {% else %}status-other{% endif %}">
+                                    {{ log_item.action|default:"N/A" }}
+                                </span>
+                            </td>
                             <td>{{ log_item.srcip }}</td>
                             <td>{{ log_item.dstip }}</td>
                             <td>{{ log_item.dstport_val }}</td>
@@ -183,7 +206,7 @@
 
     <script>
         // Pass the logs data from Django to JavaScript
-        const logData = {{ logs_json_for_expansion|safe }};
+        const logData = {{ logs_json_for_expansion|safe|default:"[]" }};
         
         document.addEventListener('DOMContentLoaded', function () {
             // Sidebar Accordion
@@ -222,146 +245,160 @@
 
             // Log Row Expansion
             logsTableBody.addEventListener('click', function(event) {
-                const target = event.target.closest('.expand-log-button');
-                if (target) {
-                    const logIndex = parseInt(target.dataset.logIndex);
-                    if (logIndex >= 0 && logIndex < logData.length) {
-                        const log = logData[logIndex]; // Get data from our JS array
-                        const icon = target.querySelector('i');
-                        const currentRow = target.closest('tr');
+                console.log('Expand button click handler initiated.');
+                const button = event.target.closest('.expand-log-button');
+                if (!button) return;
+
+                event.preventDefault(); // Prevent default <a> tag behavior (page jump/reload)
+                console.log('Default event action prevented.');
+                event.stopPropagation(); // Stop event from bubbling up
+                console.log('Event propagation stopped.');
+
+                if (button.dataset.handlingClick === 'true') {
+                    console.log('Click handling already in progress for this button. Exiting.');
+                    return;
+                }
+                console.log('Setting handlingClick = true');
+                button.dataset.handlingClick = 'true';
+
+                try {
+                    const icon = button.querySelector('i');
+                    const currentRow = button.closest('tr');
+                    const logIndex = parseInt(button.dataset.logIndex);
+                    console.log('Button clicked for log index:', logIndex, 'Current icon class:', icon.className);
+
+                    if (!(logIndex >= 0 && logIndex < logData.length)) {
+                        console.error("Log data not found for index:", logIndex, "Max index:", logData.length - 1);
+                        return; // Flag will be cleared in finally
+                    }
+                    const log = logData[logIndex];
+
+                    if (icon.classList.contains('fa-plus')) { // EXPAND action
+                        console.log('Attempting to EXPAND row for log index:', logIndex);
+                        // First, close any other open detail rows
+                        const allOpenDetailRows = logsTableBody.querySelectorAll('tr.expanded-log-details');
+                        allOpenDetailRows.forEach(openDetailRow => {
+                            console.log('Closing an already open detail row.');
+                            const associatedButtonIcon = openDetailRow.previousElementSibling.querySelector('.expand-log-button i');
+                            openDetailRow.remove();
+                            if (associatedButtonIcon) {
+                                associatedButtonIcon.classList.remove('fa-minus');
+                                associatedButtonIcon.classList.add('fa-plus');
+                            }
+                        });
+
+                        // Create and insert the new detail row
+                        const detailRow = document.createElement('tr');
+                        detailRow.classList.add('expanded-log-details');
+                        const cell = document.createElement('td');
+                        cell.colSpan = currentRow.cells.length;
                         
-                        const existingDetailRow = currentRow.nextElementSibling;
-                        if (existingDetailRow && existingDetailRow.classList.contains('expanded-log-details')) {
-                            existingDetailRow.remove();
-                            icon.classList.remove('fa-minus');
-                            icon.classList.add('fa-plus');
-                        } else {
-                            // Remove any other open detail rows in this tbody
-                            const allDetailRows = logsTableBody.querySelectorAll('.expanded-log-details');
-                            allDetailRows.forEach(row => row.remove());
-                            const allPlusButtons = logsTableBody.querySelectorAll('.expand-log-button i.fa-minus');
-                            allPlusButtons.forEach(i => {
-                                i.classList.remove('fa-minus');
-                                i.classList.add('fa-plus');
-                            });
-
-
-                            // Create the expanded details row and cell
-                            const detailRow = document.createElement('tr');
-                            detailRow.classList.add('expanded-log-details');
-                            const cell = document.createElement('td');
-                            cell.colSpan = 11; // Adjusted to match number of columns in table header
-
-                            // Using template literals for the complex HTML structure
-                            // Ensure keys (e.g., log.clientRTT) match those in logs_json_for_expansion
-                            cell.innerHTML = `
-                                <div class="expanded-log-content">
-                                    <div class="metrics-summary-bar">
-                                        <div class="metric-item">
-                                            <i class="fas fa-user-circle metric-icon icon-client"></i>
-                                            <span class="metric-label">Client RTT</span>
-                                            <span class="metric-value">${log.clientRTT || 'N/A'}</span>
-                                        </div>
-                                        <div class="metric-item">
-                                            <i class="fas fa-network-wired metric-icon icon-lb"></i>
-                                            <span class="metric-label">Server RTT LB</span>
-                                            <span class="metric-value">${log.serverRTTLB || 'N/A'}</span>
-                                        </div>
-                                        <div class="metric-item">
-                                            <i class="fas fa-server metric-icon icon-server"></i>
-                                            <span class="metric-label">App Response</span>
-                                            <span class="metric-value">${log.appResponse || 'N/A'}</span>
-                                        </div>
-                                        <div class="metric-item">
-                                            <i class="fas fa-cubes metric-icon icon-appdata"></i>
-                                            <span class="metric-label">Data Transfer</span>
-                                            <span class="metric-value">${log.dataTransfer || 'N/A'}</span>
-                                        </div>
-                                        <div class="metric-item">
-                                            <span class="metric-label" style="margin-top: 29px;">Total Time</span>
-                                            <span class="metric-value">${log.totalTime || 'N/A'}</span>
-                                        </div>
-                                        <div class="metric-item">
-                                            <span class="metric-label" style="margin-top: 29px;">Response Code</span>
-                                            <span class="metric-value response-code-value ${parseInt(log.responseCode) >= 200 && parseInt(log.responseCode) < 300 ? 'status-passed' : 'status-flagged'}">${log.responseCode || 'N/A'}</span>
-                                        </div>
+                        cell.innerHTML = `
+                            <div class="expanded-log-content">
+                                <div class="metrics-summary-bar">
+                                    <div class="metric-item">
+                                        <i class="fas fa-user-circle metric-icon icon-client"></i>
+                                        <span class="metric-label">Client RTT</span>
+                                        <span class="metric-value">${log.client_rtt || 'N/A'} ms</span>
                                     </div>
-                                    <div class="detailed-info-grid">
-                                        <div class="info-column">
-                                            <p><strong>Source IP:</strong> ${log.srcip || 'N/A'}</p>
-                                            <p><strong>Source Port:</strong> ${log.srcport_val || log.location || 'N/A'}</p>
-                                            <p><strong>Source Interface</strong> <i class="fab fa-windows"></i> ${log.sourceInterfaceOS || 'N/A'}</p>
-                                            <p><strong>Device:</strong> <i class="fas fa-desktop"></i> ${log.device || 'N/A'}</p>
-                                            <p><strong>Browser:</strong> <i class="fab fa-firefox"></i> ${log.browser || 'N/A'}</p>
-                                            <p><strong>Start time:</strong> ${log.startTime || 'N/A'}</p>
-                                        </div>
-                                        <div class="info-column">
-                                            <p><strong>Destination IP:</strong> ${log.dstip || 'N/A'}</p>
-                                            <p><strong>Destination Port:</strong> ${log.dstport_val || 'N/A'}</p>
-                                            <p><strong>Destination Interface :</strong> ${log.requestID || 'N/A'}</p>
-                                            <p><strong>End time:</strong> ${log.endTime || 'N/A'}</p>
-                                            <p><strong>Service Engine:</strong> ${log.serviceEngine || 'N/A'}</p>
-                                            <p><strong>Response Length:</strong> ${log.responseLengthDisplay || 'N/A'}</p>
-                                            <p><strong>Persistence Session ID:</strong> ${log.persistenceSessionID || 'N/A'}</p>
-                                            <p><strong>Significance:</strong> ${log.significance || 'N/A'}</p>
-                                        </div>
-                                        <div class="info-column server-ip-column">
-                                            <p><strong>Server IP:</strong> ${log.serverIPDetail || 'N/A'}</p>
-                                        </div>
+                                    <div class="metric-item">
+                                        <i class="fas fa-server metric-icon icon-server"></i>
+                                        <span class="metric-label">Server RTT</span>
+                                        <span class="metric-value">${log.target_rtt || 'N/A'} ms</span>
                                     </div>
-                                    <div class="view-headers-container">
-                                        <a href="#" class="view-all-headers-link">View All Headers</a>
-                                    </div>
-                                    <div class="log-details-tabs-container">
-                                        <div class="log-details-tabs" data-log-index="${logIndex}">
-                                            <button class="tab-button active" data-tab="response-info-tab-${logIndex}">Response Information</button>
-                                            <!-- Add more tab buttons here if needed -->
-                                        </div>
-                                        <div id="response-info-tab-${logIndex}" class="tab-content active">
-                                            <div class="response-info-section">
-                                                <h4>Response Details</h4>
-                                                <p><strong>Content Type:</strong> ${log.resContentType || 'N/A'}</p>
-                                                <p><strong>Other Details:</strong> ${log.resOtherDetails || 'N/A'}</p>
-                                            </div>
-                                            <div class="raw-message-section">
-                                                <h4>Raw Message</h4>
-                                                <pre class="raw-message">${log.raw_message || 'No raw message available'}</pre>
-                                            </div>
-                                        </div>
-                                        <!-- Add more tab content divs here if needed -->
+                                    <div class="metric-item">
+                                        <i class="fas fa-sync-alt metric-icon icon-app"></i>
+                                        <span class="metric-label">App Latency</span>
+                                        <span class="metric-value">${log.app_latency || 'N/A'} ms</span>
                                     </div>
                                 </div>
-                            `;
-                            
-                            // Insert the detail row directly after the clicked row
-                            detailRow.appendChild(cell);
-                            logsTableBody.insertBefore(detailRow, currentRow.nextSibling);
+                                <div class="detailed-info-grid">
+                                    <div class="info-column">
+                                        <p><strong>Source IP:</strong> ${log.srcip || 'N/A'}</p>
+                                        <p><strong>Source Port:</strong> ${log.srcport || 'N/A'}</p> 
+                                        <p><strong>Source Interface:</strong> ${log.srcintf || 'N/A'}</p>
+                                        <p><strong>Device:</strong> ${log.devicename || 'N/A'}</p>
+                                        <p><strong>Browser:</strong> ${log.useragent ? log.useragent.substring(0,30) : 'N/A'}</p>
+                                        <p><strong>Start time:</strong> ${log.ts_display || 'N/A'}</p>
+                                    </div>
+                                    <div class="info-column">
+                                        <p><strong>Destination IP:</strong> ${log.dstip || 'N/A'}</p>
+                                        <p><strong>Destination Port:</strong> ${log.dstport_val || 'N/A'}</p>
+                                        <p><strong>Destination Interface:</strong> ${log.dstintf || 'N/A'}</p>
+                                        <p><strong>End time:</strong> ${log.end_ts_display || 'N/A'}</p> 
+                                        <p><strong>Service Engine:</strong> ${log.hostname || 'N/A'}</p>
+                                        <p><strong>Response Length:</strong> ${log.rcvdbyte_display || 'N/A'}</p>
+                                        <p><strong>Persistence Session ID:</strong> ${log.sessionid || 'N/A'}</p>
+                                        <p><strong>Significance:</strong> ${log.level || 'N/A'}</p>
+                                    </div>
+                                    <div class="info-column server-ip-column">
+                                        <p><strong>Server IP:</strong> ${log.dstip || 'N/A'}</p> 
+                                    </div>
+                                </div>
+                                <div class="view-headers-container">
+                                    <a href="#" class="view-all-headers-link">View All Headers (Placeholder)</a>
+                                </div>
+                                <div class="log-details-tabs-container">
+                                    <div class="log-details-tabs" data-log-index="${logIndex}">
+                                        <button class="tab-button active" data-tab="response-info-tab-${logIndex}">Response Information</button>
+                                    </div>
+                                    <div id="response-info-tab-${logIndex}" class="tab-content active">
+                                        <div class="response-info-section">
+                                            <h4>Response Details</h4>
+                                            <p><strong>Content Type:</strong> ${log.content_type || 'N/A'}</p>
+                                            <p><strong>Other Details:</strong> ${log.msg || 'N/A'}</p>
+                                        </div>
+                                        <div class="raw-message-section">
+                                            <h4>Raw Message</h4>
+                                            <pre class="raw-message">${log.raw_message || 'No raw message available'}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
 
-                            // Add event listeners for the new tabs
-                            const tabContainer = cell.querySelector(`.log-details-tabs[data-log-index="${logIndex}"]`);
-                            if (tabContainer) {
-                                tabContainer.addEventListener('click', function(e) {
-                                    if (e.target.classList.contains('tab-button')) {
-                                        const targetTabId = e.target.dataset.tab;
-                                        
-                                        tabContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-                                        const parentContent = tabContainer.closest('.expanded-log-content');
-                                        parentContent.querySelectorAll('.log-details-tabs-container .tab-content').forEach(content => content.classList.remove('active'));
-                                        
-                                        e.target.classList.add('active');
-                                        const targetContentElement = document.getElementById(targetTabId);
-                                        if (targetContentElement) {
-                                            targetContentElement.classList.add('active');
-                                        }
+                        detailRow.appendChild(cell);
+                        logsTableBody.insertBefore(detailRow, currentRow.nextSibling);
+                        console.log('Detail row added for log index:', logIndex);
+
+                        // Tab handling for the newly created detail row
+                        const tabContainer = cell.querySelector(`.log-details-tabs[data-log-index="${logIndex}"]`);
+                        if (tabContainer) {
+                            tabContainer.addEventListener('click', function(e) {
+                                if (e.target.classList.contains('tab-button')) {
+                                    const targetTabId = e.target.dataset.tab;
+                                    tabContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                                    const parentContent = tabContainer.closest('.expanded-log-content');
+                                    parentContent.querySelectorAll('.log-details-tabs-container .tab-content').forEach(content => content.classList.remove('active'));
+                                    e.target.classList.add('active');
+                                    const targetContentElement = parentContent.querySelector(`#${targetTabId}`);
+                                    if (targetContentElement) {
+                                        targetContentElement.classList.add('active');
                                     }
-                                });
-                            }
-                            icon.classList.remove('fa-plus');
-                            icon.classList.add('fa-minus');
+                                }
+                            });
                         }
-                    } else {
-                        console.error("Log data not found for index:", logIndex, "Max index:", logData.length -1);
+
+                        icon.classList.remove('fa-plus');
+                        icon.classList.add('fa-minus');
+                        console.log('Icon changed to fa-minus for log index:', logIndex);
+
+                    } else if (icon.classList.contains('fa-minus')) { // COLLAPSE action
+                        console.log('Attempting to COLLAPSE row for log index:', logIndex);
+                        const detailRowToRemove = currentRow.nextElementSibling;
+                        if (detailRowToRemove && detailRowToRemove.classList.contains('expanded-log-details')) {
+                            detailRowToRemove.remove();
+                            console.log('Detail row removed for log index:', logIndex);
+                        }
+                        icon.classList.remove('fa-minus');
+                        icon.classList.add('fa-plus');
+                        console.log('Icon changed to fa-plus for log index:', logIndex);
                     }
+                } finally {
+                    setTimeout(() => {
+                        console.log('Clearing handlingClick flag for log index:', button.dataset.logIndex);
+                        delete button.dataset.handlingClick;
+                    }, 50); // Increased timeout slightly to ensure DOM updates are processed
                 }
             });
 

@@ -39,7 +39,7 @@ LOG_FILE    = '/var/log/fortigate.log'
 
 # ── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
-    level=logging.DEBUG,  # Changed to DEBUG for more verbose logging
+    level=logging.WARNING,  # Changed to DEBUG for more verbose logging
     format='%(asctime)s %(levelname)s %(message)s',
     handlers=[logging.StreamHandler()]
 )
@@ -126,7 +126,11 @@ def parse_line(line: str) -> dict:
                 data[field] = 0 if field in NUMERIC_FIELDS else ''
                 if field in ['srcip', 'dstip']:
                     data[field] = '0.0.0.0'
-    
+
+        # Ensure timestamp is always populated
+        if data.get('timestamp') is None:
+            data['timestamp'] = datetime.now()
+        
         # Remove intermediate date/time keys
         data.pop('date', None)
         data.pop('time', None)

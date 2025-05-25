@@ -1,11 +1,19 @@
 from django.shortcuts import render
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse
+from django.utils.html import escape
+from django.db.models import Sum, Count
 
 import re
 import math
 from clickhouse_driver import Client
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import os
+from collections import defaultdict
+import ipaddress
+import json # For serializing log data for JS if needed
 
 # ClickHouse connection settings
 CH_HOST = os.getenv('CH_HOST', 'localhost')
@@ -13,7 +21,50 @@ CH_PORT = int(os.getenv('CH_PORT', '9000'))
 CH_USER = os.getenv('CH_USER', 'default')
 CH_PASSWORD = os.getenv('CH_PASSWORD', 'Read@123')
 CH_DB = os.getenv('CH_DB', 'network_logs')
-PAGE_SIZE = 50
+SUBNET_GROUP_PAGE_SIZE = 50
+
+# Helper function to generate pagination range
+def get_pagination_range(current_page, total_pages, neighbors=2):
+    """
+    Generates a list of page numbers for pagination, including ellipses.
+    e.g., [1, None, 5, 6, 7, None, 10] for current_page=6, total_pages=10
+    None represents an ellipsis.
+    """
+    if total_pages <= (2 * neighbors + 1) + 2: # Show all if not many (e.g., 1 ... 3 4 5 ... 7)
+        return list(range(1, total_pages + 1))
+
+    page_range = []
+    # Ensure first page is always added
+    page_range.append(1)
+
+    # Ellipsis after first page?
+    if current_page > neighbors + 2:
+        page_range.append(None) # Represents '...'
+
+    # Pages around current_page
+    start_range = max(2, current_page - neighbors)
+    end_range = min(total_pages - 1, current_page + neighbors)
+
+    for i in range(start_range, end_range + 1):
+        if i not in page_range:
+            page_range.append(i)
+
+    # Ellipsis before last page?
+    if current_page < total_pages - neighbors - 1:
+        # Avoid double ellipsis if last page is close or already None
+        if not page_range or page_range[-1] is not None:
+             if total_pages -1 not in page_range : # ensure no ellipsis if next is last page
+                page_range.append(None) # Represents '...'
+
+    # Ensure last page is always added (if not already)
+    if total_pages not in page_range:
+        page_range.append(total_pages)
+        
+    # Remove potential leading None if page_range starts with [1, None, 2 ...]
+    if len(page_range) > 1 and page_range[0] == 1 and page_range[1] is None and (len(page_range) == 2 or page_range[2] == 2):
+        page_range.pop(1)
+        
+    return page_range
 
 def dmu_view(request):
     # Renders the static UI template
@@ -139,8 +190,25 @@ def clickhouse_logs_view(request):
     except Exception:
         total_logs_count = 0  # Fallback on error
 
-    total_pages = (total_logs_count + PAGE_SIZE - 1) // PAGE_SIZE if PAGE_SIZE > 0 else 1
-    offset = (page - 1) * PAGE_SIZE
+    total_pages = (total_logs_count + SUBNET_GROUP_PAGE_SIZE - 1) // SUBNET_GROUP_PAGE_SIZE if SUBNET_GROUP_PAGE_SIZE > 0 else 1
+    offset = (page - 1) * SUBNET_GROUP_PAGE_SIZE
+
+    # Get total count of fine-grained groups for the selected time range
+    total_grouped_logs_count_query = f"""
+        SELECT count()
+        FROM (
+            SELECT srcip, dstip, dstport, action
+            FROM fortigate_traffic
+            WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+            GROUP BY srcip, dstip, dstport, action
+        )
+    """
+    try:
+        total_grouped_logs_count_result = client.execute(total_grouped_logs_count_query)
+        total_grouped_logs_count = total_grouped_logs_count_result[0][0] if total_grouped_logs_count_result else 0
+    except Exception as e:
+        # print(f"Error executing count query: {e}") # Debugging
+        total_grouped_logs_count = 0 # Fallback on error
 
     # --- Fetch current page of logs from ClickHouse ---
     query = f"""
@@ -150,7 +218,7 @@ def clickhouse_logs_view(request):
         FROM fortigate_traffic
         WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
         ORDER BY timestamp DESC
-        LIMIT {PAGE_SIZE} OFFSET {offset}
+        LIMIT {SUBNET_GROUP_PAGE_SIZE} OFFSET {offset}
     """
     
     try:
@@ -253,3 +321,179 @@ def clickhouse_logs_view(request):
     }
     return render(request, 'dashboard/logs2.html', context)
 
+
+def grouped_logs_view(request):
+    client = Client(
+        host=CH_HOST,
+        port=CH_PORT,
+        user=CH_USER,
+        password=CH_PASSWORD,
+        database=CH_DB
+    )
+
+    time_range = request.GET.get('time_range', 'last_hour')
+    now = datetime.utcnow() # Use UTC to match ClickHouse 'now()'
+    if time_range == 'last_24_hours':
+        since = now - timedelta(hours=24)
+    elif time_range == 'last_7_days':
+        since = now - timedelta(days=7)
+    elif time_range == 'last_30_days':
+        since = now - timedelta(days=30)
+    # Add other time ranges as needed or a custom range handler
+    else: # Default to last_hour
+        since = now - timedelta(hours=1)
+    since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+
+    page = int(request.GET.get('page', 1)) # Page number for Paginator
+    sort_by = request.GET.get('sort_by', 'last_seen') # Default sort: last_seen
+    sort_order = request.GET.get('sort_order', 'desc')   # Default order: desc
+    is_reverse_sort = sort_order == 'desc'
+
+    # Get total count of fine-grained groups for the selected time range
+    total_grouped_logs_count_query = f"""
+        SELECT count()
+        FROM (
+            SELECT srcip, dstip, dstport, action
+            FROM fortigate_traffic
+            WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+            GROUP BY srcip, dstip, dstport, action
+        )
+    """
+    try:
+        total_grouped_logs_count_result = client.execute(total_grouped_logs_count_query)
+        total_grouped_logs_count = total_grouped_logs_count_result[0][0] if total_grouped_logs_count_result else 0
+    except Exception as e:
+        # print(f"Error executing count query: {e}") # Debugging
+        total_grouped_logs_count = 0 # Fallback on error
+
+    # Query to group logs and count occurrences
+    query = f"""
+        SELECT
+            srcip, dstip, dstport, action,
+            count() as event_count,
+            sum(sentbyte) as total_sent,
+            sum(rcvdbyte) as total_rcvd,
+            any(proto) as proto_val, 
+            max(timestamp) as last_seen
+        FROM fortigate_traffic
+        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+        GROUP BY srcip, dstip, dstport, action
+        ORDER BY last_seen DESC
+    """
+    
+    try:
+        db_rows = client.execute(query)
+    except Exception as e:
+        db_rows = []
+        # Consider logging error e
+
+    processed_logs_from_db = []
+    if db_rows:
+        for row in db_rows:
+            last_seen_dt = row[8]
+            processed_logs_from_db.append({
+                'srcip': row[0],
+                'dstip': row[1],
+                'dstport': row[2],
+                'action': row[3],
+                'event_count': row[4],
+                'total_sent': row[5],
+                'total_rcvd': row[6],
+                'proto': PROTO_MAP.get(row[7], str(row[7])),
+                'last_seen_display': last_seen_dt.strftime('%Y-%m-%d %H:%M:%S') if last_seen_dt else 'N/A',
+                'last_seen_raw': last_seen_dt,
+                'total_sent_display': format_bytes(row[5]),
+                'total_rcvd_display': format_bytes(row[6]),
+            })
+
+    page_level_subnet_groups = defaultdict(lambda: {
+        'summary_event_count': 0,
+        'summary_total_sent': 0,
+        'summary_total_rcvd': 0,
+        'summary_last_seen_raw': None,
+        'summary_protos': set(),
+        'details': []
+    })
+
+    for log_entry in processed_logs_from_db:
+        srcip_str = log_entry['srcip']
+        try:
+            network = ipaddress.ip_network(f"{srcip_str}/24", strict=False)
+            src_subnet_repr = str(network.network_address) + "/24"
+        except ValueError:
+            src_subnet_repr = srcip_str
+
+        page_group_key = (src_subnet_repr, log_entry['dstip'], log_entry['dstport'], log_entry['action'])
+        group = page_level_subnet_groups[page_group_key]
+        group['summary_event_count'] += log_entry['event_count']
+        group['summary_total_sent'] += log_entry['total_sent']
+        group['summary_total_rcvd'] += log_entry['total_rcvd']
+        group['summary_protos'].add(log_entry['proto'])
+        if group['summary_last_seen_raw'] is None or \
+           (log_entry['last_seen_raw'] and log_entry['last_seen_raw'] > group['summary_last_seen_raw']):
+            group['summary_last_seen_raw'] = log_entry['last_seen_raw']
+        group['details'].append(log_entry)
+
+    template_ready_subnet_groups = []
+    for key, data in page_level_subnet_groups.items():
+        src_subnet_disp, dstip_disp, dstport_disp, action_disp = key
+        sorted_details = sorted(data['details'], key=lambda x: x['event_count'], reverse=True)
+        template_ready_subnet_groups.append({
+            'src_subnet_display': src_subnet_disp,
+            'dstip': dstip_disp,
+            'dstport': dstport_disp,
+            'action': action_disp,
+            'event_count': data['summary_event_count'],
+            'total_sent_display': format_bytes(data['summary_total_sent']),
+            'total_rcvd_display': format_bytes(data['summary_total_rcvd']),
+            'proto_display': ', '.join(sorted(list(data['summary_protos']))) if data['summary_protos'] else 'N/A',
+            'last_seen_display': data['summary_last_seen_raw'].strftime('%Y-%m-%d %H:%M:%S') if data['summary_last_seen_raw'] else 'N/A',
+            'summary_last_seen_raw': data['summary_last_seen_raw'], # For accurate sorting
+            'details': sorted_details,
+            'group_id': f"subnetgroup-{str(src_subnet_disp).replace('/', '_').replace('.', '_')}-{str(dstip_disp).replace('.', '_')}-{dstport_disp}-{action_disp}".replace(' ', '_').lower()
+        })
+    # Sorting logic based on parameters
+    if sort_by == 'dstip':
+        template_ready_subnet_groups = sorted(template_ready_subnet_groups, key=lambda x: str(x.get('dstip', '')) , reverse=is_reverse_sort) # Ensure dstip is string for sorting
+    elif sort_by == 'count':
+        template_ready_subnet_groups = sorted(template_ready_subnet_groups, key=lambda x: x.get('event_count', 0), reverse=is_reverse_sort)
+    elif sort_by == 'last_seen':
+        template_ready_subnet_groups = sorted(
+            template_ready_subnet_groups, 
+            key=lambda x: x.get('summary_last_seen_raw') or datetime.min, # Use datetime.min for None values
+            reverse=is_reverse_sort
+        )
+    else: # Default sort (last_seen desc if sort_by is unrecognized or not specified)
+        template_ready_subnet_groups = sorted(
+            template_ready_subnet_groups, 
+            key=lambda x: x.get('summary_last_seen_raw') or datetime.min, 
+            reverse=True # Default sort_order for last_seen is desc
+        )
+
+    # Paginate the template_ready_subnet_groups
+    paginator = Paginator(template_ready_subnet_groups, SUBNET_GROUP_PAGE_SIZE)
+    try:
+        page_obj = paginator.page(request.GET.get('page', 1)) # 'page' is from request.GET.get('page',1)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    selected_time_range_display = time_range.replace('_', ' ').title()
+    page_range_for_template = get_pagination_range(page_obj.number, paginator.num_pages)
+
+    context = {
+        'grouped_logs': page_obj, # Pass the Paginator page object
+        'displayed_subnet_groups_count': len(page_obj.object_list),
+        'total_subnet_groups_count': paginator.count, # Total /24 subnet groups
+        'total_grouped_logs_count': total_grouped_logs_count, # Total fine-grained groups
+        'selected_time_range': time_range,
+        'selected_time_range_display': selected_time_range_display,
+        'current_page': page_obj.number,
+        'total_pages': paginator.num_pages, # Total pages of /24 subnet groups
+        'page_range': page_range_for_template,
+        'sort_by': sort_by,
+        'sort_order': sort_order,
+        'viewer_ip': request.META.get('REMOTE_ADDR')
+    }
+    return render(request, 'dashboard/grouped_logs.html', context)
