@@ -56,8 +56,17 @@
         </thead>
         <tbody id="groupedLogsTableBody">
             {% for group in grouped_logs %}
-            <tr class="subnet-summary-row" data-group-id="{{ group.group_id }}" style="cursor: pointer; background-color: #f9f9f9;">
-                <td><span class="toggle-icon">[+]</span> {{ group.src_subnet_display }}</td>
+            <tr class="subnet-summary-row" data-group-id="{{ group.group_id }}" 
+                {% if group.details|length > 1 %}style="cursor: pointer; background-color: #f9f9f9;"{% else %}style="background-color: #f9f9f9;"{% endif %}>
+                <td>
+                    {% if group.details|length > 1 %}
+                        <span class="toggle-icon">[+]</span> {{ group.src_subnet_display }}
+                    {% elif group.details|length == 1 %}
+                        {{ group.details.0.srcip }}
+                    {% else %}
+                        {{ group.src_subnet_display }} {# Fallback #}
+                    {% endif %}
+                </td>
                 <td>{{ group.dstip }}</td>
                 <td>{{ group.dstport }}</td>
                 <td>{{ group.action }}</td>
@@ -67,19 +76,21 @@
                 <td>{{ group.last_seen_display }}</td>
                 <td>{{ group.event_count }}</td>
             </tr>
-            {% for detail in group.details %}
-            <tr class="subnet-detail-row {{ group.group_id }}" style="display: none; background-color: #fff;">
-                <td style="padding-left: 30px;">{{ detail.srcip }}</td>
-                <td>{{ detail.dstip }}</td>
-                <td>{{ detail.dstport }}</td>
-                <td>{{ detail.action }}</td>
-                <td>{{ detail.proto }}</td>
-                <td>{{ detail.total_sent_display }}</td>
-                <td>{{ detail.total_rcvd_display }}</td>
-                <td>{{ detail.last_seen_display }}</td>
-                <td>{{ detail.event_count }}</td>
-            </tr>
-            {% endfor %}
+            {% if group.details|length > 1 %} {# Only render detail rows if there's more than one detail to expand #}
+                {% for detail in group.details %}
+                <tr class="subnet-detail-row {{ group.group_id }}" style="display: none; background-color: #fff;">
+                    <td style="padding-left: 30px;">{{ detail.srcip }}</td>
+                    <td>{{ detail.dstip }}</td>
+                    <td>{{ detail.dstport }}</td>
+                    <td>{{ detail.action }}</td>
+                    <td>{{ detail.proto }}</td>
+                    <td>{{ detail.total_sent_display }}</td>
+                    <td>{{ detail.total_rcvd_display }}</td>
+                    <td>{{ detail.last_seen_display }}</td>
+                    <td>{{ detail.event_count }}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
             {% empty %}
             <tr>
                 <td colspan="9" style="text-align: center; padding: 20px;">No grouped logs found for the selected period.</td>
@@ -149,10 +160,21 @@ document.addEventListener('DOMContentLoaded', function () {
     // Expand/collapse for subnet groups
     const summaryRows = document.querySelectorAll('.subnet-summary-row');
     summaryRows.forEach(row => {
+        const toggleIcon = row.querySelector('.toggle-icon');
+        // If there's no toggle icon, this row isn't meant to be expandable (e.g., single host).
+        if (!toggleIcon) {
+            return; 
+        }
+
         row.addEventListener('click', function() {
             const groupId = this.dataset.groupId;
             const detailRows = document.querySelectorAll('.subnet-detail-row.' + groupId);
-            const toggleIcon = this.querySelector('.toggle-icon');
+            // toggleIcon is already defined from the outer scope of this event listener
+
+            if (detailRows.length === 0) {
+                // Should not happen if toggleIcon exists due to template logic, but good to guard.
+                return;
+            }
 
             let allHidden = true;
             detailRows.forEach(detailRow => {
@@ -165,12 +187,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 detailRows.forEach(detailRow => {
                     detailRow.style.display = 'table-row';
                 });
-                if (toggleIcon) toggleIcon.textContent = '[-]';
+                toggleIcon.textContent = '[-]'; // toggleIcon is guaranteed to exist here
             } else {
                 detailRows.forEach(detailRow => {
                     detailRow.style.display = 'none';
                 });
-                if (toggleIcon) toggleIcon.textContent = '[+]';
+                toggleIcon.textContent = '[+]'; // toggleIcon is guaranteed to exist here
             }
         });
     });
