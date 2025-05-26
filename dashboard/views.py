@@ -180,12 +180,62 @@ def clickhouse_logs_view(request):
     else:
         since = now - timedelta(hours=1)
     since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+    
+    # --- Get filter values from request ---
+    srcip_filter = request.GET.get('srcip', '').strip()
+    dstip_filter = request.GET.get('dstip', '').strip()
+    srcport_filter = request.GET.get('srcport', '').strip()
+    dstport_filter = request.GET.get('dstport', '').strip()
+    action_filter = request.GET.get('action', '').strip()
+    
+    # Build WHERE clauses based on filter inputs
+    where_clauses = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"] 
+    
+    if srcip_filter:
+        where_clauses.append(f"srcip = '{srcip_filter}'")
+    if dstip_filter:
+        where_clauses.append(f"dstip = '{dstip_filter}'")
+    if srcport_filter:
+        # Handle range if provided (e.g., 1000-2000)
+        if '-' in srcport_filter:
+            start, end = srcport_filter.split('-')
+            where_clauses.append(f"srcport >= {start.strip()} AND srcport <= {end.strip()}")
+        else:
+            where_clauses.append(f"srcport = {srcport_filter}")
+    if dstport_filter:
+        # Handle range if provided (e.g., 3000-4000)
+        if '-' in dstport_filter:
+            start, end = dstport_filter.split('-')
+            where_clauses.append(f"dstport >= {start.strip()} AND dstport <= {end.strip()}")
+        else:
+            where_clauses.append(f"dstport = {dstport_filter}")
+    if action_filter:
+        where_clauses.append(f"action = '{action_filter}'")
+    
+    # Combine all WHERE clauses
+    where_clause = ' AND '.join(where_clauses)
+    
+    # --- Fetch available action values for dropdown ---
+    action_query = f"""
+        SELECT DISTINCT action 
+        FROM fortigate_traffic 
+        WHERE {where_clause}
+        ORDER BY action
+    """
+    
+    try:
+        available_actions = [row[0] for row in client.execute(action_query)]
+    except Exception as e:
+        available_actions = []
 
     # --- Pagination ---
     page = int(request.GET.get('page', 1))
+    
+    # Update count query with filters
+    count_query = f"SELECT count() FROM fortigate_traffic WHERE {where_clause}"
+    
     try:
-        # Total logs count for the current filter
-        total_logs_count_result = client.execute(f"SELECT count() FROM fortigate_traffic WHERE timestamp >= parseDateTimeBestEffort('{since_str}')")
+        total_logs_count_result = client.execute(count_query)
         total_logs_count = total_logs_count_result[0][0] if total_logs_count_result else 0
     except Exception:
         total_logs_count = 0  # Fallback on error
@@ -193,30 +243,30 @@ def clickhouse_logs_view(request):
     total_pages = (total_logs_count + SUBNET_GROUP_PAGE_SIZE - 1) // SUBNET_GROUP_PAGE_SIZE if SUBNET_GROUP_PAGE_SIZE > 0 else 1
     offset = (page - 1) * SUBNET_GROUP_PAGE_SIZE
 
-    # Get total count of fine-grained groups for the selected time range
+    # Get total count of fine-grained groups with filters
     total_grouped_logs_count_query = f"""
         SELECT count()
         FROM (
             SELECT srcip, dstip, dstport, action
             FROM fortigate_traffic
-            WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+            WHERE {where_clause}
             GROUP BY srcip, dstip, dstport, action
         )
     """
+    
     try:
         total_grouped_logs_count_result = client.execute(total_grouped_logs_count_query)
         total_grouped_logs_count = total_grouped_logs_count_result[0][0] if total_grouped_logs_count_result else 0
     except Exception as e:
-        # print(f"Error executing count query: {e}") # Debugging
         total_grouped_logs_count = 0 # Fallback on error
 
-    # --- Fetch current page of logs from ClickHouse ---
+    # --- Fetch current page of logs from ClickHouse with filters ---
     query = f"""
         SELECT
-            timestamp, raw_message, srcip, dstip, dstport, action, proto,
-            rcvdbyte, sentbyte, duration
+            timestamp, raw_message, srcip, srcport, dstip, dstport, action, proto,
+            rcvdbyte, sentbyte, sentpkt, rcvdpkt, duration, srcintf, dstintf, policyname
         FROM fortigate_traffic
-        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+        WHERE {where_clause}
         ORDER BY timestamp DESC
         LIMIT {SUBNET_GROUP_PAGE_SIZE} OFFSET {offset}
     """
@@ -232,13 +282,19 @@ def clickhouse_logs_view(request):
         ts_obj = db_row[0]
         raw_message_val = db_row[1]
         srcip_val = db_row[2]
-        dstip_val = db_row[3]
-        dstport_val = db_row[4]
-        action_val = db_row[5]
-        proto_num = db_row[6]
-        rcvdbyte_val = db_row[7]
-        sentbyte_val = db_row[8]
-        duration_val = db_row[9] if db_row[9] is not None else 0
+        srcport_val = db_row[3] # Added srcport
+        dstip_val = db_row[4]
+        dstport_val = db_row[5]
+        action_val = db_row[6]
+        proto_num = db_row[7]
+        rcvdbyte_val = db_row[8]
+        sentbyte_val = db_row[9]
+        sentpkt_val = db_row[10] # Added sentpkt
+        rcvdpkt_val = db_row[11] # Added rcvdpkt
+        duration_val = db_row[12] if db_row[12] is not None else 0
+        srcintf_val = db_row[13]
+        dstintf_val = db_row[14]
+        policyname_val = db_row[15]
 
         # DEBUG: Print the raw_message value for each row
 
@@ -268,6 +324,11 @@ def clickhouse_logs_view(request):
                                                            # Or use a dedicated response length field if available.
                                                            # Corresponds to `log.len` in JS table and `log.responseLength` in expansion
             'raw_message': raw_message_val,    # Pass raw_message to frontend
+            'srcintf': srcintf_val,
+            'dstintf': dstintf_val,
+            'policyname': policyname_val,
+            'sentpkt': sentpkt_val,
+            'rcvdpkt': rcvdpkt_val,
 
             # Detailed fields for JavaScript expansion (Populate these from your data)
             'clientRTT': "N/A",                 # TODO: Fetch or derive
@@ -276,8 +337,8 @@ def clickhouse_logs_view(request):
             'dataTransfer': "N/A",              # TODO: Fetch or derive
             'totalTime': duration_display_str,  # Or a more specific total time if available
 
-            'srcport_val': "N/A",               # TODO: Fetch source port if available for `log.srcport`
-            'location': "Internal",             # Fallback for `log.srcport` if `srcport_val` is "N/A"
+            'srcport': srcport_val,             # Use 'srcport' to match template, assign fetched value
+            'location': "Internal",             # Fallback for `log.srcport` if `srcport_val` is "N/A" # This fallback might need review if srcport is now always present
             
             # Example: Parsing User Agent for OS and Browser
             'sourceInterfaceOS': "N/A",         # Not available in DB
@@ -317,7 +378,14 @@ def clickhouse_logs_view(request):
         'total_logs_count': total_logs_count,
         'page_range': page_range,
         'selected_time_range': time_range, # Pass to template for dropdown selection
-        # Pass any other context variables your template needs
+        
+        # Filter-related context variables
+        'available_actions': available_actions, # For Action dropdown
+        'srcip_filter': srcip_filter,  # Current filter values to prepopulate inputs
+        'dstip_filter': dstip_filter,
+        'srcport_filter': srcport_filter,
+        'dstport_filter': dstport_filter,
+        'action_filter': action_filter,
     }
     return render(request, 'dashboard/logs2.html', context)
 

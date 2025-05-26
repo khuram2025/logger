@@ -6,6 +6,11 @@
         </div>
     </div>
 
+    {% comment %} Include the new Filters sidebar component {% endcomment %}
+    <div class="sidebar-section">
+        {% include 'dashboard/_filters_sidebar.html' %}
+    </div>
+
     <div class="sidebar-section">
         <div class="sidebar-header collapsible-header" data-target="log-analytics-content">
             <span>Log Analytics</span>

@@ -1,0 +1,161 @@
+{% comment %}
+    File: /home/net/analyzer/dashboard/templates/dashboard/_filters_sidebar.html
+    Reusable filter sidebar component.
+{% endcomment %}
+{% load static %}
+
+<style>
+    /* Direct styles to ensure they're applied */
+    .filter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #f8f9fa;
+        border-radius: 4px 4px 0 0;
+        padding: 10px 15px;
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .filter-content {
+        padding: 14px 16px 14px 16px;
+        background-color: #fff;
+        border-radius: 0 0 4px 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .filter-group {
+        margin-bottom: 12px;
+    }
+    
+    .filter-group label {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 500;
+        font-size: 13px;
+        color: #495057;
+    }
+    
+    .filter-input {
+        width: 95%; /* Reduced from 100% to leave space on the right */
+        padding: 6px 10px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 13px;
+        line-height: 1.4;
+        color: #495057;
+        background-color: #fff;
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        height: 32px;
+    }
+    
+    .filter-input:focus {
+        border-color: #80bdff;
+        outline: 0;
+        box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.2);
+    }
+    
+    .filter-input::placeholder {
+        color: #adb5bd;
+        font-size: 12px;
+    }
+    
+    .filter-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 16px;
+        width: 95%; /* Match the input fields width */
+    }
+    
+    .btn-apply {
+        background-color: #4a5568;
+        border: 1px solid #4a5568;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex: 1;
+        font-weight: 500;
+    }
+    
+    .btn-apply:hover {
+        background-color: #4a5568;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .btn-clear {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex: 1;
+    }
+    
+    .btn-clear:hover {
+        background-color: #e9ecef;
+        border-color: #ced4da;
+    }
+</style>
+
+<div class="sidebar-header collapsible-header filter-header" data-target="logFiltersContent">
+    <span>Filters</span>
+    <i class="fas fa-plus filter-icon"></i>
+</div>
+<div id="logFiltersContent" class="collapsible-content filter-content" style="display: none;">
+    <form id="logFiltersForm" class="log-filters-form" method="GET" action="{% url 'clickhouse_logs' %}">
+        <div class="filter-group">
+            <label for="filterSrcIp">Source IP</label>
+            <input type="text" id="filterSrcIp" name="srcip" class="filter-input" placeholder="e.g., 192.168.1.1" value="{{ srcip_filter }}">
+        </div>
+        <div class="filter-group">
+            <label for="filterDstIp">Destination IP</label>
+            <input type="text" id="filterDstIp" name="dstip" class="filter-input" placeholder="e.g., 8.8.8.8" value="{{ dstip_filter }}">
+        </div>
+        <div class="filter-group">
+            <label for="filterSrcPort">Source Port</label>
+            <input type="text" id="filterSrcPort" name="srcport" class="filter-input" placeholder="e.g., 80 or 1000-2000" value="{{ srcport_filter }}">
+        </div>
+        <div class="filter-group">
+            <label for="filterDstPort">Destination Port</label>
+            <input type="text" id="filterDstPort" name="dstport" class="filter-input" placeholder="e.g., 443 or 3000-4000" value="{{ dstport_filter }}">
+        </div>
+        <div class="filter-group">
+            <label for="filterAction">Action</label>
+            <select id="filterAction" name="action" class="filter-input">
+                <option value="">All Actions</option>
+                {% for action_type in available_actions %}
+                    <option value="{{ action_type }}" {% if request.GET.action == action_type %}selected{% endif %}>{{ action_type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn-apply">Apply</button>
+            <button type="button" class="btn-clear" onclick="clearFilters()">Clear</button>
+        </div>
+        <script>
+            function clearFilters() {
+                // Get the current URL
+                let url = new URL(window.location.href);
+                
+                // Preserve only the time_range parameter if it exists
+                let params = new URLSearchParams();
+                if (url.searchParams.has('time_range')) {
+                    params.append('time_range', url.searchParams.get('time_range'));
+                }
+                
+                // Redirect to the page with only time_range (or no parameters)
+                window.location.href = '{% url "clickhouse_logs" %}' + (params.toString() ? '?' + params.toString() : '');
+            }
+        </script>
+    </form>
+</div>
+
+

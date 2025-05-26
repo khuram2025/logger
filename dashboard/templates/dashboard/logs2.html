@@ -192,6 +192,52 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const headers = document.querySelectorAll('.sidebar-header.collapsible-header'); // More specific selector
+    console.log('Found collapsible headers:', headers.length); 
+
+    headers.forEach(header => {
+        header.addEventListener('click', function () {
+            const targetId = this.dataset.target;
+            console.log('Header clicked. Target ID: ' + targetId);
+            console.log('Clicked element outerHTML: ' + (this.outerHTML || 'N/A')); 
+
+            if (!targetId) {
+                console.error('No data-target found for this header. Element:');
+                console.error('The problematic header element outerHTML: ' + (this.outerHTML || 'N/A')); 
+                return;
+            }
+
+            const content = document.getElementById(targetId);
+            const icon = this.querySelector('i.fas');
+
+            if (content) {
+                console.log('Target content element outerHTML: ' + (content.outerHTML || 'N/A'));
+                console.log('Current display: ' + content.style.display); 
+                
+                if (content.style.display === 'none' || content.style.display === '') {
+                    content.style.display = 'block';
+                    console.log('Set content to display: block'); 
+                    if (icon) {
+                        icon.classList.remove('fa-plus');
+                        icon.classList.add('fa-minus');
+                    }
+                } else {
+                    content.style.display = 'none';
+                    console.log('Set content to display: none'); 
+                    if (icon) {
+                        icon.classList.remove('fa-minus');
+                        icon.classList.add('fa-plus');
+                    }
+                }
+            } else {
+                console.error('Target content not found for ID:', targetId); 
+            }
+        });
+    });
+});
+</script>
     <div id="wafRulesModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -318,21 +364,22 @@
                                         <p><strong>Source Port:</strong> ${log.srcport || 'N/A'}</p> 
                                         <p><strong>Source Interface:</strong> ${log.srcintf || 'N/A'}</p>
                                         <p><strong>Device:</strong> ${log.devicename || 'N/A'}</p>
-                                        <p><strong>Browser:</strong> ${log.useragent ? log.useragent.substring(0,30) : 'N/A'}</p>
                                         <p><strong>Start time:</strong> ${log.ts_display || 'N/A'}</p>
                                     </div>
                                     <div class="info-column">
                                         <p><strong>Destination IP:</strong> ${log.dstip || 'N/A'}</p>
                                         <p><strong>Destination Port:</strong> ${log.dstport_val || 'N/A'}</p>
                                         <p><strong>Destination Interface:</strong> ${log.dstintf || 'N/A'}</p>
-                                        <p><strong>End time:</strong> ${log.end_ts_display || 'N/A'}</p> 
-                                        <p><strong>Service Engine:</strong> ${log.hostname || 'N/A'}</p>
                                         <p><strong>Response Length:</strong> ${log.rcvdbyte_display || 'N/A'}</p>
                                         <p><strong>Persistence Session ID:</strong> ${log.sessionid || 'N/A'}</p>
-                                        <p><strong>Significance:</strong> ${log.level || 'N/A'}</p>
                                     </div>
                                     <div class="info-column server-ip-column">
-                                        <p><strong>Server IP:</strong> ${log.dstip || 'N/A'}</p> 
+                                        <p><strong>Policy Name:</strong> ${log.policyname || 'N/A'}</p> 
+                                        <p><strong>Duration:</strong> ${log.duration_display || 'N/A'}</p>
+                                        <p><strong>Sent Byte:</strong> ${log.sentbyte_display || 'N/A'}</p>
+                                        <p><strong>Received Byte:</strong> ${log.rcvdbyte_display || 'N/A'}</p>
+                                        <p><strong>Sent Packet:</strong> ${log.sentpkt || 'N/A'}</p>
+                                        <p><strong>Received Packet:</strong> ${log.rcvdpkt || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <div class="view-headers-container">
@@ -343,11 +390,6 @@
                                         <button class="tab-button active" data-tab="response-info-tab-${logIndex}">Response Information</button>
                                     </div>
                                     <div id="response-info-tab-${logIndex}" class="tab-content active">
-                                        <div class="response-info-section">
-                                            <h4>Response Details</h4>
-                                            <p><strong>Content Type:</strong> ${log.content_type || 'N/A'}</p>
-                                            <p><strong>Other Details:</strong> ${log.msg || 'N/A'}</p>
-                                        </div>
                                         <div class="raw-message-section">
                                             <h4>Raw Message</h4>
                                             <pre class="raw-message">${log.raw_message || 'No raw message available'}</pre>
