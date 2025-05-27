@@ -88,3 +88,16 @@ ORDER BY timestamp DESC
 LIMIT 5;
 
 
+
+
+ALTER TABLE network_logs.paloalto_traffic
+ADD COLUMN username String AFTER dstcountry;
+
+
+ALTER TABLE network_logs.fortigate_traffic
+ADD COLUMN username String AFTER dstcountry;
+
+
+
+SELECT * FROM paloalto_traffic ORDER BY timestamp DESC LIMIT 10;
+SELECT * FROM fortigate_traffic ORDER BY timestamp DESC LIMIT 10;

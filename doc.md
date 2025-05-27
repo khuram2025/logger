@@ -10,7 +10,10 @@ sudo systemctl enable fortigate_to_clickhouse.service
 sudo systemctl start fortigate_to_clickhouse.service
 sudo systemctl status fortigate_to_clickhouse.service
 
-
+sudo systemctl daemon-reload
+sudo systemctl enable paloalto_to_clickhouse.service
+sudo systemctl start paloalto_to_clickhouse.service
+sudo systemctl status paloalto_to_clickhouse.service
 
 
 sudo tcpdump -i any -A -n 'port 514' -c 5
@@ -110,3 +113,11 @@ auth.*;mail.none  /var/log/auth.log
 news.crit         /var/log/news/news.crit
 news.err          /var/log/news/news.err
 news.notice       /var/log/news/news.notice
+
+
+
+sudo tcpdump -i any -A -n 'port 514' -c 5
+sudo tcpdump -i any host 10.10.100.4 and port 514 -A
+
+
+

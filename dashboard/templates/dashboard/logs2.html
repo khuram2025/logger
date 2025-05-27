@@ -119,7 +119,7 @@
                             <td>
                                 <span class="status-label 
                                     {% if log_item.action|default:""|lower == 'deny' %}status-deny
-                                    {% elif log_item.action|default:""|lower == 'accept' %}status-accept
+                                    {% elif log_item.action|default:""|lower == 'accept' or log_item.action|default:""|lower == 'allow' %}status-accept
                                     {% else %}status-other{% endif %}">
                                     {{ log_item.action|default:"N/A" }}
                                 </span>
@@ -361,10 +361,12 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <div class="detailed-info-grid">
                                     <div class="info-column">
                                         <p><strong>Source IP:</strong> ${log.srcip || 'N/A'}</p>
+                                        <p><strong>Username:</strong> ${log.username || 'N/A'}</p>
                                         <p><strong>Source Port:</strong> ${log.srcport || 'N/A'}</p> 
                                         <p><strong>Source Interface:</strong> ${log.srcintf || 'N/A'}</p>
                                         <p><strong>Device:</strong> ${log.devicename || 'N/A'}</p>
                                         <p><strong>Start time:</strong> ${log.ts_display || 'N/A'}</p>
+                                        <p><strong>Source Country:</strong> ${log.srccountry || 'N/A'}</p>
                                     </div>
                                     <div class="info-column">
                                         <p><strong>Destination IP:</strong> ${log.dstip || 'N/A'}</p>
@@ -372,6 +374,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                         <p><strong>Destination Interface:</strong> ${log.dstintf || 'N/A'}</p>
                                         <p><strong>Response Length:</strong> ${log.rcvdbyte_display || 'N/A'}</p>
                                         <p><strong>Persistence Session ID:</strong> ${log.sessionid || 'N/A'}</p>
+                                        <p><strong>Destination Country:</strong> ${log.dstcountry || 'N/A'}</p>
                                     </div>
                                     <div class="info-column server-ip-column">
                                         <p><strong>Policy Name:</strong> ${log.policyname || 'N/A'}</p> 

@@ -187,6 +187,7 @@ def clickhouse_logs_view(request):
     srcport_filter = request.GET.get('srcport', '').strip()
     dstport_filter = request.GET.get('dstport', '').strip()
     action_filter = request.GET.get('action', '').strip()
+    devname_filter = request.GET.get('devname', '').strip() # Added devname filter
     
     # Build WHERE clauses based on filter inputs
     where_clauses = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"] 
@@ -211,6 +212,8 @@ def clickhouse_logs_view(request):
             where_clauses.append(f"dstport = {dstport_filter}")
     if action_filter:
         where_clauses.append(f"action = '{action_filter}'")
+    if devname_filter: # Added devname filter condition
+        where_clauses.append(f"devname = '{devname_filter}'")
     
     # Combine all WHERE clauses
     where_clause = ' AND '.join(where_clauses)
@@ -227,6 +230,19 @@ def clickhouse_logs_view(request):
         available_actions = [row[0] for row in client.execute(action_query)]
     except Exception as e:
         available_actions = []
+
+    # --- Fetch available device names for dropdown ---
+    device_query = f"""
+        SELECT DISTINCT devname 
+        FROM fortigate_traffic 
+        WHERE {where_clause}  # Consider if devname filter should apply to its own dropdown population
+        ORDER BY devname
+    """
+    try:
+        available_devices = [row[0] for row in client.execute(device_query)]
+    except Exception as e:
+        logging.error(f"Error fetching device names: {e}")
+        available_devices = []
 
     # --- Pagination ---
     page = int(request.GET.get('page', 1))
@@ -264,7 +280,7 @@ def clickhouse_logs_view(request):
     query = f"""
         SELECT
             timestamp, raw_message, srcip, srcport, dstip, dstport, action, proto,
-            rcvdbyte, sentbyte, sentpkt, rcvdpkt, duration, srcintf, dstintf, policyname
+            rcvdbyte, sentbyte, sentpkt, rcvdpkt, duration, srcintf, dstintf, policyname, username, srccountry, dstcountry
         FROM fortigate_traffic
         WHERE {where_clause}
         ORDER BY timestamp DESC
@@ -295,6 +311,9 @@ def clickhouse_logs_view(request):
         srcintf_val = db_row[13]
         dstintf_val = db_row[14]
         policyname_val = db_row[15]
+        username_val = db_row[16] if len(db_row) > 16 and db_row[16] is not None else 'N/A'
+        srccountry_val = db_row[17] if len(db_row) > 17 and db_row[17] is not None else 'N/A'
+        dstcountry_val = db_row[18] if len(db_row) > 18 and db_row[18] is not None else 'N/A'
 
         # DEBUG: Print the raw_message value for each row
 
@@ -312,6 +331,7 @@ def clickhouse_logs_view(request):
             'ts_display': ts_display_str,
             'action': action_val,  # Corresponds to `log.waf` in JS example (FLAGGED/PASSED)
             'srcip': srcip_val,
+            'username': username_val, # Add username to log_entry
             'dstip': dstip_val,
             'dstport_val': dstport_val, # For display in table as Dst Port
             'proto_str': proto_str,
@@ -329,6 +349,8 @@ def clickhouse_logs_view(request):
             'policyname': policyname_val,
             'sentpkt': sentpkt_val,
             'rcvdpkt': rcvdpkt_val,
+            'srccountry': srccountry_val,
+            'dstcountry': dstcountry_val,
 
             # Detailed fields for JavaScript expansion (Populate these from your data)
             'clientRTT': "N/A",                 # TODO: Fetch or derive
@@ -376,6 +398,43 @@ def clickhouse_logs_view(request):
         'current_page': page,
         'total_pages': total_pages,
         'total_logs_count': total_logs_count,
+        
+        # Example: Parsing User Agent for OS and Browser
+        'sourceInterfaceOS': "N/A",         # Not available in DB
+        'browser': "N/A",                   # Not available in DB
+        'device': "N/A",                    # Not available in DB
+
+        'startTime': ts_obj.strftime("%Y-%m-%d, %H:%M:%S") if hasattr(ts_obj, 'strftime') else "N/A", # Format for `log.startTime`
+
+        'requestID': "N/A",                 # For `log.requestID` (Destination Interface) - TODO: Fetch or derive
+        'endTime': "N/A",                   # TODO: Calculate or fetch for `log.endTime`
+        'serviceEngine': "N/A",             # TODO: Fetch or derive for `log.serviceEngine`
+        'persistenceSessionID': "N/A",      # TODO: Fetch or derive for `log.persistenceSessionID`
+        'significance': "N/A",              # Not available in DB
+        'serverIPDetail': "N/A",            # TODO: Fetch or derive for `log.serverIPDetail`
+        'resContentType': "N/A",            # TODO: Fetch or derive for `log.resContentType`
+        'resOtherDetails': "N/A",           # TODO: Fetch or derive for `log.resOther`
+        'tl': "|||", # If this is still needed for the table
+    }
+    processed_logs_for_template.append(log_entry)
+
+    # Pagination range logic for up to 5 pages
+    if total_pages <= 5:
+        page_range = range(1, total_pages + 1)
+    else:
+        start = max(page - 2, 1)
+        end = min(start + 4, total_pages)
+        if end - start < 4:
+            start = max(end - 4, 1)
+        page_range = range(start, end + 1)
+
+    context = {
+        'logs_for_display': processed_logs_for_template, # For Django template to render table rows
+        'logs_json_for_expansion': json.dumps(processed_logs_for_template, default=str), # For JS `logData`
+        'viewer_ip': viewer_ip, # The IP of the person viewing the page
+        'current_page': page,
+        'total_pages': total_pages,
+        'total_logs_count': total_logs_count,
         'page_range': page_range,
         'selected_time_range': time_range, # Pass to template for dropdown selection
         
@@ -386,6 +445,8 @@ def clickhouse_logs_view(request):
         'srcport_filter': srcport_filter,
         'dstport_filter': dstport_filter,
         'action_filter': action_filter,
+        'devname_filter': devname_filter, # Pass devname filter to template
+        'available_devices': available_devices, # Pass available devices to template
     }
     return render(request, 'dashboard/logs2.html', context)
 

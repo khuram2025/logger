@@ -136,6 +136,15 @@
                 {% endfor %}
             </select>
         </div>
+        <div class="filter-group">
+            <label for="filterDevname">Device Name</label>
+            <select id="filterDevname" name="devname" class="filter-input">
+                <option value="">All Devices</option>
+                {% for device_name in available_devices %}
+                    <option value="{{ device_name }}" {% if devname_filter == device_name %}selected{% endif %}>{{ device_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="filter-actions">
             <button type="submit" class="btn-apply">Apply</button>
             <button type="button" class="btn-clear" onclick="clearFilters()">Clear</button>
