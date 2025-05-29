@@ -9,6 +9,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable fortigate_to_clickhouse.service
 sudo systemctl start fortigate_to_clickhouse.service
 sudo systemctl status fortigate_to_clickhouse.service
+sudo systemctl restart fortigate_to_clickhouse.service
 
 sudo systemctl daemon-reload
 sudo systemctl enable paloalto_to_clickhouse.service
@@ -121,3 +122,4 @@ sudo tcpdump -i any host 10.10.100.4 and port 514 -A
 
 
 
+python paloalto_Url_Clickhose.py

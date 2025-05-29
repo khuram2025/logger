@@ -170,7 +170,7 @@
                                 <li><a class="pagination-link" href="?page={{ total_pages }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ total_pages }}</a></li>
                             {% elif total_pages > 5 and current_page >= total_pages|add:"-2" and current_page != total_pages %}
                                 <!-- Show last few pages if close to end -->
-                                {% for i in total_pages|rjust:" "|slice:"-3:" %} 
+                                {% for _ in "123" %} 
                                     {% with page_num=forloop.counter0|add:total_pages|add:"-2" %}
                                         {% if page_num > 5 and page_num != current_page and page_num <= total_pages %}
                                         <li><a class="pagination-link" href="?page={{ page_num }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a></li>

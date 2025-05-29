@@ -22,6 +22,8 @@
 {% endblock %}
 
 {% block content %}
+<div class="page-container">
+    <main class="main-content-area">
 <div class="logs-content-header">
     <div class="controls-bar logs-controls-row">
         <div class="logs-controls-group">
@@ -44,14 +46,14 @@
         <thead>
             <tr>
                 <th>Source Subnet / IP</th>
-                <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=dstip&sort_order={% if sort_by == 'dstip' and sort_order == 'asc' %}desc{% else %}asc{% endif %}">Destination IP {% if sort_by == 'dstip' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
+                <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=dstip&sort_order={% if sort_by == 'dstip' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}">Destination IP {% if sort_by == 'dstip' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
                 <th>Destination Port</th>
                 <th>Action</th>
                 <th>Protocol(s)</th>
                 <th>Total Sent</th>
                 <th>Total Received</th>
-                <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=last_seen&sort_order={% if sort_by == 'last_seen' and sort_order == 'asc' %}desc{% else %}asc{% endif %}">Last Seen {% if sort_by == 'last_seen' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
-                <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=count&sort_order={% if sort_by == 'count' and sort_order == 'asc' %}desc{% else %}asc{% endif %}">Count {% if sort_by == 'count' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
+                <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=last_seen&sort_order={% if sort_by == 'last_seen' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}">Last Seen {% if sort_by == 'last_seen' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
+                <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=count&sort_order={% if sort_by == 'count' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}">Count {% if sort_by == 'count' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
             </tr>
         </thead>
         <tbody id="groupedLogsTableBody">
@@ -105,7 +107,7 @@
         <nav aria-label="Grouped logs pagination">
             <ul class="pagination" style="display: flex; gap: 4px; list-style: none; padding: 0;">
                 {% if current_page > 1 %}
-                <li><a class="pagination-link" href="?page={{ current_page|add:'-1' }}&time_range={{ selected_time_range }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">« Previous</a></li>
+                <li><a class="pagination-link" href="?page={{ current_page|add:'-1' }}&time_range={{ selected_time_range }}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">« Previous</a></li>
                 {% else %}
                 <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">« Previous</span></li>
                 {% endif %}
@@ -114,12 +116,12 @@
                     {% if page_num == current_page %}
                         <li><span class="pagination-link active" style="padding: 6px 12px; border: 1px solid #007bff; background: #007bff; color: #fff; border-radius: 4px;">{{ page_num }}</span></li>
                     {% else %}
-                        <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ page_num }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a></li>
+                        <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ page_num }}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a></li>
                     {% endif %}
                 {% endfor %}
 
                 {% if current_page < total_pages %}
-                <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ current_page|add:'1' }}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">Next »</a></li>
+                <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ current_page|add:'1' }}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">Next »</a></li>
                 {% else %}
                 <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">Next »</span></li>
                 {% endif %}
@@ -128,11 +130,96 @@
     </div>
     {% endif %}
 </div>
+    </main>
+
+    <aside class="sidebar-right">
+        <div class="sidebar-section">
+            <div class="sidebar-header non-collapsible">
+                <span>Summaries</span>
+                <i class="fas fa-caret-down"></i>
+            </div>
+        </div>
+
+        {% comment %} Include the new Filters sidebar component {% endcomment %}
+        <div class="sidebar-section">
+            {% include 'dashboard/_filters_sidebar_grouped.html' %}
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-header collapsible-header" data-target="log-analytics-content">
+                <span>Log Analytics</span>
+                <i class="fas fa-plus"></i>
+            </div>
+            <div id="log-analytics-content" class="collapsible-content">
+                <a href="#">WAF Tags</a>
+                <a href="#" id="wafRulesLink">WAF Rules</a>
+                <a href="#">WAF Groups</a>
+                <a href="#">WAF Latency</a>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-header collapsible-header" data-target="client-analytics-content">
+                <span>Client Analytics</span>
+                <i class="fas fa-plus"></i>
+            </div>
+            <div id="client-analytics-content" class="collapsible-content">
+                <a href="#">Browser</a>
+                <a href="#">Client OS</a>
+                <a href="#">Device</a>
+                <a href="#">IP Address</a>
+                <a href="#">Location</a>
+                <a href="#">End to End</a>
+                <a href="#">User ID</a>
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="sidebar-header collapsible-header" data-target="lb-analytics-content">
+                <span>Load Balancer Analytics</span>
+                <i class="fas fa-plus"></i>
+            </div>
+            <div id="lb-analytics-content" class="collapsible-content">
+                <a href="#">VS IP Address</a>
+                <a href="#">Server IP Address</a>
+            </div>
+        </div>
+    </aside>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Collapsible header functionality for filters
+    const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+    console.log('Found collapsible headers:', collapsibleHeaders.length);
+    
+    collapsibleHeaders.forEach(header => {
+        header.addEventListener('click', function () {
+            const targetId = this.dataset.target;
+            console.log('Clicked header with target:', targetId);
+            const content = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            if (content) {
+                // Toggle the open class instead of directly manipulating display
+                content.classList.toggle('open');
+                
+                if (content.classList.contains('open')) {
+                    if (icon) {
+                        icon.classList.remove('fa-plus');
+                        icon.classList.add('fa-minus');
+                    }
+                } else {
+                    if (icon) {
+                        icon.classList.remove('fa-minus');
+                        icon.classList.add('fa-plus');
+                    }
+                }
+            }
+        });
+    });
     const filterSelect = document.getElementById('time-filter');
     const customRangeContainer = document.getElementById('custom-date-range'); // Assuming this ID is in filter_dropdown.html
     const timeFilterForm = document.getElementById('time-filter-form'); // Assuming this ID is in filter_dropdown.html

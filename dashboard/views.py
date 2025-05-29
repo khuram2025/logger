@@ -391,33 +391,6 @@ def clickhouse_logs_view(request):
             start = max(end - 4, 1)
         page_range = range(start, end + 1)
 
-    context = {
-        'logs_for_display': processed_logs_for_template, # For Django template to render table rows
-        'logs_json_for_expansion': json.dumps(processed_logs_for_template, default=str), # For JS `logData`
-        'viewer_ip': viewer_ip, # The IP of the person viewing the page
-        'current_page': page,
-        'total_pages': total_pages,
-        'total_logs_count': total_logs_count,
-        
-        # Example: Parsing User Agent for OS and Browser
-        'sourceInterfaceOS': "N/A",         # Not available in DB
-        'browser': "N/A",                   # Not available in DB
-        'device': "N/A",                    # Not available in DB
-
-        'startTime': ts_obj.strftime("%Y-%m-%d, %H:%M:%S") if hasattr(ts_obj, 'strftime') else "N/A", # Format for `log.startTime`
-
-        'requestID': "N/A",                 # For `log.requestID` (Destination Interface) - TODO: Fetch or derive
-        'endTime': "N/A",                   # TODO: Calculate or fetch for `log.endTime`
-        'serviceEngine': "N/A",             # TODO: Fetch or derive for `log.serviceEngine`
-        'persistenceSessionID': "N/A",      # TODO: Fetch or derive for `log.persistenceSessionID`
-        'significance': "N/A",              # Not available in DB
-        'serverIPDetail': "N/A",            # TODO: Fetch or derive for `log.serverIPDetail`
-        'resContentType': "N/A",            # TODO: Fetch or derive for `log.resContentType`
-        'resOtherDetails': "N/A",           # TODO: Fetch or derive for `log.resOther`
-        'tl': "|||", # If this is still needed for the table
-    }
-    processed_logs_for_template.append(log_entry)
-
     # Pagination range logic for up to 5 pages
     if total_pages <= 5:
         page_range = range(1, total_pages + 1)
@@ -478,13 +451,64 @@ def grouped_logs_view(request):
     sort_order = request.GET.get('sort_order', 'desc')   # Default order: desc
     is_reverse_sort = sort_order == 'desc'
 
+    # Get filter parameters
+    srcip_filter = request.GET.get('srcip', '').strip()
+    dstip_filter = request.GET.get('dstip', '').strip()
+    srcport_filter = request.GET.get('srcport', '').strip()
+    dstport_filter = request.GET.get('dstport', '').strip()
+    action_filter = request.GET.get('action', '').strip()
+    devname_filter = request.GET.get('devname', '').strip()
+
+    # Build WHERE conditions
+    where_conditions = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"]
+    
+    if srcip_filter:
+        where_conditions.append(f"srcip = '{srcip_filter}'")
+    if dstip_filter:
+        where_conditions.append(f"dstip = '{dstip_filter}'")
+    if action_filter:
+        where_conditions.append(f"action = '{action_filter}'")
+    if devname_filter:
+        where_conditions.append(f"devicename = '{devname_filter}'")
+    
+    # Handle port filters with ranges
+    if srcport_filter:
+        if '-' in srcport_filter:
+            try:
+                start, end = srcport_filter.split('-')
+                where_conditions.append(f"srcport >= {int(start)} AND srcport <= {int(end)}")
+            except:
+                pass
+        elif ',' in srcport_filter:
+            ports = [p.strip() for p in srcport_filter.split(',') if p.strip().isdigit()]
+            if ports:
+                where_conditions.append(f"srcport IN ({','.join(ports)})")
+        elif srcport_filter.isdigit():
+            where_conditions.append(f"srcport = {srcport_filter}")
+    
+    if dstport_filter:
+        if '-' in dstport_filter:
+            try:
+                start, end = dstport_filter.split('-')
+                where_conditions.append(f"dstport >= {int(start)} AND dstport <= {int(end)}")
+            except:
+                pass
+        elif ',' in dstport_filter:
+            ports = [p.strip() for p in dstport_filter.split(',') if p.strip().isdigit()]
+            if ports:
+                where_conditions.append(f"dstport IN ({','.join(ports)})")
+        elif dstport_filter.isdigit():
+            where_conditions.append(f"dstport = {dstport_filter}")
+    
+    where_clause = " AND ".join(where_conditions)
+
     # Get total count of fine-grained groups for the selected time range
     total_grouped_logs_count_query = f"""
         SELECT count()
         FROM (
             SELECT srcip, dstip, dstport, action
             FROM fortigate_traffic
-            WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+            WHERE {where_clause}
             GROUP BY srcip, dstip, dstport, action
         )
     """
@@ -505,7 +529,7 @@ def grouped_logs_view(request):
             any(proto) as proto_val, 
             max(timestamp) as last_seen
         FROM fortigate_traffic
-        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+        WHERE {where_clause}
         GROUP BY srcip, dstip, dstport, action
         ORDER BY last_seen DESC
     """
@@ -611,6 +635,20 @@ def grouped_logs_view(request):
     selected_time_range_display = time_range.replace('_', ' ').title()
     page_range_for_template = get_pagination_range(page_obj.number, paginator.num_pages)
 
+    # Get available actions and devices for filters
+    available_actions = []
+    available_devices = []
+    try:
+        # Query for distinct actions
+        actions_result = client.execute("SELECT DISTINCT action FROM fortigate_traffic WHERE action != '' ORDER BY action")
+        available_actions = [row[0] for row in actions_result if row[0]]
+        
+        # Query for distinct device names
+        devices_result = client.execute("SELECT DISTINCT devicename FROM fortigate_traffic WHERE devicename != '' ORDER BY devicename")
+        available_devices = [row[0] for row in devices_result if row[0]]
+    except:
+        pass
+
     context = {
         'grouped_logs': page_obj, # Pass the Paginator page object
         'displayed_subnet_groups_count': len(page_obj.object_list),
@@ -623,6 +661,15 @@ def grouped_logs_view(request):
         'page_range': page_range_for_template,
         'sort_by': sort_by,
         'sort_order': sort_order,
-        'viewer_ip': request.META.get('REMOTE_ADDR')
+        'viewer_ip': request.META.get('REMOTE_ADDR'),
+        # Filter values for template
+        'srcip_filter': srcip_filter,
+        'dstip_filter': dstip_filter,
+        'srcport_filter': srcport_filter,
+        'dstport_filter': dstport_filter,
+        'action_filter': action_filter,
+        'devname_filter': devname_filter,
+        'available_actions': available_actions,
+        'available_devices': available_devices,
     }
     return render(request, 'dashboard/grouped_logs.html', context)

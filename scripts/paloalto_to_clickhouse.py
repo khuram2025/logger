@@ -89,6 +89,8 @@ def parse_line(line: str) -> dict:
     """
     Parse a PaloAlto firewall syslog line into a dict of all expected fields.
     Missing numeric fields default to 0; others to empty string.
+    
+    Returns None if the log entry is not a TRAFFIC log.
     """
     data = {}
     try:
@@ -117,6 +119,10 @@ def parse_line(line: str) -> dict:
                 log_data = parts[4]
                 # Split the CSV fields
                 fields = log_data.split(',')
+                
+                # Check if this is a TRAFFIC log entry (field index 3)
+                if len(fields) > 3 and fields[3] != 'TRAFFIC':
+                    return None  # Skip non-TRAFFIC logs
                 
                 # Extract timestamp (field 1)
                 if len(fields) > 1:
@@ -339,6 +345,9 @@ def main():
         for line in batch:
             try:
                 rec = parse_line(line)
+                # Skip if rec is None (not a TRAFFIC log)
+                if rec is None:
+                    continue
                 row = [rec[field] for field in ALL_FIELDS]
                 rows.append(row)
             except Exception as e:

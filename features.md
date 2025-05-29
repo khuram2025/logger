@@ -14,6 +14,8 @@ edl :) USE network_logs;
 
 
 USE network_logs
+DESCRIBE TABLE fortigate_traffic
+DESCRIBE TABLE threat_logs
 
 Query id: 7d2b8dc9-0a12-4d46-afef-2e758259d3f0
 

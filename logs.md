@@ -51,3 +51,8 @@ if ($fromhost-ip == '192.168.100.221') then {
 
 echo -e "\n-- Current FortiGate Log File --"; stat /var/log/fortigate.log; echo -e "\n-- Rotated Log Files --"; ls -lh /var/log/fortigate.log* | sort -V
 
+
+tail -n 5 /var/log/fortigate.log
+
+tail -n 5 /var/log/paloalto-1004.log
+
