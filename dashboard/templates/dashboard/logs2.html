@@ -10,30 +10,34 @@
 {% endblock %}
 
 {% block content %}
-            <div class="logs-content-header">
-                <div class="controls-bar logs-controls-row">
-                    <div class="logs-controls-group">
-                        <div class="search-container">
-                            <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Search" />
-                        </div>
-                        <div class="log-summary">
-                            Total: <span id="total-logs">{{ total_logs_count|default:"0" }}</span> Logs 
-                            {% if total_logs_count|default:0 > 1000 %}(Log Throttling may be ON){% endif %}
-                        </div>
-                        <div class="date-range-display">
-                            Aug 13, 2019 10:06 AM - Aug 20, 2019 10:06 AM <!-- TODO: Make this dynamic -->
-                        </div>
-                        <div class="action-buttons">
-                            <button class="icon-text-button"><i class="fas fa-sync-alt"></i></button>
-                            <button class="icon-text-button"><i class="fas fa-search-plus"></i></button>
-                            <button class="icon-text-button"><i class="fas fa-download"></i> Export</button>
-                        </div>
+<div class="logs-page-container">
+    <div class="logs-main-content">
+        <div class="logs-content-header">
+            <div class="controls-bar logs-controls-row">
+                <div class="logs-controls-group">
+                    <div class="search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search logs..." id="globalSearch" />
                     </div>
-                    <div class="logs-controls-filter">
-                        {% include 'dashboard/partials/filter_dropdown.html' %}
+                    <div class="log-summary">
+                        Total: <span id="total-logs">{{ total_logs_count|default:"0" }}</span> Logs 
+                        {% if total_logs_count|default:0 > 1000 %}(Log Throttling may be ON){% endif %}
+                    </div>
+                    <div class="date-range-display">
+                        {% if time_range %}
+                            {{ time_range|title }}
+                        {% else %}
+                            Last Hour
+                        {% endif %}
+                    </div>
+                    <div class="action-buttons">
+                        <button class="icon-text-button" onclick="refreshLogs()"><i class="fas fa-sync-alt"></i></button>
+                        <button class="icon-text-button" onclick="toggleFilters()"><i class="fas fa-filter"></i></button>
+                        <button class="icon-text-button"><i class="fas fa-download"></i> Export</button>
                     </div>
                 </div>
+            </div>
+        </div>
                 <style>
                 .status-label {
                     padding: 0.2em 0.6em;
@@ -87,6 +91,284 @@
                     .logs-controls-filter {
                         justify-content: flex-start;
                     }
+                }
+
+                /* Professional Filter Sidebar Styles */
+                .logs-page-container {
+                    display: flex;
+                    gap: 20px;
+                    max-width: 100%;
+                    overflow: visible;
+                    width: 100%;
+                }
+
+                .logs-main-content {
+                    flex: 1;
+                    min-width: 0;
+                    width: calc(100% - 300px);
+                    overflow-x: auto;
+                }
+
+                .logs-filter-sidebar {
+                    width: 280px;
+                    min-width: 280px;
+                    background: #fff;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                    border: 1px solid #e1e5e9;
+                    height: fit-content;
+                    max-height: calc(100vh - 200px);
+                    overflow-y: auto;
+                    position: sticky;
+                    top: 20px;
+                    transition: all 0.3s ease;
+                    flex-shrink: 0;
+                    display: block;
+                    visibility: visible;
+                }
+
+                .logs-filter-sidebar.hidden {
+                    display: none;
+                }
+
+                .logs-main-content.sidebar-hidden {
+                    width: 100%;
+                }
+
+                .logs-table-container {
+                    width: 100%;
+                    overflow-x: auto;
+                }
+
+                .filter-sidebar-header {
+                    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                    padding: 12px 16px;
+                    border-bottom: 1px solid #dee2e6;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border-radius: 8px 8px 0 0;
+                }
+
+                .filter-sidebar-header h3 {
+                    margin: 0;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #495057;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .filter-sidebar-header h3 i {
+                    color: #667eea;
+                    font-size: 12px;
+                }
+
+                .clear-all-filters {
+                    background: none;
+                    border: 1px solid #dc3545;
+                    color: #dc3545;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 10px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+
+                .clear-all-filters:hover {
+                    background: #dc3545;
+                    color: white;
+                }
+
+                .filter-sections {
+                    padding: 0;
+                    max-height: calc(100vh - 340px);
+                    overflow-y: auto;
+                }
+
+                .filter-section {
+                    border-bottom: 1px solid #f1f3f4;
+                }
+
+                .filter-section:last-child {
+                    border-bottom: none;
+                }
+
+                .filter-section-header {
+                    padding: 10px 16px;
+                    background: #fafbfc;
+                    border-bottom: 1px solid #e9ecef;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #495057;
+                    cursor: pointer;
+                    transition: background-color 0.2s ease;
+                }
+
+                .filter-section-header:hover {
+                    background: #f1f3f4;
+                }
+
+                .filter-section-header i {
+                    color: #667eea;
+                    font-size: 11px;
+                    width: 12px;
+                }
+
+                .filter-section-content {
+                    padding: 12px 16px;
+                }
+
+                .filter-group {
+                    margin-bottom: 12px;
+                }
+
+                .filter-group:last-child {
+                    margin-bottom: 0;
+                }
+
+                .filter-group label {
+                    display: block;
+                    font-size: 11px;
+                    font-weight: 500;
+                    color: #6c757d;
+                    margin-bottom: 4px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                }
+
+                .filter-input {
+                    width: 100%;
+                    padding: 6px 8px;
+                    font-size: 11px;
+                    border: 1px solid #ced4da;
+                    border-radius: 4px;
+                    background: #fff;
+                    color: #495057;
+                    transition: all 0.2s ease;
+                    box-sizing: border-box;
+                }
+
+                .filter-input:focus {
+                    outline: none;
+                    border-color: #667eea;
+                    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
+                }
+
+                .filter-input::placeholder {
+                    color: #adb5bd;
+                    font-size: 10px;
+                }
+
+                .filter-input[type="number"] {
+                    -moz-appearance: textfield;
+                }
+
+                .filter-input[type="number"]::-webkit-outer-spin-button,
+                .filter-input[type="number"]::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+
+                .filter-actions {
+                    padding: 12px 16px;
+                    border-top: 1px solid #dee2e6;
+                    background: #fafbfc;
+                    display: flex;
+                    gap: 8px;
+                    border-radius: 0 0 8px 8px;
+                }
+
+                .apply-filters-btn, .reset-filters-btn {
+                    flex: 1;
+                    padding: 8px 12px;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 11px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 4px;
+                }
+
+                .apply-filters-btn {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                }
+
+                .apply-filters-btn:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                }
+
+                .reset-filters-btn {
+                    background: #fff;
+                    color: #6c757d;
+                    border: 1px solid #ced4da;
+                }
+
+                .reset-filters-btn:hover {
+                    background: #f8f9fa;
+                    color: #495057;
+                }
+
+                /* Responsive Design */
+                @media (max-width: 768px) {
+                    .logs-page-container {
+                        flex-direction: column;
+                    }
+
+                    .logs-main-content {
+                        width: 100% !important;
+                    }
+
+                    .logs-filter-sidebar {
+                        width: 100%;
+                        min-width: 100%;
+                        position: relative;
+                        top: 0;
+                        max-height: 400px;
+                        order: -1;
+                        margin-bottom: 20px;
+                    }
+
+                    .logs-filter-sidebar.hidden {
+                        display: none;
+                    }
+                }
+
+
+                /* Scrollbar Styling */
+                .filter-sections::-webkit-scrollbar,
+                .logs-filter-sidebar::-webkit-scrollbar {
+                    width: 4px;
+                }
+
+                .filter-sections::-webkit-scrollbar-track,
+                .logs-filter-sidebar::-webkit-scrollbar-track {
+                    background: #f1f1f1;
+                    border-radius: 2px;
+                }
+
+                .filter-sections::-webkit-scrollbar-thumb,
+                .logs-filter-sidebar::-webkit-scrollbar-thumb {
+                    background: #c1c1c1;
+                    border-radius: 2px;
+                }
+
+                .filter-sections::-webkit-scrollbar-thumb:hover,
+                .logs-filter-sidebar::-webkit-scrollbar-thumb:hover {
+                    background: #a8a8a8;
                 }
                 </style>
 
@@ -189,10 +471,382 @@
                     </nav>
                 </div>
                 {% endif %}
+            </div>
+        </div>
+        
+        <!-- Professional Filter Sidebar -->
+        <div class="logs-filter-sidebar" id="filterSidebar">
+            <div class="filter-sidebar-header">
+                <h3><i class="fas fa-filter"></i> Filters</h3>
+                <button class="clear-all-filters" onclick="clearAllFilters()">
+                    <i class="fas fa-times"></i> Clear All
+                </button>
+            </div>
+            
+            <div class="filter-sections">
+                <!-- Time Range Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-clock"></i>
+                        <span>Time Range</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <select class="filter-input" name="time_range" id="timeRangeFilter">
+                            <option value="last_hour" {% if time_range == 'last_hour' %}selected{% endif %}>Last Hour</option>
+                            <option value="last_6_hours" {% if time_range == 'last_6_hours' %}selected{% endif %}>Last 6 Hours</option>
+                            <option value="last_24_hours" {% if time_range == 'last_24_hours' %}selected{% endif %}>Last 24 Hours</option>
+                            <option value="last_7_days" {% if time_range == 'last_7_days' %}selected{% endif %}>Last 7 Days</option>
+                            <option value="last_30_days" {% if time_range == 'last_30_days' %}selected{% endif %}>Last 30 Days</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- IP Address Filters -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-network-wired"></i>
+                        <span>IP Addresses</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <div class="filter-group">
+                            <label>Source IP</label>
+                            <input type="text" class="filter-input" name="srcip" 
+                                   placeholder="e.g., 192.168.1.1" 
+                                   value="{{ srcip_filter|default:'' }}">
+                        </div>
+                        <div class="filter-group">
+                            <label>Destination IP</label>
+                            <input type="text" class="filter-input" name="dstip" 
+                                   placeholder="e.g., 10.0.0.1" 
+                                   value="{{ dstip_filter|default:'' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Port Filters -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-plug"></i>
+                        <span>Ports</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <div class="filter-group">
+                            <label>Source Port</label>
+                            <input type="number" class="filter-input" name="srcport" 
+                                   placeholder="1-65535" min="1" max="65535"
+                                   value="{{ srcport_filter|default:'' }}">
+                        </div>
+                        <div class="filter-group">
+                            <label>Destination Port</label>
+                            <input type="number" class="filter-input" name="dstport" 
+                                   placeholder="1-65535" min="1" max="65535"
+                                   value="{{ dstport_filter|default:'' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Action</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <select class="filter-input" name="action" id="actionFilter">
+                            <option value="">All Actions</option>
+                            <option value="accept" {% if action_filter == 'accept' %}selected{% endif %}>Accept</option>
+                            <option value="allow" {% if action_filter == 'allow' %}selected{% endif %}>Allow</option>
+                            <option value="deny" {% if action_filter == 'deny' %}selected{% endif %}>Deny</option>
+                            <option value="block" {% if action_filter == 'block' %}selected{% endif %}>Block</option>
+                            <option value="drop" {% if action_filter == 'drop' %}selected{% endif %}>Drop</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Protocol Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Protocol</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <select class="filter-input" name="protocol" id="protocolFilter">
+                            <option value="">All Protocols</option>
+                            <option value="TCP" {% if protocol_filter == 'TCP' %}selected{% endif %}>TCP</option>
+                            <option value="UDP" {% if protocol_filter == 'UDP' %}selected{% endif %}>UDP</option>
+                            <option value="ICMP" {% if protocol_filter == 'ICMP' %}selected{% endif %}>ICMP</option>
+                            <option value="GRE" {% if protocol_filter == 'GRE' %}selected{% endif %}>GRE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Device Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-server"></i>
+                        <span>Device</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <select class="filter-input" name="devname" id="deviceFilter">
+                            <option value="">All Devices</option>
+                            {% for device in available_devices %}
+                            <option value="{{ device }}" {% if devname_filter == device %}selected{% endif %}>{{ device }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Application Category Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-tags"></i>
+                        <span>App Category</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <input type="text" class="filter-input" name="appcategory" 
+                               placeholder="e.g., Web-browsing" 
+                               value="{{ appcategory_filter|default:'' }}">
+                    </div>
+                </div>
+
+                <!-- Hostname Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-globe"></i>
+                        <span>Hostname</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <input type="text" class="filter-input" name="hostname" 
+                               placeholder="e.g., google.com" 
+                               value="{{ hostname_filter|default:'' }}">
+                    </div>
+                </div>
+
+                <!-- Username Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-user"></i>
+                        <span>Username</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <input type="text" class="filter-input" name="username" 
+                               placeholder="Enter username" 
+                               value="{{ username_filter|default:'' }}">
+                    </div>
+                </div>
+
+                <!-- Country Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <span>Destination Country</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <input type="text" class="filter-input" name="dstcountry" 
+                               placeholder="e.g., US, CN, GB" 
+                               value="{{ dstcountry_filter|default:'' }}">
+                    </div>
+                </div>
+
+                <!-- Byte Range Filters -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Byte Range</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <div class="filter-group">
+                            <label>Min Bytes</label>
+                            <input type="number" class="filter-input" name="min_bytes" 
+                                   placeholder="0" min="0" value="{{ min_bytes_filter|default:'' }}">
+                        </div>
+                        <div class="filter-group">
+                            <label>Max Bytes</label>
+                            <input type="number" class="filter-input" name="max_bytes" 
+                                   placeholder="1000000" min="0" value="{{ max_bytes_filter|default:'' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Duration Range Filters -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-stopwatch"></i>
+                        <span>Duration Range</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <div class="filter-group">
+                            <label>Min Duration (ms)</label>
+                            <input type="number" class="filter-input" name="min_duration" 
+                                   placeholder="0" min="0" value="{{ min_duration_filter|default:'' }}">
+                        </div>
+                        <div class="filter-group">
+                            <label>Max Duration (ms)</label>
+                            <input type="number" class="filter-input" name="max_duration" 
+                                   placeholder="10000" min="0" value="{{ max_duration_filter|default:'' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Actions -->
+            <div class="filter-actions">
+                <button class="apply-filters-btn" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> Apply Filters
+                </button>
+                <button class="reset-filters-btn" onclick="resetFilters()">
+                    <i class="fas fa-undo"></i> Reset
+                </button>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
+// Filter Sidebar Functionality
+function toggleFilters() {
+    const sidebar = document.getElementById('filterSidebar');
+    const mainContent = document.querySelector('.logs-main-content');
+    
+    sidebar.classList.toggle('hidden');
+    mainContent.classList.toggle('sidebar-hidden');
+}
+
+function applyFilters() {
+    const form = document.createElement('form');
+    form.method = 'GET';
+    form.action = window.location.pathname;
+
+    // Collect all filter values
+    const filterInputs = document.querySelectorAll('.filter-input');
+    filterInputs.forEach(input => {
+        if (input.value.trim()) {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = input.name;
+            hiddenInput.value = input.value.trim();
+            form.appendChild(hiddenInput);
+        }
+    });
+
+    // Preserve current page if exists
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentPage = urlParams.get('page');
+    if (currentPage && currentPage !== '1') {
+        const pageInput = document.createElement('input');
+        pageInput.type = 'hidden';
+        pageInput.name = 'page';
+        pageInput.value = '1'; // Reset to first page when filtering
+        form.appendChild(pageInput);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function resetFilters() {
+    // Clear all filter inputs
+    const filterInputs = document.querySelectorAll('.filter-input');
+    filterInputs.forEach(input => {
+        if (input.type === 'select-one') {
+            input.selectedIndex = 0;
+        } else {
+            input.value = '';
+        }
+    });
+    
+    // Redirect to clean URL
+    window.location.href = window.location.pathname;
+}
+
+function clearAllFilters() {
+    if (confirm('Are you sure you want to clear all filters?')) {
+        resetFilters();
+    }
+}
+
+function refreshLogs() {
+    window.location.reload();
+}
+
+// Global search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const globalSearch = document.getElementById('globalSearch');
+    if (globalSearch) {
+        globalSearch.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const searchTerm = this.value.trim();
+                if (searchTerm) {
+                    // Add search term to URL and reload
+                    const url = new URL(window.location);
+                    url.searchParams.set('search', searchTerm);
+                    window.location.href = url.toString();
+                } else {
+                    // Remove search parameter if empty
+                    const url = new URL(window.location);
+                    url.searchParams.delete('search');
+                    window.location.href = url.toString();
+                }
+            }
+        });
+        
+        // Set current search value if exists
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentSearch = urlParams.get('search');
+        if (currentSearch) {
+            globalSearch.value = currentSearch;
+        }
+    }
+
+    // Initialize filter sidebar based on screen size
+    const sidebar = document.getElementById('filterSidebar');
+    const mainContent = document.querySelector('.logs-main-content');
+    
+    console.log('Sidebar element:', sidebar);
+    console.log('Main content element:', mainContent);
+    console.log('Window width:', window.innerWidth);
+    
+    // Always show sidebar by default on desktop, only hide on mobile
+    if (window.innerWidth < 768) {
+        console.log('Hiding sidebar for mobile');
+        sidebar.classList.add('hidden');
+        mainContent.classList.add('sidebar-hidden');
+    } else {
+        // Ensure sidebar is visible on desktop
+        console.log('Showing sidebar for desktop');
+        sidebar.classList.remove('hidden');
+        mainContent.classList.remove('sidebar-hidden');
+    }
+
+    // Add event listeners for filter inputs (real-time filtering for some fields)
+    const filterInputs = document.querySelectorAll('.filter-input');
+    filterInputs.forEach(input => {
+        if (input.type === 'select-one') {
+            input.addEventListener('change', function() {
+                // Auto-apply for select fields
+                if (this.name === 'time_range') {
+                    applyFilters();
+                }
+            });
+        }
+    });
+});
+
+// Responsive filter sidebar handling
+window.addEventListener('resize', function() {
+    const sidebar = document.getElementById('filterSidebar');
+    const mainContent = document.querySelector('.logs-main-content');
+    
+    if (window.innerWidth >= 768) {
+        sidebar.classList.remove('hidden');
+        mainContent.classList.remove('sidebar-hidden');
+    } else {
+        sidebar.classList.add('hidden');
+        mainContent.classList.add('sidebar-hidden');
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function () {
     const headers = document.querySelectorAll('.sidebar-header.collapsible-header'); // More specific selector
     console.log('Found collapsible headers:', headers.length); 

@@ -350,6 +350,14 @@ def clickhouse_logs_view(request):
     username_filter = request.GET.get('username', '').strip()
     dstcountry_filter = request.GET.get('dstcountry', '').strip()
     
+    # New filter parameters
+    protocol_filter = request.GET.get('protocol', '').strip()
+    search_filter = request.GET.get('search', '').strip()
+    min_bytes_filter = request.GET.get('min_bytes', '').strip()
+    max_bytes_filter = request.GET.get('max_bytes', '').strip()
+    min_duration_filter = request.GET.get('min_duration', '').strip()
+    max_duration_filter = request.GET.get('max_duration', '').strip()
+    
     # Build WHERE clauses based on filter inputs
     where_clauses = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"] 
     
@@ -383,6 +391,38 @@ def clickhouse_logs_view(request):
         where_clauses.append(f"username = '{username_filter}'")
     if dstcountry_filter:
         where_clauses.append(f"dstcountry = '{dstcountry_filter}'")
+    
+    # New filter clauses
+    if protocol_filter:
+        # Map protocol names to numbers
+        protocol_map = {'TCP': 6, 'UDP': 17, 'ICMP': 1, 'GRE': 47}
+        if protocol_filter.upper() in protocol_map:
+            where_clauses.append(f"proto = {protocol_map[protocol_filter.upper()]}")
+        elif protocol_filter.isdigit():
+            where_clauses.append(f"proto = {protocol_filter}")
+    
+    if search_filter:
+        # Search across multiple fields (simple text search)
+        search_conditions = [
+            f"srcip LIKE '%{search_filter}%'",
+            f"dstip LIKE '%{search_filter}%'",
+            f"hostname LIKE '%{search_filter}%'",
+            f"username LIKE '%{search_filter}%'",
+            f"appcategory LIKE '%{search_filter}%'"
+        ]
+        where_clauses.append(f"({' OR '.join(search_conditions)})")
+    
+    if min_bytes_filter and min_bytes_filter.isdigit():
+        where_clauses.append(f"(sentbyte + rcvdbyte) >= {min_bytes_filter}")
+    
+    if max_bytes_filter and max_bytes_filter.isdigit():
+        where_clauses.append(f"(sentbyte + rcvdbyte) <= {max_bytes_filter}")
+    
+    if min_duration_filter and min_duration_filter.isdigit():
+        where_clauses.append(f"duration >= {min_duration_filter}")
+    
+    if max_duration_filter and max_duration_filter.isdigit():
+        where_clauses.append(f"duration <= {max_duration_filter}")
     
     # Combine all WHERE clauses
     where_clause = ' AND '.join(where_clauses)
@@ -593,6 +633,13 @@ def clickhouse_logs_view(request):
         'hostname_filter': hostname_filter,
         'username_filter': username_filter,
         'dstcountry_filter': dstcountry_filter,
+        'protocol_filter': protocol_filter,
+        'search_filter': search_filter,
+        'min_bytes_filter': min_bytes_filter,
+        'max_bytes_filter': max_bytes_filter,
+        'min_duration_filter': min_duration_filter,
+        'max_duration_filter': max_duration_filter,
+        'time_range': time_range,
     }
     return render(request, 'dashboard/logs2.html', context)
 
