@@ -14,11 +14,10 @@
 <body>
     {% include 'dashboard/header.html' %}
     {% block subheader %}{% endblock %}
-    <div class="page-container" style="display:flex;flex-direction:row;">
-        <main class="main-content-area" style="flex:1 1 0;">
+    <div class="page-container">
+        <main class="main-content-area">
             {% block content %}{% endblock %}
         </main>
-        {% include 'dashboard/partials/sidebar.html' %}
     </div>
     
     <script>

@@ -4,6 +4,8 @@
         <a href="{% url 'top_summary' %}" class="tab-link {% if active_tab == 'top_summary' %}active{% endif %}">Top Summary</a>
         <a href="{% url 'clickhouse_logs' %}" class="tab-link {% if active_tab == 'logs' %}active{% endif %}">Logs</a>
         <a href="{% url 'grouped_logs' %}" class="tab-link {% if active_tab == 'grouped_logs' %}active{% endif %}">Grouped Logs</a>
+        <a href="{% url 'system_config' %}" class="tab-link {% if active_tab == 'system-config' %}active{% endif %}">System Config</a>
+        <a href="{% url 'log_sources' %}" class="tab-link {% if active_tab == 'log_sources' %}active{% endif %}">Log Sources</a>
         <a href="#" class="tab-link {% if active_tab == 'health' %}active{% endif %}">Health</a>
         
     </div>

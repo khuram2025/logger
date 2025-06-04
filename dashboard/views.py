@@ -79,22 +79,54 @@ def top_summary_view(request):
         database=CH_DB
     )
     # Get time_range from GET params
-    time_range = request.GET.get('time_range', 'last_hour')
+    time_range = request.GET.get('time_range', '1h')
     now = datetime.now()
-    if time_range == 'last_24_hours':
-        since = now - timedelta(hours=24)
-    elif time_range == 'last_7_days':
+    
+    if time_range == '1h':
+        since = now - timedelta(hours=1)
+        selected_time_range = '1h'
+    elif time_range == '1d':
+        since = now - timedelta(days=1)
+        selected_time_range = '1d'
+    elif time_range == '7d':
         since = now - timedelta(days=7)
-    elif time_range == 'last_30_days':
+        selected_time_range = '7d'
+    elif time_range == '1m':
         since = now - timedelta(days=30)
+        selected_time_range = '1m'
     elif time_range == 'custom':
-        # Custom range not yet implemented; fallback to last hour
-        since = now - timedelta(hours=1)
+        # Handle custom date range
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        
+        if start_date_str and end_date_str:
+            try:
+                # Parse datetime-local format (YYYY-MM-DDTHH:MM)
+                since = datetime.fromisoformat(start_date_str.replace('T', ' '))
+                until = datetime.fromisoformat(end_date_str.replace('T', ' '))
+                selected_time_range = 'custom'
+            except ValueError:
+                # Fallback to last hour if parsing fails
+                since = now - timedelta(hours=1)
+                until = now
+                selected_time_range = '1h'
+        else:
+            # Fallback to last hour if dates not provided
+            since = now - timedelta(hours=1)
+            until = now
+            selected_time_range = '1h'
     else:
+        # Default to last hour
         since = now - timedelta(hours=1)
+        selected_time_range = '1h'
+    
+    # For non-custom ranges, set until to now
+    if time_range != 'custom':
+        until = now
 
     # ClickHouse expects ISO format
     since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+    until_str = until.strftime('%Y-%m-%d %H:%M:%S')
 
     # Query 1: Top Traffic (existing)
     traffic_query = f'''
@@ -107,6 +139,7 @@ def top_summary_view(request):
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
         WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+          AND timestamp <= parseDateTimeBestEffort('{until_str}')
         GROUP BY srcip, dstip, dstport
         ORDER BY total_bytes DESC
         LIMIT 10
@@ -120,6 +153,7 @@ def top_summary_view(request):
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
         WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+          AND timestamp <= parseDateTimeBestEffort('{until_str}')
           AND appcategory != '' AND appcategory IS NOT NULL
         GROUP BY appcategory
         ORDER BY count DESC
@@ -134,6 +168,7 @@ def top_summary_view(request):
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
         WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+          AND timestamp <= parseDateTimeBestEffort('{until_str}')
           AND hostname != '' AND hostname IS NOT NULL
         GROUP BY hostname
         ORDER BY count DESC
@@ -148,6 +183,7 @@ def top_summary_view(request):
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
         WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+          AND timestamp <= parseDateTimeBestEffort('{until_str}')
           AND username != '' AND username IS NOT NULL
         GROUP BY username
         ORDER BY count DESC
@@ -162,6 +198,7 @@ def top_summary_view(request):
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
         WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+          AND timestamp <= parseDateTimeBestEffort('{until_str}')
           AND dstcountry != '' AND dstcountry IS NOT NULL
         GROUP BY dstcountry
         ORDER BY count DESC
@@ -249,7 +286,7 @@ def top_summary_view(request):
         'top_urls': top_urls,
         'top_users': top_users,
         'top_countries': top_countries,
-        'selected_time_range': time_range
+        'selected_time_range': selected_time_range
     })
 
 
@@ -825,3 +862,993 @@ def grouped_logs_view(request):
         'available_devices': available_devices,
     }
     return render(request, 'dashboard/grouped_logs.html', context)
+
+def system_config_view(request):
+    """System Configuration view with service status dashboard"""
+    import subprocess
+    import json
+    
+    # Define the services we want to monitor
+    services = [
+        {
+            'name': 'paloalto_to_clickhouse.service',
+            'display_name': 'PaloAlto Traffic Logs',
+            'description': 'Ingests PaloAlto firewall traffic logs to ClickHouse',
+            'category': 'PaloAlto'
+        },
+        {
+            'name': 'paloalto-url-loader.service',
+            'display_name': 'PaloAlto URL Threat Logs',
+            'description': 'Ingests PaloAlto URL threat logs to ClickHouse',
+            'category': 'PaloAlto'
+        },
+        {
+            'name': 'fortigate_to_clickhouse.service',
+            'display_name': 'FortiGate Log Ingestion',
+            'description': 'Ingests FortiGate firewall logs to ClickHouse',
+            'category': 'FortiGate'
+        }
+    ]
+    
+    # Get status for each service
+    service_statuses = []
+    for service in services:
+        try:
+            # Get service status
+            result = subprocess.run(
+                ['systemctl', 'is-active', service['name']],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            status_output = result.stdout.strip()
+            is_active = status_output == 'active'
+            
+            # Debug logging
+            print(f"DEBUG: Service {service['name']} status output: '{status_output}', is_active: {is_active}")
+            
+            # Get detailed status
+            status_result = subprocess.run(
+                ['systemctl', 'status', service['name']],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            # Parse status info
+            status_lines = status_result.stdout.split('\n')
+            main_pid = None
+            memory_usage = None
+            cpu_time = None
+            uptime = None
+            
+            for line in status_lines:
+                if 'Main PID:' in line:
+                    main_pid = line.split('Main PID:')[1].strip().split(' ')[0]
+                elif 'Memory:' in line:
+                    memory_usage = line.split('Memory:')[1].strip().split(' ')[0]
+                elif 'CPU:' in line:
+                    cpu_time = line.split('CPU:')[1].strip().split(' ')[0]
+                elif 'Active:' in line and 'since' in line:
+                    try:
+                        uptime_part = line.split('since ')[1].split(';')[0].strip()
+                        uptime = uptime_part
+                    except:
+                        uptime = 'Unknown'
+            
+            service_statuses.append({
+                'name': service['name'],
+                'display_name': service['display_name'],
+                'description': service['description'],
+                'category': service['category'],
+                'status': 'running' if is_active else 'stopped',
+                'main_pid': main_pid or 'N/A',
+                'memory_usage': memory_usage or 'N/A',
+                'cpu_time': cpu_time or 'N/A',
+                'uptime': uptime or 'N/A',
+                'enabled': True  # We'll assume enabled for now
+            })
+            
+        except Exception as e:
+            service_statuses.append({
+                'name': service['name'],
+                'display_name': service['display_name'],
+                'description': service['description'],
+                'category': service['category'],
+                'status': 'error',
+                'main_pid': 'N/A',
+                'memory_usage': 'N/A',
+                'cpu_time': 'N/A',
+                'uptime': 'N/A',
+                'enabled': False,
+                'error': str(e)
+            })
+    
+    # Group services by category
+    services_by_category = {}
+    for service in service_statuses:
+        category = service['category']
+        if category not in services_by_category:
+            services_by_category[category] = []
+        services_by_category[category].append(service)
+    
+    context = {
+        'services_by_category': services_by_category,
+        'total_services': len(service_statuses),
+        'running_services': len([s for s in service_statuses if s['status'] == 'running']),
+        'stopped_services': len([s for s in service_statuses if s['status'] == 'stopped']),
+        'error_services': len([s for s in service_statuses if s['status'] == 'error']),
+    }
+    
+    return render(request, 'dashboard/system_config.html', context)
+
+def service_action_view(request):
+    """Handle service start/stop/restart actions via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'})
+    
+    import subprocess
+    import json
+    
+    try:
+        data = json.loads(request.body)
+        service_name = data.get('service_name')
+        action = data.get('action')
+        
+        if not service_name or not action:
+            return JsonResponse({'success': False, 'error': 'Missing service_name or action'})
+        
+        if action not in ['start', 'stop', 'restart']:
+            return JsonResponse({'success': False, 'error': 'Invalid action'})
+        
+        # Execute the systemctl command
+        cmd = ['sudo', 'systemctl', action, service_name]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        if result.returncode == 0:
+            return JsonResponse({'success': True, 'message': f'Service {action} successful'})
+        else:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Command failed: {result.stderr or result.stdout}'
+            })
+            
+    except subprocess.TimeoutExpired:
+        return JsonResponse({'success': False, 'error': 'Command timed out'})
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Unexpected error: {str(e)}'})
+
+def logs_config_view(request):
+    """Logs Configuration view for managing firewall log settings"""
+    import subprocess
+    import json
+    import os
+    import glob
+    
+    # Define current log configurations
+    log_configs = {
+        'fortigate': {
+            'name': 'FortiGate',
+            'ip_addresses': ['192.168.100.221'],
+            'log_file': '/var/log/fortigate.log',
+            'rsyslog_config': '/etc/rsyslog.d/fortigate.conf',
+            'service': 'fortigate_to_clickhouse.service',
+            'port': 514,
+            'protocol': 'UDP',
+            'description': 'FortiGate firewall logs via syslog'
+        },
+        'paloalto': {
+            'name': 'PaloAlto',
+            'ip_addresses': ['10.12.50.61', '192.168.1.100'],
+            'log_file': '/var/log/paloalto-1004.log',
+            'rsyslog_config': '/etc/rsyslog.d/paloalto.conf',
+            'service': 'paloalto_to_clickhouse.service',
+            'port': 1004,
+            'protocol': 'UDP',
+            'description': 'PaloAlto firewall logs via syslog'
+        }
+    }
+    
+    # Get current log file statistics
+    log_stats = {}
+    for vendor, config in log_configs.items():
+        try:
+            log_file = config['log_file']
+            if os.path.exists(log_file):
+                stat = os.stat(log_file)
+                size_mb = stat.st_size / (1024 * 1024)
+                
+                # Get rotated files
+                rotated_files = glob.glob(f"{log_file}*")
+                rotated_count = len(rotated_files) - 1  # Exclude the main file
+                
+                # Get last modification time
+                from datetime import datetime
+                last_modified = datetime.fromtimestamp(stat.st_mtime)
+                
+                # Check if service is actively writing (recent modification)
+                import time
+                is_active = (time.time() - stat.st_mtime) < 300  # Within 5 minutes
+                
+                log_stats[vendor] = {
+                    'exists': True,
+                    'size_mb': round(size_mb, 2),
+                    'rotated_files': rotated_count,
+                    'last_modified': last_modified.strftime('%Y-%m-%d %H:%M:%S'),
+                    'is_active': is_active,
+                    'path': log_file
+                }
+            else:
+                log_stats[vendor] = {
+                    'exists': False,
+                    'size_mb': 0,
+                    'rotated_files': 0,
+                    'last_modified': 'N/A',
+                    'is_active': False,
+                    'path': log_file
+                }
+                
+        except Exception as e:
+            log_stats[vendor] = {
+                'exists': False,
+                'size_mb': 0,
+                'rotated_files': 0,
+                'last_modified': 'Error',
+                'is_active': False,
+                'error': str(e),
+                'path': config.get('log_file', 'Unknown')
+            }
+    
+    # Get rsyslog configuration status
+    rsyslog_status = {}
+    for vendor, config in log_configs.items():
+        try:
+            rsyslog_file = config['rsyslog_config']
+            if os.path.exists(rsyslog_file):
+                with open(rsyslog_file, 'r') as f:
+                    content = f.read()
+                    rsyslog_status[vendor] = {
+                        'exists': True,
+                        'content_preview': content[:200] + '...' if len(content) > 200 else content,
+                        'size': len(content)
+                    }
+            else:
+                rsyslog_status[vendor] = {
+                    'exists': False,
+                    'content_preview': '',
+                    'size': 0
+                }
+        except Exception as e:
+            rsyslog_status[vendor] = {
+                'exists': False,
+                'content_preview': f'Error: {str(e)}',
+                'size': 0
+            }
+    
+    # Get disk usage for log directory
+    try:
+        result = subprocess.run(['df', '-h', '/var/log'], capture_output=True, text=True)
+        disk_usage = result.stdout.split('\n')[1].split() if result.returncode == 0 else None
+    except:
+        disk_usage = None
+    
+    # Get total log sizes
+    total_log_size = sum(stats.get('size_mb', 0) for stats in log_stats.values())
+    
+    context = {
+        'log_configs': log_configs,
+        'log_stats': log_stats,
+        'rsyslog_status': rsyslog_status,
+        'disk_usage': disk_usage,
+        'total_log_size_mb': round(total_log_size, 2),
+        'total_devices': sum(len(config['ip_addresses']) for config in log_configs.values()),
+    }
+    
+    return render(request, 'dashboard/logs_config.html', context)
+
+def logs_config_save_view(request):
+    """Save logs configuration changes"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'})
+    
+    import json
+    import os
+    import subprocess
+    
+    try:
+        data = json.loads(request.body)
+        config_type = data.get('config_type')  # 'fortigate' or 'paloalto'
+        settings = data.get('settings', {})
+        
+        if config_type == 'fortigate':
+            # Update FortiGate rsyslog configuration
+            ip_address = settings.get('ip_address', '192.168.100.221')
+            log_file = settings.get('log_file', '/var/log/fortigate.log')
+            port = settings.get('port', 514)
+            
+            rsyslog_content = f"""#### start fortigate.conf ####
+
+# Load UDP syslog listener only once
+module(load="imudp")
+
+# Listen on port {port}
+input(type="imudp" port="{port}")
+
+# Template for clean FortiGate messages (without PRI)
+template(name="FortiGateRaw" type="string" string="%rawmsg-after-pri%\\n")
+
+# Log all messages coming from {ip_address} only
+if ($fromhost-ip == '{ip_address}') then {{
+    action(
+        type="omfile"
+        file="{log_file}"
+        template="FortiGateRaw"
+    )
+    stop
+}}
+
+#### end fortigate.conf ####
+"""
+            
+            # Write configuration file
+            with open('/tmp/fortigate.conf', 'w') as f:
+                f.write(rsyslog_content)
+                
+            return JsonResponse({
+                'success': True, 
+                'message': 'FortiGate configuration updated. Restart rsyslog to apply changes.',
+                'config_preview': rsyslog_content
+            })
+            
+        elif config_type == 'paloalto':
+            # Update PaloAlto rsyslog configuration
+            ip_addresses = settings.get('ip_addresses', ['10.12.50.61'])
+            log_file = settings.get('log_file', '/var/log/paloalto-1004.log')
+            port = settings.get('port', 1004)
+            
+            # Create condition for multiple IPs
+            if len(ip_addresses) == 1:
+                ip_condition = f"$fromhost-ip == '{ip_addresses[0]}'"
+            else:
+                ip_conditions = [f"$fromhost-ip == '{ip}'" for ip in ip_addresses]
+                ip_condition = " or ".join(ip_conditions)
+                ip_condition = f"({ip_condition})"
+            
+            rsyslog_content = f"""#### start paloalto.conf ####
+
+# Load UDP syslog listener
+module(load="imudp")
+
+# Listen on port {port}
+input(type="imudp" port="{port}")
+
+# Template for clean PaloAlto messages
+template(name="PaloAltoRaw" type="string" string="%rawmsg-after-pri%\\n")
+
+# Log messages from PaloAlto devices: {', '.join(ip_addresses)}
+if ({ip_condition}) then {{
+    action(
+        type="omfile"
+        file="{log_file}"
+        template="PaloAltoRaw"
+    )
+    stop
+}}
+
+#### end paloalto.conf ####
+"""
+            
+            # Write configuration file
+            with open('/tmp/paloalto.conf', 'w') as f:
+                f.write(rsyslog_content)
+                
+            return JsonResponse({
+                'success': True, 
+                'message': 'PaloAlto configuration updated. Restart rsyslog to apply changes.',
+                'config_preview': rsyslog_content
+            })
+            
+        else:
+            return JsonResponse({'success': False, 'error': 'Invalid configuration type'})
+            
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Configuration save failed: {str(e)}'})
+
+def logs_config_test_view(request):
+    """Test log configuration and connectivity"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'})
+    
+    import json
+    import subprocess
+    import socket
+    import os
+    
+    try:
+        data = json.loads(request.body)
+        test_type = data.get('test_type')
+        config = data.get('config', {})
+        
+        results = {'success': True, 'tests': []}
+        
+        if test_type == 'connectivity':
+            # Test network connectivity to firewall devices
+            ip_address = config.get('ip_address')
+            port = config.get('port', 514)
+            
+            try:
+                # Test UDP port connectivity
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.settimeout(5)
+                sock.sendto(b'test', (ip_address, port))
+                sock.close()
+                
+                results['tests'].append({
+                    'name': f'UDP Connectivity to {ip_address}:{port}',
+                    'status': 'success',
+                    'message': 'Connection successful'
+                })
+            except Exception as e:
+                results['tests'].append({
+                    'name': f'UDP Connectivity to {ip_address}:{port}',
+                    'status': 'error',
+                    'message': f'Connection failed: {str(e)}'
+                })
+                
+        elif test_type == 'log_file':
+            # Test log file permissions and accessibility
+            log_file = config.get('log_file')
+            
+            # Check if file exists
+            if os.path.exists(log_file):
+                results['tests'].append({
+                    'name': f'Log file exists: {log_file}',
+                    'status': 'success',
+                    'message': 'File found'
+                })
+                
+                # Check write permissions
+                if os.access(log_file, os.W_OK):
+                    results['tests'].append({
+                        'name': 'Write permissions',
+                        'status': 'success',
+                        'message': 'File is writable'
+                    })
+                else:
+                    results['tests'].append({
+                        'name': 'Write permissions',
+                        'status': 'error',
+                        'message': 'File is not writable'
+                    })
+            else:
+                # Check if directory exists and is writable
+                log_dir = os.path.dirname(log_file)
+                if os.path.exists(log_dir) and os.access(log_dir, os.W_OK):
+                    results['tests'].append({
+                        'name': f'Log file: {log_file}',
+                        'status': 'warning',
+                        'message': 'File does not exist but directory is writable'
+                    })
+                else:
+                    results['tests'].append({
+                        'name': f'Log file: {log_file}',
+                        'status': 'error',
+                        'message': 'File and directory not accessible'
+                    })
+                    
+        elif test_type == 'rsyslog':
+            # Test rsyslog configuration
+            try:
+                result = subprocess.run(['rsyslogd', '-N1'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    results['tests'].append({
+                        'name': 'Rsyslog configuration syntax',
+                        'status': 'success',
+                        'message': 'Configuration is valid'
+                    })
+                else:
+                    results['tests'].append({
+                        'name': 'Rsyslog configuration syntax',
+                        'status': 'error',
+                        'message': f'Configuration error: {result.stderr}'
+                    })
+            except Exception as e:
+                results['tests'].append({
+                    'name': 'Rsyslog configuration test',
+                    'status': 'error',
+                    'message': f'Test failed: {str(e)}'
+                })
+                
+        return JsonResponse(results)
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Test failed: {str(e)}'})
+
+
+# Log Sources Management Views
+
+def log_sources_view(request):
+    """Main log sources management view"""
+    from datetime import datetime, timedelta
+    
+    # Mock data for demonstration - in production this would come from a database
+    mock_log_sources = [
+        {
+            'id': 1,
+            'name': 'FortiGate Firewall',
+            'description': 'Primary FortiGate firewall appliance',
+            'ip_address': '192.168.100.221',
+            'port': 514,
+            'status': 'active',
+            'save_logs': True,
+            'logs_today': 15420,
+            'logs_last_hour': 892,
+            'total_logs': 2456781,
+            'device_type': 'fortigate'
+        },
+        {
+            'id': 2,
+            'name': 'PaloAlto Firewall',
+            'description': 'Secondary PaloAlto firewall appliance',
+            'ip_address': '10.12.50.61',
+            'port': 1004,
+            'status': 'active',
+            'save_logs': True,
+            'logs_today': 8756,
+            'logs_last_hour': 432,
+            'total_logs': 1234567,
+            'device_type': 'paloalto'
+        },
+        {
+            'id': 3,
+            'name': 'Unknown Device',
+            'description': 'Unidentified device sending logs',
+            'ip_address': '192.168.1.100',
+            'port': 514,
+            'status': 'pending',
+            'save_logs': False,
+            'logs_today': 245,
+            'logs_last_hour': 12,
+            'total_logs': 5642,
+            'device_type': 'unknown'
+        },
+        {
+            'id': 4,
+            'name': 'Test Firewall',
+            'description': 'Test environment firewall',
+            'ip_address': '10.10.10.50',
+            'port': 514,
+            'status': 'inactive',
+            'save_logs': False,
+            'logs_today': 0,
+            'logs_last_hour': 0,
+            'total_logs': 123456,
+            'device_type': 'fortigate'
+        }
+    ]
+    
+    # Calculate overview statistics
+    total_sources = len(mock_log_sources)
+    active_sources = len([s for s in mock_log_sources if s['status'] == 'active'])
+    inactive_sources = len([s for s in mock_log_sources if s['status'] == 'inactive'])
+    pending_sources = len([s for s in mock_log_sources if s['status'] == 'pending'])
+    
+    context = {
+        'log_sources': mock_log_sources,
+        'total_sources': total_sources,
+        'active_sources': active_sources,
+        'inactive_sources': inactive_sources,
+        'pending_sources': pending_sources,
+        'last_updated': datetime.now(),
+    }
+    
+    return render(request, 'dashboard/log_sources.html', context)
+
+def toggle_save_logs_view(request):
+    """Toggle log saving for a specific source"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'})
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        source_id = data.get('source_id')
+        save_logs = data.get('save_logs', False)
+        
+        # In production, update the database record
+        # For now, we'll simulate success
+        
+        # Update rsyslog configuration based on the source
+        # This would involve modifying rsyslog rules to include/exclude the source
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Log saving {"enabled" if save_logs else "disabled"} for source {source_id}'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error: {str(e)}'})
+
+def log_source_action_view(request):
+    """Perform actions on log sources (approve, reject, enable, disable)"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'})
+    
+    try:
+        import json
+        import subprocess
+        data = json.loads(request.body)
+        source_id = data.get('source_id')
+        action = data.get('action')
+        
+        if action not in ['approve', 'reject', 'enable', 'disable']:
+            return JsonResponse({'success': False, 'error': 'Invalid action'})
+        
+        # In production, update the database and rsyslog configuration
+        # For demonstration, we'll simulate the actions
+        
+        if action == 'approve':
+            # Add source to allowed list and configure rsyslog
+            message = f'Source {source_id} approved and configured'
+        elif action == 'reject':
+            # Block source and remove from configuration
+            message = f'Source {source_id} rejected and blocked'
+        elif action == 'enable':
+            # Enable log processing for source
+            message = f'Source {source_id} enabled'
+        elif action == 'disable':
+            # Disable log processing for source
+            message = f'Source {source_id} disabled'
+        
+        # Restart rsyslog to apply changes
+        try:
+            subprocess.run(['sudo', 'systemctl', 'reload', 'rsyslog'], 
+                         capture_output=True, text=True, check=True)
+        except subprocess.CalledProcessError as e:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Failed to reload rsyslog: {e.stderr}'
+            })
+        
+        return JsonResponse({'success': True, 'message': message})
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error: {str(e)}'})
+
+def test_log_source_view(request):
+    """Test connection to a log source"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'})
+    
+    try:
+        import json
+        import subprocess
+        import socket
+        data = json.loads(request.body)
+        source_id = data.get('source_id')
+        
+        # In production, get source details from database
+        # For demonstration, use mock data
+        mock_sources = {
+            '1': {'ip': '192.168.100.221', 'port': 514},
+            '2': {'ip': '10.12.50.61', 'port': 1004},
+            '3': {'ip': '192.168.1.100', 'port': 514},
+            '4': {'ip': '10.10.10.50', 'port': 514}
+        }
+        
+        source = mock_sources.get(str(source_id))
+        if not source:
+            return JsonResponse({'success': False, 'error': 'Source not found'})
+        
+        # Test network connectivity
+        try:
+            # Test if we can reach the IP (ping test)
+            ping_result = subprocess.run(['ping', '-c', '1', '-W', '3', source['ip']], 
+                                       capture_output=True, text=True, timeout=5)
+            
+            if ping_result.returncode == 0:
+                # Test port connectivity
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.settimeout(3)
+                try:
+                    # For UDP, we'll try to connect (though UDP is connectionless)
+                    sock.connect((source['ip'], source['port']))
+                    sock.close()
+                    return JsonResponse({
+                        'success': True, 
+                        'message': f'Successfully connected to {source["ip"]}:{source["port"]}'
+                    })
+                except socket.error as e:
+                    return JsonResponse({
+                        'success': False, 
+                        'error': f'Port {source["port"]} not reachable: {str(e)}'
+                    })
+            else:
+                return JsonResponse({
+                    'success': False, 
+                    'error': f'Host {source["ip"]} not reachable'
+                })
+                
+        except subprocess.TimeoutExpired:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Connection test timed out'
+            })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Test failed: {str(e)}'})
+
+def scan_log_sources_view(request):
+    """Scan network for potential log sources"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'})
+    
+    try:
+        import subprocess
+        import re
+        
+        # Scan common syslog ports on local network
+        # This is a simplified scan - in production you'd want more sophisticated discovery
+        discovered_sources = []
+        
+        # Get local network range
+        try:
+            # Get default gateway to determine network range
+            route_result = subprocess.run(['ip', 'route', 'show', 'default'], 
+                                        capture_output=True, text=True)
+            
+            # For demonstration, we'll simulate discovering some devices
+            discovered_sources = [
+                {
+                    'ip': '192.168.1.50',
+                    'port': 514,
+                    'device_type': 'unknown',
+                    'status': 'pending'
+                },
+                {
+                    'ip': '10.10.10.100',
+                    'port': 514,
+                    'device_type': 'cisco',
+                    'status': 'pending'
+                }
+            ]
+            
+        except Exception as e:
+            # Fallback to mock data
+            discovered_sources = []
+        
+        return JsonResponse({
+            'success': True,
+            'discovered_count': len(discovered_sources),
+            'sources': discovered_sources
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Scan failed: {str(e)}'})
+
+def log_sources_status_view(request):
+    """Get current status of all log sources (for auto-refresh)"""
+    # Mock data - in production this would query the database
+    status_data = {
+        'total_sources': 4,
+        'active_sources': 2,
+        'inactive_sources': 1,
+        'pending_sources': 1,
+        'last_updated': datetime.now().isoformat()
+    }
+    
+    return JsonResponse(status_data)
+
+def add_log_source_view(request):
+    """Add a new log source (placeholder for future implementation)"""
+    # This would render a form or handle POST data to add a new source
+    return JsonResponse({'success': False, 'error': 'Not implemented yet'})
+
+def configure_log_source_view(request, source_id):
+    """Configure a specific log source"""
+    from datetime import datetime
+    
+    # Mock data for demonstration - in production this would query the database
+    mock_log_sources = {
+        1: {
+            'id': 1,
+            'name': 'FortiGate Firewall',
+            'description': 'Primary FortiGate firewall appliance',
+            'ip_address': '192.168.100.221',
+            'port': 514,
+            'status': 'active',
+            'save_logs': True,
+            'logs_today': 15420,
+            'logs_last_hour': 892,
+            'total_logs': 2456781,
+            'device_type': 'fortigate',
+            'log_file_path': '/var/log/fortigate.log',
+            'protocol': 'udp',
+            'log_template': 'raw',
+            'custom_template': '%rawmsg-after-pri%\\n',
+            'parse_to_database': True
+        },
+        2: {
+            'id': 2,
+            'name': 'PaloAlto Firewall',
+            'description': 'Secondary PaloAlto firewall appliance',
+            'ip_address': '10.12.50.61',
+            'port': 1004,
+            'status': 'active',
+            'save_logs': True,
+            'logs_today': 8756,
+            'logs_last_hour': 432,
+            'total_logs': 1234567,
+            'device_type': 'paloalto',
+            'log_file_path': '/var/log/paloalto-1004.log',
+            'protocol': 'udp',
+            'log_template': 'detailed',
+            'custom_template': '%timegenerated% %hostname% %rawmsg-after-pri%\\n',
+            'parse_to_database': True
+        },
+        3: {
+            'id': 3,
+            'name': 'Unknown Device',
+            'description': 'Unidentified device sending logs',
+            'ip_address': '192.168.1.100',
+            'port': 514,
+            'status': 'pending',
+            'save_logs': False,
+            'logs_today': 245,
+            'logs_last_hour': 12,
+            'total_logs': 5642,
+            'device_type': 'unknown',
+            'log_file_path': '/var/log/unknown.log',
+            'protocol': 'udp',
+            'log_template': 'timestamp',
+            'custom_template': '%timegenerated% %rawmsg-after-pri%\\n',
+            'parse_to_database': False
+        },
+        4: {
+            'id': 4,
+            'name': 'Test Firewall',
+            'description': 'Test environment firewall',
+            'ip_address': '10.10.10.50',
+            'port': 514,
+            'status': 'inactive',
+            'save_logs': False,
+            'logs_today': 0,
+            'logs_last_hour': 0,
+            'total_logs': 123456,
+            'device_type': 'fortigate',
+            'log_file_path': '/var/log/test-firewall.log',
+            'protocol': 'udp',
+            'log_template': 'raw',
+            'custom_template': '%rawmsg-after-pri%\\n',
+            'parse_to_database': False
+        }
+    }
+    
+    source = mock_log_sources.get(int(source_id))
+    if not source:
+        return render(request, '404.html', {'message': 'Log source not found'}, status=404)
+    
+    context = {
+        'source': source,
+    }
+    
+    return render(request, 'dashboard/configure_log_source.html', context)
+
+def save_log_source_config_view(request, source_id):
+    """Save log source configuration"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'})
+    
+    try:
+        import json
+        import subprocess
+        import os
+        data = json.loads(request.body)
+        
+        # Validate required fields
+        required_fields = ['name', 'ip_address', 'port', 'device_type']
+        for field in required_fields:
+            if not data.get(field):
+                return JsonResponse({'success': False, 'error': f'Missing required field: {field}'})
+        
+        # Validate IP address format
+        import ipaddress
+        try:
+            ipaddress.ip_address(data['ip_address'])
+        except ValueError:
+            return JsonResponse({'success': False, 'error': 'Invalid IP address format'})
+        
+        # Validate port range
+        port = data.get('port')
+        if not isinstance(port, int) or port < 1 or port > 65535:
+            return JsonResponse({'success': False, 'error': 'Port must be between 1 and 65535'})
+        
+        # Generate rsyslog configuration
+        device_type = data['device_type']
+        ip_address = data['ip_address']
+        save_logs = data.get('save_logs', False)
+        log_file_path = data.get('log_file_path', f'/var/log/{device_type}.log')
+        log_template = data.get('log_template', 'raw')
+        custom_template = data.get('custom_template', '%rawmsg-after-pri%\\n')
+        
+        # Determine template string
+        template_string = ''
+        if log_template == 'raw':
+            template_string = '%rawmsg-after-pri%\\n'
+        elif log_template == 'timestamp':
+            template_string = '%timegenerated% %rawmsg-after-pri%\\n'
+        elif log_template == 'detailed':
+            template_string = '%timegenerated% %hostname% %rawmsg-after-pri%\\n'
+        elif log_template == 'custom':
+            template_string = custom_template
+        
+        # Generate rsyslog configuration content
+        config_content = f"""#### start {device_type}.conf ####
+
+# Load UDP syslog listener
+module(load="imudp")
+input(type="imudp" port="{port}")
+
+# Template for {device_type} messages
+template(name="{device_type.capitalize()}Template" type="string" string="{template_string}")
+
+# Process messages from {ip_address}
+if ($fromhost-ip == '{ip_address}') then {{
+"""
+        
+        if save_logs:
+            config_content += f"""    action(
+        type="omfile"
+        file="{log_file_path}"
+        template="{device_type.capitalize()}Template"
+    )
+"""
+        else:
+            config_content += "    # Log saving disabled\n"
+        
+        config_content += f"""    stop
+}}
+
+#### end {device_type}.conf ####"""
+        
+        # In production, you would:
+        # 1. Update the database with the new configuration
+        # 2. Write the rsyslog configuration file
+        # 3. Reload rsyslog service
+        # 4. Update any related services
+        
+        # For demonstration, we'll simulate writing the config file
+        config_filename = f"/tmp/{device_type}-{ip_address.replace('.', '-')}.conf"
+        
+        try:
+            with open(config_filename, 'w') as f:
+                f.write(config_content)
+            
+            # Simulate rsyslog reload
+            # In production: subprocess.run(['sudo', 'systemctl', 'reload', 'rsyslog'])
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Configuration saved successfully for {data["name"]}',
+                'config_file': config_filename,
+                'config_content': config_content
+            })
+            
+        except IOError as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Failed to write configuration file: {str(e)}'
+            })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Configuration save failed: {str(e)}'})

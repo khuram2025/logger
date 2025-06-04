@@ -1,15 +1,15 @@
 {% comment %}
-    File: /home/net/analyzer/dashboard/templates/dashboard/_filters_sidebar_optimized.html
-    Smart, professional, non-bulky filter sidebar with expandable functionality.
+    File: /home/net/analyzer/dashboard/templates/dashboard/_filters_sidebar.html
+    Reusable filter sidebar component.
 {% endcomment %}
 {% load static %}
 
 <style>
-    /* Smart Professional Filter Styles - Optimized */
+    /* Smart Professional Filter Styles */
     
-    /* Smart compact sidebar */
+    /* Optimize sidebar width */
     .sidebar-right {
-        width: 280px !important;
+        width: 320px !important;
         flex-shrink: 0;
         max-height: 100vh;
         overflow-y: auto;
@@ -19,90 +19,68 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 6px;
-        padding: 10px 12px;
+        background-color: #f8f9fa;
+        border-radius: 4px 4px 0 0;
+        padding: 12px 15px;
         font-weight: 600;
         color: #495057;
-        border: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
         cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        position: relative;
-    }
-    
-    .filter-header:hover {
-        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        transform: translateY(-1px);
-    }
-    
-    .filter-header::after {
-        content: 'Click to expand';
-        font-size: 10px;
-        color: #adb5bd;
-        font-weight: 400;
-        position: absolute;
-        right: 35px;
-        opacity: 0.8;
     }
     
     .filter-content {
-        padding: 12px;
+        padding: 16px;
         background-color: #fff;
-        border-radius: 0 0 6px 6px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        max-height: 70vh;
+        border-radius: 0 0 4px 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        max-height: 600px;
         overflow-y: auto;
-        border: 1px solid #dee2e6;
-        border-top: none;
-        transition: all 0.3s ease;
     }
     
     .filter-group {
-        margin-bottom: 10px;
+        margin-bottom: 14px;
     }
     
     .filter-group label {
         display: block;
-        margin-bottom: 4px;
+        margin-bottom: 5px;
         font-weight: 500;
-        font-size: 11px;
-        color: #6c757d;
+        font-size: 12px;
+        color: #495057;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.5px;
     }
     
     .filter-input {
         width: 100%;
-        padding: 6px 10px;
+        padding: 8px 12px;
         border: 1px solid #ced4da;
         border-radius: 4px;
-        font-size: 12px;
-        line-height: 1.3;
+        font-size: 13px;
+        line-height: 1.4;
         color: #495057;
         background-color: #fff;
-        transition: all 0.2s ease;
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         box-sizing: border-box;
     }
     
     .filter-input:focus {
         border-color: #007bff;
         outline: 0;
-        box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.15);
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
     }
     
     .filter-input::placeholder {
         color: #adb5bd;
-        font-size: 11px;
+        font-size: 12px;
     }
     
     .filter-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        margin-top: 15px;
-        padding-top: 12px;
+        gap: 10px;
+        margin-top: 20px;
+        padding-top: 15px;
         border-top: 1px solid #e9ecef;
     }
     
@@ -110,14 +88,14 @@
         background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
         border: none;
         color: white;
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 12px;
+        padding: 10px 15px;
+        border-radius: 5px;
+        font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.5px;
     }
     
     .btn-apply:hover {
@@ -130,14 +108,14 @@
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
         color: #6c757d;
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 12px;
+        padding: 10px 15px;
+        border-radius: 5px;
+        font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.5px;
     }
     
     .btn-clear:hover {
@@ -151,40 +129,35 @@
     /* Compact layout for filter groups */
     .filter-group:nth-child(even) {
         background-color: #f8f9fa;
-        padding: 6px 8px;
-        border-radius: 3px;
-        margin: 6px -4px;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 8px -6px;
     }
     
     /* Responsive adjustments */
     @media (max-width: 1200px) {
         .sidebar-right {
-            width: 260px !important;
+            width: 320px !important;
         }
         
         .filter-content {
-            padding: 10px;
-        }
-        
-        .filter-input {
-            font-size: 11px;
-            padding: 5px 8px;
+            padding: 12px;
         }
     }
     
-    /* Adjust main content area to accommodate sidebar */
+    /* Adjust main content area to accommodate wider sidebar */
     .main-content-area {
         margin-right: 10px;
     }
     
     /* Make filter form more compact */
     .log-filters-form {
-        font-size: 12px;
+        font-size: 13px;
     }
     
     /* Custom scrollbar for filter content */
     .filter-content::-webkit-scrollbar {
-        width: 5px;
+        width: 6px;
     }
     
     .filter-content::-webkit-scrollbar-track {
@@ -201,10 +174,10 @@
         background: #a8a8a8;
     }
     
-    /* Filter section styles - compact */
+    /* Filter section styles */
     .filter-section {
-        margin-bottom: 15px;
-        padding-bottom: 10px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
     }
     
     .filter-section:last-of-type {
@@ -215,49 +188,52 @@
         display: flex;
         align-items: center;
         font-weight: 600;
-        margin: 10px 0 8px 0;
-        font-size: 12px;
+        margin: 15px 0 10px 0;
+        font-size: 13px;
         border-bottom: 1px solid #e9ecef;
-        padding-bottom: 4px;
+        padding-bottom: 5px;
     }
     
     /* Add some hover effects */
     .filter-group:hover {
         background-color: rgba(0, 123, 255, 0.02);
-        border-radius: 3px;
-        padding: 4px;
-        margin: 1px -4px;
+        border-radius: 4px;
+        padding: 5px;
+        margin: 2px -5px;
         transition: all 0.2s ease;
     }
     
     /* Better spacing for grouped filters */
     .filter-section .filter-group {
-        margin-bottom: 8px;
+        margin-bottom: 12px;
     }
     
-    /* Filter icon animation and smart collapse */
-    .filter-icon {
-        transition: transform 0.3s ease;
-        color: #007bff;
-        font-size: 14px;
+    /* Quick access buttons */
+    .quick-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin: 10px 0;
     }
     
-    .filter-header.collapsed .filter-icon {
-        transform: rotate(45deg);
+    .quick-filter-btn {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 3px;
+        padding: 4px 8px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
     }
     
-    /* Smart state indication */
-    .sidebar-right[data-filter-state="collapsed"] .filter-header::after {
-        content: 'Click to expand';
-    }
-    
-    .sidebar-right[data-filter-state="expanded"] .filter-header::after {
-        content: 'Click to collapse';
+    .quick-filter-btn:hover {
+        background: #e9ecef;
+        border-color: #ced4da;
     }
 </style>
 
 <div class="sidebar-header collapsible-header filter-header" data-target="logFiltersContent">
-    <span>🔍 Filters</span>
+    <span>Filters</span>
     <i class="fas fa-plus filter-icon"></i>
 </div>
 <div id="logFiltersContent" class="collapsible-content filter-content" style="display: none;">
@@ -265,7 +241,7 @@
         
         <!-- Time Range Section -->
         <div class="filter-section">
-            <h4 style="color: #007bff; margin: 0 0 8px 0; font-size: 12px; border-bottom: 1px solid #e9ecef; padding-bottom: 4px;">⏰ Time Range</h4>
+            <h4 style="color: #007bff; margin: 0 0 10px 0; font-size: 14px; border-bottom: 1px solid #e9ecef; padding-bottom: 5px;">⏰ Time Range</h4>
             <div class="filter-group">
                 <label for="filterTimeRange">Period</label>
                 <select id="filterTimeRange" name="time_range" class="filter-input">
@@ -279,7 +255,7 @@
 
         <!-- Network Section -->
         <div class="filter-section">
-            <h4 style="color: #28a745; margin: 10px 0 8px 0; font-size: 12px; border-bottom: 1px solid #e9ecef; padding-bottom: 4px;">🌐 Network</h4>
+            <h4 style="color: #28a745; margin: 15px 0 10px 0; font-size: 14px; border-bottom: 1px solid #e9ecef; padding-bottom: 5px;">🌐 Network</h4>
             <div class="filter-group">
                 <label for="filterSrcIp">Source IP</label>
                 <input type="text" id="filterSrcIp" name="srcip" class="filter-input" placeholder="192.168.1.1" value="{{ srcip_filter }}">
@@ -304,7 +280,7 @@
 
         <!-- Security Section -->
         <div class="filter-section">
-            <h4 style="color: #dc3545; margin: 10px 0 8px 0; font-size: 12px; border-bottom: 1px solid #e9ecef; padding-bottom: 4px;">🔒 Security</h4>
+            <h4 style="color: #dc3545; margin: 15px 0 10px 0; font-size: 14px; border-bottom: 1px solid #e9ecef; padding-bottom: 5px;">🔒 Security</h4>
             <div class="filter-group">
                 <label for="filterAction">Action</label>
                 <select id="filterAction" name="action" class="filter-input">
@@ -327,7 +303,7 @@
 
         <!-- Application Section -->
         <div class="filter-section">
-            <h4 style="color: #6f42c1; margin: 10px 0 8px 0; font-size: 12px; border-bottom: 1px solid #e9ecef; padding-bottom: 4px;">📱 Application</h4>
+            <h4 style="color: #6f42c1; margin: 15px 0 10px 0; font-size: 14px; border-bottom: 1px solid #e9ecef; padding-bottom: 5px;">📱 Application</h4>
             <div class="filter-group">
                 <label for="filterAppCategory">Category</label>
                 <input type="text" id="filterAppCategory" name="appcategory" class="filter-input" placeholder="web, email, gaming" value="{{ appcategory_filter }}">
@@ -341,12 +317,10 @@
                 <input type="text" id="filterUsername" name="username" class="filter-input" placeholder="john.doe" value="{{ username_filter }}">
             </div>
         </div>
-        
         <div class="filter-actions">
             <button type="submit" class="btn-apply">Apply</button>
             <button type="button" class="btn-clear" onclick="clearFilters()">Clear</button>
         </div>
-        
         <script>
             function clearFilters() {
                 // Get the current URL
@@ -371,24 +345,8 @@
                 var baseUrl = '{% if request.resolver_match.url_name == "grouped_logs" %}{% url "grouped_logs" %}{% else %}{% url "clickhouse_logs" %}{% endif %}';
                 window.location.href = baseUrl + (params.toString() ? '?' + params.toString() : '');
             }
-            
-            // Enhanced filter state management
-            document.addEventListener('DOMContentLoaded', function() {
-                const sidebar = document.querySelector('.sidebar-right');
-                const filterHeader = document.querySelector('.filter-header');
-                const filterContent = document.getElementById('logFiltersContent');
-                
-                if (sidebar && filterHeader) {
-                    // Set initial state
-                    sidebar.setAttribute('data-filter-state', 'collapsed');
-                    
-                    // Update state on header click
-                    filterHeader.addEventListener('click', function() {
-                        const isExpanded = filterContent.style.display !== 'none';
-                        sidebar.setAttribute('data-filter-state', isExpanded ? 'collapsed' : 'expanded');
-                    });
-                }
-            });
         </script>
     </form>
 </div>
+
+

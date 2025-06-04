@@ -12,10 +12,60 @@
 
 {% block content %}
 
-<!-- Filters moved to sidebar only -->
-
 <div class="analytics-container" style="max-width:1400px;margin:2rem auto;padding:0 1rem;">
-    <h1 style="margin-bottom:2rem;font-weight:600;color:#333;">Network Analytics Dashboard</h1>
+    <!-- Header with Time Filter -->
+    <div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
+        <h1 style="margin:0;font-weight:600;color:#333;">Network Analytics Dashboard</h1>
+        
+        <!-- Professional Time Filter Dropdown -->
+        <div class="time-filter-container">
+            <div class="time-filter-dropdown">
+                <button type="button" class="time-filter-btn" id="timeFilterButton">
+                    <i class="fas fa-clock"></i>
+                    <span id="timeFilterLabel">Last 1 Hour</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="time-filter-menu" id="timeFilterMenu">
+                    <div class="filter-section">
+                        <div class="section-title">Quick Filters</div>
+                        <a href="#" class="filter-option active" data-value="1h" data-label="Last 1 Hour">
+                            <i class="fas fa-clock"></i>
+                            <span>Last 1 Hour</span>
+                        </a>
+                        <a href="#" class="filter-option" data-value="1d" data-label="Last 1 Day">
+                            <i class="fas fa-calendar-day"></i>
+                            <span>Last 1 Day</span>
+                        </a>
+                        <a href="#" class="filter-option" data-value="7d" data-label="Last 7 Days">
+                            <i class="fas fa-calendar-week"></i>
+                            <span>Last 7 Days</span>
+                        </a>
+                        <a href="#" class="filter-option" data-value="1m" data-label="Last 1 Month">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Last 1 Month</span>
+                        </a>
+                    </div>
+                    <div class="filter-section">
+                        <div class="section-title">Custom Range</div>
+                        <div class="custom-date-range">
+                            <div class="date-input-group">
+                                <label>From:</label>
+                                <input type="datetime-local" id="startDate" class="date-input">
+                            </div>
+                            <div class="date-input-group">
+                                <label>To:</label>
+                                <input type="datetime-local" id="endDate" class="date-input">
+                            </div>
+                            <button type="button" class="apply-custom-btn" onclick="applyCustomDateRange()">
+                                <i class="fas fa-check"></i>
+                                Apply Custom Range
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <!-- Grid layout for multiple sections -->
     <div class="analytics-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(500px, 1fr));gap:2rem;">
@@ -327,5 +377,278 @@
 tr:hover .detail-link {
     color: #2980b9;
 }
+
+/* Professional Time Filter Styles */
+.time-filter-container {
+    position: relative;
+}
+
+.time-filter-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.time-filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    min-width: 160px;
+}
+
+.time-filter-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.time-filter-btn .fas.fa-chevron-down {
+    transition: transform 0.3s ease;
+    margin-left: auto;
+}
+
+.time-filter-dropdown.active .time-filter-btn .fas.fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.time-filter-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 280px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e1e5e9;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    margin-top: 0.5rem;
+}
+
+.time-filter-dropdown.active .time-filter-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.filter-section {
+    padding: 1rem;
+}
+
+.filter-section:not(:last-child) {
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    text-decoration: none;
+    color: #495057;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    margin-bottom: 0.25rem;
+}
+
+.filter-option:hover {
+    background-color: #f8f9fa;
+    color: #495057;
+    text-decoration: none;
+}
+
+.filter-option.active {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    color: #667eea;
+    font-weight: 500;
+}
+
+.filter-option i {
+    width: 16px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.custom-date-range {
+    margin-top: 0.5rem;
+}
+
+.date-input-group {
+    margin-bottom: 0.75rem;
+}
+
+.date-input-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+.date-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.apply-custom-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.apply-custom-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start !important;
+    }
+    
+    .time-filter-menu {
+        right: auto;
+        left: 0;
+        min-width: 260px;
+    }
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timeFilterBtn = document.getElementById('timeFilterButton');
+    const timeFilterMenu = document.getElementById('timeFilterMenu');
+    const timeFilterDropdown = document.querySelector('.time-filter-dropdown');
+    const timeFilterLabel = document.getElementById('timeFilterLabel');
+    const filterOptions = document.querySelectorAll('.filter-option');
+
+    // Toggle dropdown
+    timeFilterBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        timeFilterDropdown.classList.toggle('active');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!timeFilterDropdown.contains(e.target)) {
+            timeFilterDropdown.classList.remove('active');
+        }
+    });
+
+    // Handle filter option selection
+    filterOptions.forEach(option => {
+        option.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all options
+            filterOptions.forEach(opt => opt.classList.remove('active'));
+            
+            // Add active class to clicked option
+            this.classList.add('active');
+            
+            // Update button label
+            const label = this.getAttribute('data-label');
+            const value = this.getAttribute('data-value');
+            timeFilterLabel.textContent = label;
+            
+            // Close dropdown
+            timeFilterDropdown.classList.remove('active');
+            
+            // Apply filter and reload page
+            applyTimeFilter(value);
+        });
+    });
+
+    // Set current filter as active based on URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentTimeRange = urlParams.get('time_range') || '1h';
+    
+    filterOptions.forEach(option => {
+        const value = option.getAttribute('data-value');
+        if (value === currentTimeRange) {
+            option.classList.add('active');
+            timeFilterLabel.textContent = option.getAttribute('data-label');
+        } else {
+            option.classList.remove('active');
+        }
+    });
+});
+
+function applyTimeFilter(timeRange) {
+    const url = new URL(window.location);
+    url.searchParams.set('time_range', timeRange);
+    window.location.href = url.toString();
+}
+
+function applyCustomDateRange() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return;
+    }
+    
+    if (new Date(startDate) >= new Date(endDate)) {
+        alert('End date must be after start date');
+        return;
+    }
+    
+    const url = new URL(window.location);
+    url.searchParams.set('time_range', 'custom');
+    url.searchParams.set('start_date', startDate);
+    url.searchParams.set('end_date', endDate);
+    
+    // Update button label
+    document.getElementById('timeFilterLabel').textContent = 'Custom Range';
+    
+    // Close dropdown
+    document.querySelector('.time-filter-dropdown').classList.remove('active');
+    
+    window.location.href = url.toString();
+}
+</script>
 {% endblock %}

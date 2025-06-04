@@ -1,0 +1,546 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}System Configuration{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='system-config' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+<style>
+    /* System Config Styles matching existing UI */
+    .system-config-header {
+        margin-bottom: 25px;
+    }
+    
+    .system-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .overview-card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-left: 4px solid #007bff;
+        text-align: center;
+    }
+    
+    .overview-card.running {
+        border-left-color: #28a745;
+    }
+    
+    .overview-card.stopped {
+        border-left-color: #dc3545;
+    }
+    
+    .overview-card.error {
+        border-left-color: #ffc107;
+    }
+    
+    .overview-card h3 {
+        margin: 0 0 8px 0;
+        font-size: 28px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .overview-card p {
+        margin: 0;
+        color: #6c757d;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+    }
+    
+    .services-section {
+        margin-bottom: 30px;
+    }
+    
+    .services-category {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+    
+    .category-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .category-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #495057;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .category-title i {
+        color: #007bff;
+    }
+    
+    .category-summary {
+        font-size: 12px;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .services-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .services-table th,
+    .services-table td {
+        padding: 15px 20px;
+        text-align: left;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .services-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .services-table td {
+        color: #495057;
+        font-size: 14px;
+    }
+    
+    .service-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .service-status.running {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .service-status.stopped {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .service-status.error {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+    }
+    
+    .service-status i {
+        font-size: 10px;
+    }
+    
+    .service-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+    
+    .service-description {
+        font-size: 12px;
+        color: #6c757d;
+        line-height: 1.4;
+    }
+    
+    .service-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .service-btn {
+        padding: 6px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        background: #fff;
+        color: #495057;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .service-btn:hover {
+        background: #f8f9fa;
+        border-color: #ced4da;
+    }
+    
+    .service-btn.start {
+        color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .service-btn.start:hover {
+        background: #28a745;
+        color: #fff;
+    }
+    
+    .service-btn.stop {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    .service-btn.stop:hover {
+        background: #dc3545;
+        color: #fff;
+    }
+    
+    .service-btn.restart {
+        color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .service-btn.restart:hover {
+        background: #007bff;
+        color: #fff;
+    }
+    
+    .service-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .service-metrics {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .service-metrics span {
+        display: block;
+        margin-bottom: 2px;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #007bff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .alert {
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+    
+    .alert-error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+    
+    .refresh-btn {
+        background: #007bff;
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        transition: all 0.2s ease;
+    }
+    
+    .refresh-btn:hover {
+        background: #0056b3;
+    }
+</style>
+
+<div class="system-config-header">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="margin: 0; color: #495057; font-size: 24px; font-weight: 600;">System Configuration</h1>
+        <button class="refresh-btn" onclick="refreshPage()">
+            <i class="fas fa-sync-alt"></i> Refresh Status
+        </button>
+    </div>
+    
+    <!-- System Overview Cards -->
+    <div class="system-overview">
+        <div class="overview-card">
+            <h3>{{ total_services }}</h3>
+            <p>Total Services</p>
+        </div>
+        <div class="overview-card running">
+            <h3>{{ running_services }}</h3>
+            <p>Running</p>
+        </div>
+        <div class="overview-card stopped">
+            <h3>{{ stopped_services }}</h3>
+            <p>Stopped</p>
+        </div>
+        <div class="overview-card error">
+            <h3>{{ error_services }}</h3>
+            <p>Errors</p>
+        </div>
+    </div>
+</div>
+
+<!-- Alert messages -->
+<div id="alert-container"></div>
+
+<!-- Services by Category -->
+{% for category, services in services_by_category.items %}
+<div class="services-category">
+    <div class="category-header">
+        <h2 class="category-title">
+            {% if category == 'PaloAlto' %}
+                <i class="fas fa-shield-alt"></i>
+            {% elif category == 'FortiGate' %}
+                <i class="fas fa-network-wired"></i>
+            {% else %}
+                <i class="fas fa-cogs"></i>
+            {% endif %}
+            {{ category }} Services
+        </h2>
+        <div class="category-summary">
+            {{ services|length }} service{{ services|length|pluralize }}
+        </div>
+    </div>
+    
+    <table class="services-table">
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Status</th>
+                <th>Metrics</th>
+                <th>Uptime</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for service in services %}
+            <tr>
+                <td>
+                    <div class="service-name">{{ service.display_name }}</div>
+                    <div class="service-description">{{ service.description }}</div>
+                    <div style="font-size: 11px; color: #adb5bd; margin-top: 2px;">{{ service.name }}</div>
+                </td>
+                <td>
+                    <span class="service-status {{ service.status }}">
+                        {% if service.status == 'running' %}
+                            <i class="fas fa-check-circle"></i> Running
+                        {% elif service.status == 'stopped' %}
+                            <i class="fas fa-stop-circle"></i> Stopped
+                        {% else %}
+                            <i class="fas fa-exclamation-triangle"></i> Error
+                        {% endif %}
+                    </span>
+                </td>
+                <td>
+                    <div class="service-metrics">
+                        <span><strong>PID:</strong> {{ service.main_pid }}</span>
+                        <span><strong>Memory:</strong> {{ service.memory_usage }}</span>
+                        <span><strong>CPU:</strong> {{ service.cpu_time }}</span>
+                    </div>
+                </td>
+                <td>
+                    <div style="font-size: 12px; color: #495057;">
+                        {{ service.uptime }}
+                    </div>
+                </td>
+                <td>
+                    <div class="service-actions">
+                        {% if service.status == 'running' %}
+                            <button class="service-btn stop" onclick="serviceAction('{{ service.name }}', 'stop', this)">
+                                <i class="fas fa-stop"></i> Stop
+                            </button>
+                            <button class="service-btn restart" onclick="serviceAction('{{ service.name }}', 'restart', this)">
+                                <i class="fas fa-redo"></i> Restart
+                            </button>
+                        {% else %}
+                            <button class="service-btn start" onclick="serviceAction('{{ service.name }}', 'start', this)">
+                                <i class="fas fa-play"></i> Start
+                            </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+<script>
+function showAlert(message, type = 'success') {
+    const alertContainer = document.getElementById('alert-container');
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = message;
+    
+    alertContainer.innerHTML = '';
+    alertContainer.appendChild(alert);
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+
+function serviceAction(serviceName, action, button) {
+    // Show loading state
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<span class="loading-spinner"></span> Processing...';
+    button.disabled = true;
+    
+    // Disable all buttons for this service
+    const row = button.closest('tr');
+    const allButtons = row.querySelectorAll('.service-btn');
+    allButtons.forEach(btn => btn.disabled = true);
+    
+    fetch('/service-action/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+        },
+        body: JSON.stringify({
+            service_name: serviceName,
+            action: action
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`<i class="fas fa-check-circle"></i> Service ${action} successful for ${serviceName}`, 'success');
+            // Refresh the page after a short delay to show updated status
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            showAlert(`<i class="fas fa-exclamation-triangle"></i> Error: ${data.error}`, 'error');
+            // Restore button state
+            button.innerHTML = originalContent;
+            button.disabled = false;
+            allButtons.forEach(btn => btn.disabled = false);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert(`<i class="fas fa-exclamation-triangle"></i> Network error occurred`, 'error');
+        // Restore button state
+        button.innerHTML = originalContent;
+        button.disabled = false;
+        allButtons.forEach(btn => btn.disabled = false);
+    });
+}
+
+function refreshPage() {
+    window.location.reload();
+}
+
+// Auto-refresh every 30 seconds
+setInterval(() => {
+    const refreshBtn = document.querySelector('.refresh-btn i');
+    refreshBtn.style.animation = 'spin 1s linear infinite';
+    
+    fetch('/system-config/')
+        .then(response => response.text())
+        .then(html => {
+            // Parse the response and update service statuses
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Update overview cards
+            const overviewCards = document.querySelectorAll('.overview-card h3');
+            const newOverviewCards = doc.querySelectorAll('.overview-card h3');
+            
+            overviewCards.forEach((card, index) => {
+                if (newOverviewCards[index]) {
+                    card.textContent = newOverviewCards[index].textContent;
+                }
+            });
+            
+            // Update service statuses
+            const serviceRows = document.querySelectorAll('.services-table tbody tr');
+            const newServiceRows = doc.querySelectorAll('.services-table tbody tr');
+            
+            serviceRows.forEach((row, index) => {
+                if (newServiceRows[index]) {
+                    const statusCell = row.cells[1];
+                    const newStatusCell = newServiceRows[index].cells[1];
+                    const metricsCell = row.cells[2];
+                    const newMetricsCell = newServiceRows[index].cells[2];
+                    const uptimeCell = row.cells[3];
+                    const newUptimeCell = newServiceRows[index].cells[3];
+                    
+                    statusCell.innerHTML = newStatusCell.innerHTML;
+                    metricsCell.innerHTML = newMetricsCell.innerHTML;
+                    uptimeCell.innerHTML = newUptimeCell.innerHTML;
+                }
+            });
+            
+            refreshBtn.style.animation = '';
+        })
+        .catch(error => {
+            console.error('Auto-refresh failed:', error);
+            refreshBtn.style.animation = '';
+        });
+}, 30000);
+
+// Add CSRF token to all requests
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    if (!csrfToken) {
+        // Create a hidden CSRF token if it doesn't exist
+        const token = '{{ csrf_token }}';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'csrfmiddlewaretoken';
+        input.value = token;
+        document.body.appendChild(input);
+    }
+});
+</script>
+{% endblock %}

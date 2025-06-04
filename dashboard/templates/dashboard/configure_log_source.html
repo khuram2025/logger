@@ -1,0 +1,923 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Configure Log Source - {{ source.name }}{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='log_sources' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+<style>
+    /* Configuration Styles */
+    .config-header {
+        margin-bottom: 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .config-title {
+        margin: 0;
+        color: #495057;
+        font-size: 24px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .config-title i {
+        color: #667eea;
+    }
+    
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #6c757d;
+        margin: 0 0 10px 0;
+    }
+    
+    .breadcrumb a {
+        color: #667eea;
+        text-decoration: none;
+    }
+    
+    .breadcrumb a:hover {
+        text-decoration: underline;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-secondary {
+        background: #fff;
+        color: #495057;
+        border: 1px solid #dee2e6;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-secondary:hover {
+        background: #f8f9fa;
+        border-color: #ced4da;
+        color: #495057;
+        text-decoration: none;
+    }
+    
+    .config-container {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 25px;
+    }
+    
+    .config-main {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+    
+    .config-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .config-section {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #495057;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .section-title i {
+        color: #667eea;
+    }
+    
+    .section-content {
+        padding: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        font-size: 14px;
+        color: #495057;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #495057;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .form-control:disabled {
+        background-color: #f8f9fa;
+        opacity: 1;
+    }
+    
+    .form-select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 16px 12px;
+        padding-right: 40px;
+    }
+    
+    .form-text {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 4px;
+    }
+    
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider {
+        background-color: #28a745;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(26px);
+    }
+    
+    .info-card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        padding: 20px;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-size: 13px;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .info-value {
+        font-size: 14px;
+        color: #495057;
+        font-weight: 600;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .status-badge.active {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-badge.inactive {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .status-badge.pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .test-result {
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 10px;
+        font-size: 13px;
+        display: none;
+    }
+    
+    .test-result.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .test-result.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .alert {
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+    
+    .alert-warning {
+        color: #856404;
+        background-color: #fff3cd;
+        border-color: #ffeeba;
+    }
+    
+    .alert-error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+    
+    .code-block {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 12px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        color: #495057;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    
+    @media (max-width: 768px) {
+        .config-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .config-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .action-buttons {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+</style>
+
+<div class="config-header">
+    <div>
+        <div class="breadcrumb">
+            <a href="{% url 'log_sources' %}">Log Sources</a>
+            <i class="fas fa-chevron-right"></i>
+            <span>Configure</span>
+        </div>
+        <h1 class="config-title">
+            <i class="fas fa-cog"></i>
+            Configure {{ source.name }}
+        </h1>
+    </div>
+    <div class="action-buttons">
+        <a href="{% url 'log_sources' %}" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Back to Sources
+        </a>
+        <button class="btn-primary" onclick="testConnection()">
+            <i class="fas fa-plug"></i>
+            Test Connection
+        </button>
+        <button class="btn-primary" onclick="saveConfiguration()">
+            <i class="fas fa-save"></i>
+            Save Configuration
+        </button>
+    </div>
+</div>
+
+<!-- Alert messages -->
+<div id="alert-container"></div>
+
+<div class="config-container">
+    <div class="config-main">
+        <!-- Basic Configuration -->
+        <div class="config-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-server"></i>
+                    Basic Configuration
+                </h2>
+            </div>
+            <div class="section-content">
+                <div class="form-group">
+                    <label class="form-label">Source Name</label>
+                    <input type="text" class="form-control" id="sourceName" value="{{ source.name }}">
+                    <div class="form-text">Friendly name for this log source</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" id="sourceDescription" rows="3">{{ source.description }}</textarea>
+                    <div class="form-text">Optional description of this log source</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Device Type</label>
+                    <select class="form-control form-select" id="deviceType">
+                        <option value="fortigate" {% if source.device_type == 'fortigate' %}selected{% endif %}>FortiGate Firewall</option>
+                        <option value="paloalto" {% if source.device_type == 'paloalto' %}selected{% endif %}>PaloAlto Firewall</option>
+                        <option value="cisco" {% if source.device_type == 'cisco' %}selected{% endif %}>Cisco Device</option>
+                        <option value="checkpoint" {% if source.device_type == 'checkpoint' %}selected{% endif %}>Check Point Firewall</option>
+                        <option value="sophos" {% if source.device_type == 'sophos' %}selected{% endif %}>Sophos Firewall</option>
+                        <option value="generic" {% if source.device_type == 'generic' %}selected{% endif %}>Generic Syslog</option>
+                        <option value="unknown" {% if source.device_type == 'unknown' %}selected{% endif %}>Unknown</option>
+                    </select>
+                    <div class="form-text">Type of device sending logs</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Configuration -->
+        <div class="config-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-network-wired"></i>
+                    Network Configuration
+                </h2>
+            </div>
+            <div class="section-content">
+                <div class="form-group">
+                    <label class="form-label">IP Address</label>
+                    <input type="text" class="form-control" id="ipAddress" value="{{ source.ip_address }}">
+                    <div class="form-text">IP address of the log source</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Port</label>
+                    <input type="number" class="form-control" id="port" value="{{ source.port }}" min="1" max="65535">
+                    <div class="form-text">UDP port for syslog reception (typically 514)</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Protocol</label>
+                    <select class="form-control form-select" id="protocol">
+                        <option value="udp" selected>UDP</option>
+                        <option value="tcp">TCP</option>
+                    </select>
+                    <div class="form-text">Protocol for log transmission</div>
+                </div>
+                
+                <div id="testResult" class="test-result"></div>
+            </div>
+        </div>
+
+        <!-- Log Processing Configuration -->
+        <div class="config-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-file-alt"></i>
+                    Log Processing
+                </h2>
+            </div>
+            <div class="section-content">
+                <div class="form-group">
+                    <label class="form-label">Save Logs to File</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="saveLogs" {% if source.save_logs %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="form-text">Enable saving logs to local files</span>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="logFileGroup">
+                    <label class="form-label">Log File Path</label>
+                    <input type="text" class="form-control" id="logFilePath" value="{{ source.log_file_path|default:'/var/log/custom.log' }}">
+                    <div class="form-text">Full path where logs will be saved</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Log Format Template</label>
+                    <select class="form-control form-select" id="logTemplate">
+                        <option value="raw">Raw Message</option>
+                        <option value="timestamp">Timestamp + Message</option>
+                        <option value="detailed">Detailed (Timestamp + Host + Message)</option>
+                        <option value="custom">Custom Template</option>
+                    </select>
+                    <div class="form-text">Format for saved log entries</div>
+                </div>
+                
+                <div class="form-group" id="customTemplateGroup" style="display: none;">
+                    <label class="form-label">Custom Template</label>
+                    <textarea class="form-control" id="customTemplate" rows="3" placeholder="%TIMESTAMP% %HOSTNAME% %MSG%\n">{{ source.custom_template|default:"%TIMESTAMP% %HOSTNAME% %MSG%\\n" }}</textarea>
+                    <div class="form-text">Custom rsyslog template (use rsyslog property names)</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Parse and Store in Database</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="parseToDatabase" {% if source.parse_to_database %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="form-text">Parse logs and store in ClickHouse database</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated Configuration Preview -->
+        <div class="config-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-code"></i>
+                    Generated Rsyslog Configuration
+                </h2>
+            </div>
+            <div class="section-content">
+                <div class="code-block" id="configPreview">
+# Loading configuration...
+                </div>
+                <div class="form-text">This configuration will be applied to rsyslog</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="config-sidebar">
+        <!-- Source Status -->
+        <div class="info-card">
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: 600; color: #495057;">
+                <i class="fas fa-info-circle" style="color: #667eea; margin-right: 8px;"></i>
+                Source Status
+            </h3>
+            <div class="info-item">
+                <span class="info-label">Current Status</span>
+                <span class="status-badge {{ source.status }}">
+                    {% if source.status == 'active' %}
+                        <i class="fas fa-check-circle"></i> Active
+                    {% elif source.status == 'inactive' %}
+                        <i class="fas fa-stop-circle"></i> Inactive
+                    {% else %}
+                        <i class="fas fa-clock"></i> Pending
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Logs Today</span>
+                <span class="info-value">{{ source.logs_today|default:"0" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Last Hour</span>
+                <span class="info-value">{{ source.logs_last_hour|default:"0" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Total Logs</span>
+                <span class="info-value">{{ source.total_logs|default:"0" }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="info-card">
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: 600; color: #495057;">
+                <i class="fas fa-bolt" style="color: #667eea; margin-right: 8px;"></i>
+                Quick Actions
+            </h3>
+            
+            {% if source.status == 'pending' %}
+            <button class="btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="approveSource()">
+                <i class="fas fa-check"></i>
+                Approve Source
+            </button>
+            <button class="btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="rejectSource()">
+                <i class="fas fa-times"></i>
+                Reject Source
+            </button>
+            {% elif source.status == 'active' %}
+            <button class="btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="disableSource()">
+                <i class="fas fa-pause"></i>
+                Disable Source
+            </button>
+            {% elif source.status == 'inactive' %}
+            <button class="btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="enableSource()">
+                <i class="fas fa-play"></i>
+                Enable Source
+            </button>
+            {% endif %}
+            
+            <button class="btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="viewLogs()">
+                <i class="fas fa-eye"></i>
+                View Recent Logs
+            </button>
+            
+            <button class="btn-secondary" style="width: 100%;" onclick="downloadConfig()">
+                <i class="fas fa-download"></i>
+                Download Config
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function showAlert(message, type = 'success') {
+    const alertContainer = document.getElementById('alert-container');
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+    
+    alertContainer.innerHTML = '';
+    alertContainer.appendChild(alert);
+    
+    setTimeout(() => alert.remove(), 5000);
+}
+
+function updateConfigPreview() {
+    const deviceType = document.getElementById('deviceType').value;
+    const ipAddress = document.getElementById('ipAddress').value;
+    const port = document.getElementById('port').value;
+    const saveLogs = document.getElementById('saveLogs').checked;
+    const logFilePath = document.getElementById('logFilePath').value;
+    const logTemplate = document.getElementById('logTemplate').value;
+    const customTemplate = document.getElementById('customTemplate').value;
+
+    let template = '';
+    switch(logTemplate) {
+        case 'raw':
+            template = '%rawmsg-after-pri%\\n';
+            break;
+        case 'timestamp':
+            template = '%timegenerated% %rawmsg-after-pri%\\n';
+            break;
+        case 'detailed':
+            template = '%timegenerated% %hostname% %rawmsg-after-pri%\\n';
+            break;
+        case 'custom':
+            template = customTemplate;
+            break;
+    }
+
+    const config = `#### start ${deviceType}.conf ####
+
+# Load UDP syslog listener
+module(load="imudp")
+input(type="imudp" port="${port}")
+
+# Template for ${deviceType} messages
+template(name="${deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}Template" type="string" string="${template}")
+
+# Process messages from ${ipAddress}
+if ($fromhost-ip == '${ipAddress}') then {
+${saveLogs ? `    action(
+        type="omfile"
+        file="${logFilePath}"
+        template="${deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}Template"
+    )` : '    # Log saving disabled'}
+    stop
+}
+
+#### end ${deviceType}.conf ####`;
+
+    document.getElementById('configPreview').textContent = config;
+}
+
+function testConnection() {
+    const button = event.target;
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+    button.disabled = true;
+    
+    const testResult = document.getElementById('testResult');
+    testResult.style.display = 'none';
+    
+    fetch(`/logs-sources/test/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify({
+            source_id: '{{ source.id }}'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        testResult.className = `test-result ${data.success ? 'success' : 'error'}`;
+        testResult.innerHTML = `<i class="fas fa-${data.success ? 'check-circle' : 'exclamation-triangle'}"></i> ${data.success ? data.message : data.error}`;
+        testResult.style.display = 'block';
+        
+        if (data.success) {
+            showAlert('Connection test successful', 'success');
+        } else {
+            showAlert(`Connection test failed: ${data.error}`, 'warning');
+        }
+    })
+    .catch(error => {
+        testResult.className = 'test-result error';
+        testResult.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Connection test failed';
+        testResult.style.display = 'block';
+        showAlert('Connection test failed', 'error');
+    })
+    .finally(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    });
+}
+
+function saveConfiguration() {
+    const config = {
+        source_id: '{{ source.id }}',
+        name: document.getElementById('sourceName').value,
+        description: document.getElementById('sourceDescription').value,
+        device_type: document.getElementById('deviceType').value,
+        ip_address: document.getElementById('ipAddress').value,
+        port: parseInt(document.getElementById('port').value),
+        protocol: document.getElementById('protocol').value,
+        save_logs: document.getElementById('saveLogs').checked,
+        log_file_path: document.getElementById('logFilePath').value,
+        log_template: document.getElementById('logTemplate').value,
+        custom_template: document.getElementById('customTemplate').value,
+        parse_to_database: document.getElementById('parseToDatabase').checked
+    };
+    
+    const button = event.target;
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    button.disabled = true;
+    
+    fetch(`/logs-sources/configure/{{ source.id }}/save/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Configuration saved successfully', 'success');
+            // Update page title if name changed
+            if (config.name !== '{{ source.name }}') {
+                document.title = `Configure Log Source - ${config.name}`;
+                document.querySelector('.config-title').innerHTML = `<i class="fas fa-cog"></i> Configure ${config.name}`;
+            }
+        } else {
+            showAlert(`Save failed: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('Save failed: Network error', 'error');
+    })
+    .finally(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    });
+}
+
+function approveSource() {
+    if (confirm('Approve this log source? This will start accepting logs from this device.')) {
+        performAction('approve');
+    }
+}
+
+function rejectSource() {
+    if (confirm('Reject this log source? This will block logs from this device.')) {
+        performAction('reject');
+    }
+}
+
+function enableSource() {
+    performAction('enable');
+}
+
+function disableSource() {
+    if (confirm('Disable this log source? This will stop accepting logs from this device.')) {
+        performAction('disable');
+    }
+}
+
+function performAction(action) {
+    fetch('/logs-sources/action/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify({
+            source_id: '{{ source.id }}',
+            action: action
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`Source ${action}d successfully`, 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            showAlert(`Error: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('Action failed: Network error', 'error');
+    });
+}
+
+function viewLogs() {
+    window.open(`/logs/?srcip={{ source.ip_address }}&time_range=1h`, '_blank');
+}
+
+function downloadConfig() {
+    const config = document.getElementById('configPreview').textContent;
+    const blob = new Blob([config], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `{{ source.device_type }}-{{ source.ip_address }}.conf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const logTemplate = document.getElementById('logTemplate');
+    const customTemplateGroup = document.getElementById('customTemplateGroup');
+    const saveLogs = document.getElementById('saveLogs');
+    const logFileGroup = document.getElementById('logFileGroup');
+    
+    // Show/hide custom template
+    logTemplate.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customTemplateGroup.style.display = 'block';
+        } else {
+            customTemplateGroup.style.display = 'none';
+        }
+        updateConfigPreview();
+    });
+    
+    // Show/hide log file path
+    saveLogs.addEventListener('change', function() {
+        logFileGroup.style.display = this.checked ? 'block' : 'none';
+        updateConfigPreview();
+    });
+    
+    // Update preview on input changes
+    ['deviceType', 'ipAddress', 'port', 'saveLogs', 'logFilePath', 'logTemplate', 'customTemplate'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', updateConfigPreview);
+            element.addEventListener('input', updateConfigPreview);
+        }
+    });
+    
+    // Initial setup
+    if (logTemplate.value === 'custom') {
+        customTemplateGroup.style.display = 'block';
+    }
+    
+    if (!saveLogs.checked) {
+        logFileGroup.style.display = 'none';
+    }
+    
+    updateConfigPreview();
+    
+    // Add CSRF token
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'csrfmiddlewaretoken';
+        input.value = getCsrfToken();
+        document.body.appendChild(input);
+    }
+});
+</script>
+{% endblock %}

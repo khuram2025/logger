@@ -1,8 +1,8 @@
 <header class="main-header">
     <div class="main-nav-links">
-        <a href="#" class="active">Dashboard</a>
+        <a href="{% url 'dmu' %}" {% if request.resolver_match.url_name == 'dmu' %}class="active"{% endif %}>Dashboard</a>
         <a href="#">Firewalls</a>
-        <a href="#">System Config</a>
+        <a href="{% url 'system_config' %}" {% if request.resolver_match.url_name == 'system_config' %}class="active"{% endif %}>System Config</a>
         <a href="#">Reports</a>
         <a href="#">Settings</a>
     </div>
