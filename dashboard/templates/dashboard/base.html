@@ -20,6 +20,41 @@
         </main>
         {% include 'dashboard/partials/sidebar.html' %}
     </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Collapsible header functionality for sidebar
+        const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+        console.log('Found collapsible headers:', collapsibleHeaders.length);
+        
+        collapsibleHeaders.forEach(header => {
+            header.addEventListener('click', function () {
+                const targetId = this.dataset.target;
+                console.log('Clicked header with target:', targetId);
+                const content = document.getElementById(targetId);
+                const icon = this.querySelector('i');
+                
+                if (content) {
+                    // Toggle the visibility
+                    if (content.style.display === 'none' || content.style.display === '') {
+                        content.style.display = 'block';
+                        if (icon) {
+                            icon.className = 'fas fa-minus filter-icon';
+                        }
+                    } else {
+                        content.style.display = 'none';
+                        if (icon) {
+                            icon.className = 'fas fa-plus filter-icon';
+                        }
+                    }
+                } else {
+                    console.error('Content element not found for target:', targetId);
+                }
+            });
+        });
+    });
+    </script>
+    
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

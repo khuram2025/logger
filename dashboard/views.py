@@ -96,7 +96,8 @@ def top_summary_view(request):
     # ClickHouse expects ISO format
     since_str = since.strftime('%Y-%m-%d %H:%M:%S')
 
-    query = f'''
+    # Query 1: Top Traffic (existing)
+    traffic_query = f'''
         SELECT
             srcip,
             dstip,
@@ -111,12 +112,90 @@ def top_summary_view(request):
         LIMIT 10
     '''
     
+    # Query 2: Top Categories
+    categories_query = f'''
+        SELECT
+            appcategory,
+            count(*) AS count,
+            sum(sentbyte) + sum(rcvdbyte) AS total_bytes
+        FROM fortigate_traffic
+        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+          AND appcategory != '' AND appcategory IS NOT NULL
+        GROUP BY appcategory
+        ORDER BY count DESC
+        LIMIT 10
+    '''
+    
+    # Query 3: Top URLs (from threat_logs table if exists, otherwise from fortigate_traffic)
+    urls_query = f'''
+        SELECT
+            hostname,
+            count(*) AS count,
+            sum(sentbyte) + sum(rcvdbyte) AS total_bytes
+        FROM fortigate_traffic
+        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+          AND hostname != '' AND hostname IS NOT NULL
+        GROUP BY hostname
+        ORDER BY count DESC
+        LIMIT 10
+    '''
+    
+    # Query 4: Top Users
+    users_query = f'''
+        SELECT
+            username,
+            count(*) AS count,
+            sum(sentbyte) + sum(rcvdbyte) AS total_bytes
+        FROM fortigate_traffic
+        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+          AND username != '' AND username IS NOT NULL
+        GROUP BY username
+        ORDER BY count DESC
+        LIMIT 10
+    '''
+    
+    # Query 5: Top Destination Countries
+    countries_query = f'''
+        SELECT
+            dstcountry,
+            count(*) AS count,
+            sum(sentbyte) + sum(rcvdbyte) AS total_bytes
+        FROM fortigate_traffic
+        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
+          AND dstcountry != '' AND dstcountry IS NOT NULL
+        GROUP BY dstcountry
+        ORDER BY count DESC
+        LIMIT 10
+    '''
+    
+    # Execute all queries
     try:
-        rows = client.execute(query)
+        traffic_rows = client.execute(traffic_query)
     except Exception:
-        rows = []
+        traffic_rows = []
         
-    top_summary = [
+    try:
+        categories_rows = client.execute(categories_query)
+    except Exception:
+        categories_rows = []
+        
+    try:
+        urls_rows = client.execute(urls_query)
+    except Exception:
+        urls_rows = []
+        
+    try:
+        users_rows = client.execute(users_query)
+    except Exception:
+        users_rows = []
+        
+    try:
+        countries_rows = client.execute(countries_query)
+    except Exception:
+        countries_rows = []
+    
+    # Format results
+    top_traffic = [
         {
             'srcip': row[0],
             'dstip': row[1],
@@ -125,10 +204,51 @@ def top_summary_view(request):
             'total_rcvd': row[4],
             'total_bytes': row[5],
         }
-        for row in rows
+        for row in traffic_rows
     ]
+    
+    top_categories = [
+        {
+            'category': row[0],
+            'count': row[1],
+            'total_bytes': row[2],
+        }
+        for row in categories_rows
+    ]
+    
+    top_urls = [
+        {
+            'url': row[0],
+            'count': row[1],
+            'total_bytes': row[2],
+        }
+        for row in urls_rows
+    ]
+    
+    top_users = [
+        {
+            'username': row[0],
+            'count': row[1],
+            'total_bytes': row[2],
+        }
+        for row in users_rows
+    ]
+    
+    top_countries = [
+        {
+            'country': row[0],
+            'count': row[1],
+            'total_bytes': row[2],
+        }
+        for row in countries_rows
+    ]
+    
     return render(request, 'dashboard/top_summary.html', {
-        'top_summary': top_summary,
+        'top_traffic': top_traffic,
+        'top_categories': top_categories,
+        'top_urls': top_urls,
+        'top_users': top_users,
+        'top_countries': top_countries,
         'selected_time_range': time_range
     })
 
@@ -187,7 +307,11 @@ def clickhouse_logs_view(request):
     srcport_filter = request.GET.get('srcport', '').strip()
     dstport_filter = request.GET.get('dstport', '').strip()
     action_filter = request.GET.get('action', '').strip()
-    devname_filter = request.GET.get('devname', '').strip() # Added devname filter
+    devname_filter = request.GET.get('devname', '').strip()
+    appcategory_filter = request.GET.get('appcategory', '').strip()
+    hostname_filter = request.GET.get('hostname', '').strip()
+    username_filter = request.GET.get('username', '').strip()
+    dstcountry_filter = request.GET.get('dstcountry', '').strip()
     
     # Build WHERE clauses based on filter inputs
     where_clauses = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"] 
@@ -212,8 +336,16 @@ def clickhouse_logs_view(request):
             where_clauses.append(f"dstport = {dstport_filter}")
     if action_filter:
         where_clauses.append(f"action = '{action_filter}'")
-    if devname_filter: # Added devname filter condition
+    if devname_filter:
         where_clauses.append(f"devname = '{devname_filter}'")
+    if appcategory_filter:
+        where_clauses.append(f"appcategory = '{appcategory_filter}'")
+    if hostname_filter:
+        where_clauses.append(f"hostname = '{hostname_filter}'")
+    if username_filter:
+        where_clauses.append(f"username = '{username_filter}'")
+    if dstcountry_filter:
+        where_clauses.append(f"dstcountry = '{dstcountry_filter}'")
     
     # Combine all WHERE clauses
     where_clause = ' AND '.join(where_clauses)
@@ -418,8 +550,12 @@ def clickhouse_logs_view(request):
         'srcport_filter': srcport_filter,
         'dstport_filter': dstport_filter,
         'action_filter': action_filter,
-        'devname_filter': devname_filter, # Pass devname filter to template
-        'available_devices': available_devices, # Pass available devices to template
+        'devname_filter': devname_filter,
+        'available_devices': available_devices,
+        'appcategory_filter': appcategory_filter,
+        'hostname_filter': hostname_filter,
+        'username_filter': username_filter,
+        'dstcountry_filter': dstcountry_filter,
     }
     return render(request, 'dashboard/logs2.html', context)
 
@@ -458,6 +594,10 @@ def grouped_logs_view(request):
     dstport_filter = request.GET.get('dstport', '').strip()
     action_filter = request.GET.get('action', '').strip()
     devname_filter = request.GET.get('devname', '').strip()
+    appcategory_filter = request.GET.get('appcategory', '').strip()
+    hostname_filter = request.GET.get('hostname', '').strip()
+    username_filter = request.GET.get('username', '').strip()
+    dstcountry_filter = request.GET.get('dstcountry', '').strip()
 
     # Build WHERE conditions
     where_conditions = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"]
@@ -469,7 +609,15 @@ def grouped_logs_view(request):
     if action_filter:
         where_conditions.append(f"action = '{action_filter}'")
     if devname_filter:
-        where_conditions.append(f"devicename = '{devname_filter}'")
+        where_conditions.append(f"devname = '{devname_filter}'")
+    if appcategory_filter:
+        where_conditions.append(f"appcategory = '{appcategory_filter}'")
+    if hostname_filter:
+        where_conditions.append(f"hostname = '{hostname_filter}'")
+    if username_filter:
+        where_conditions.append(f"username = '{username_filter}'")
+    if dstcountry_filter:
+        where_conditions.append(f"dstcountry = '{dstcountry_filter}'")
     
     # Handle port filters with ranges
     if srcport_filter:
@@ -669,6 +817,10 @@ def grouped_logs_view(request):
         'dstport_filter': dstport_filter,
         'action_filter': action_filter,
         'devname_filter': devname_filter,
+        'appcategory_filter': appcategory_filter,
+        'hostname_filter': hostname_filter,
+        'username_filter': username_filter,
+        'dstcountry_filter': dstcountry_filter,
         'available_actions': available_actions,
         'available_devices': available_devices,
     }

@@ -22,8 +22,50 @@
 {% endblock %}
 
 {% block content %}
-<div class="page-container">
-    <main class="main-content-area">
+<!-- Active Filters Banner -->
+{% if srcip_filter or dstip_filter or srcport_filter or dstport_filter or action_filter or devname_filter or appcategory_filter or hostname_filter or username_filter or dstcountry_filter %}
+<div class="active-filters-banner" style="background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 4px; padding: 10px 15px; margin-bottom: 15px;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div>
+            <strong style="color: #1976d2;">Active Filters:</strong>
+            {% if srcip_filter %}
+                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Source IP: {{ srcip_filter }}</span>
+            {% endif %}
+            {% if dstip_filter %}
+                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Destination IP: {{ dstip_filter }}</span>
+            {% endif %}
+            {% if srcport_filter %}
+                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Source Port: {{ srcport_filter }}</span>
+            {% endif %}
+            {% if dstport_filter %}
+                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Destination Port: {{ dstport_filter }}</span>
+            {% endif %}
+            {% if action_filter %}
+                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Action: {{ action_filter }}</span>
+            {% endif %}
+            {% if devname_filter %}
+                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Device: {{ devname_filter }}</span>
+            {% endif %}
+            {% if appcategory_filter %}
+                <span class="filter-tag" style="background-color: #f39c12; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Category: {{ appcategory_filter }}</span>
+            {% endif %}
+            {% if hostname_filter %}
+                <span class="filter-tag" style="background-color: #e67e22; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Hostname: {{ hostname_filter }}</span>
+            {% endif %}
+            {% if username_filter %}
+                <span class="filter-tag" style="background-color: #9b59b6; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">User: {{ username_filter }}</span>
+            {% endif %}
+            {% if dstcountry_filter %}
+                <span class="filter-tag" style="background-color: #1abc9c; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Country: {{ dstcountry_filter }}</span>
+            {% endif %}
+        </div>
+        <a href="{% url 'grouped_logs' %}?time_range={{ selected_time_range }}" style="color: #1976d2; text-decoration: none; font-size: 0.9em;">
+            <i class="fas fa-times"></i> Clear All
+        </a>
+    </div>
+</div>
+{% endif %}
+
 <div class="logs-content-header">
     <div class="controls-bar logs-controls-row">
         <div class="logs-controls-group">
@@ -35,9 +77,7 @@
                 Displaying groups for: {{ selected_time_range_display }}
             </div>
         </div>
-        <div class="logs-controls-filter">
-            {% include 'dashboard/partials/filter_dropdown.html' %}
-        </div>
+        <!-- Filters moved to sidebar only -->
     </div>
 </div>
 
@@ -129,62 +169,6 @@
         </nav>
     </div>
     {% endif %}
-</div>
-    </main>
-
-    <aside class="sidebar-right">
-        <div class="sidebar-section">
-            <div class="sidebar-header non-collapsible">
-                <span>Summaries</span>
-                <i class="fas fa-caret-down"></i>
-            </div>
-        </div>
-
-        {% comment %} Include the new Filters sidebar component {% endcomment %}
-        <div class="sidebar-section">
-            {% include 'dashboard/_filters_sidebar_grouped.html' %}
-        </div>
-
-        <div class="sidebar-section">
-            <div class="sidebar-header collapsible-header" data-target="log-analytics-content">
-                <span>Log Analytics</span>
-                <i class="fas fa-plus"></i>
-            </div>
-            <div id="log-analytics-content" class="collapsible-content">
-                <a href="#">WAF Tags</a>
-                <a href="#" id="wafRulesLink">WAF Rules</a>
-                <a href="#">WAF Groups</a>
-                <a href="#">WAF Latency</a>
-            </div>
-        </div>
-
-        <div class="sidebar-section">
-            <div class="sidebar-header collapsible-header" data-target="client-analytics-content">
-                <span>Client Analytics</span>
-                <i class="fas fa-plus"></i>
-            </div>
-            <div id="client-analytics-content" class="collapsible-content">
-                <a href="#">Browser</a>
-                <a href="#">Client OS</a>
-                <a href="#">Device</a>
-                <a href="#">IP Address</a>
-                <a href="#">Location</a>
-                <a href="#">End to End</a>
-                <a href="#">User ID</a>
-            </div>
-        </div>
-        
-        <div class="sidebar-section">
-            <div class="sidebar-header collapsible-header" data-target="lb-analytics-content">
-                <span>Load Balancer Analytics</span>
-                <i class="fas fa-plus"></i>
-            </div>
-            <div id="lb-analytics-content" class="collapsible-content">
-                <a href="#">VS IP Address</a>
-                <a href="#">Server IP Address</a>
-            </div>
-        </div>
-    </aside>
 </div>
 {% endblock %}
 

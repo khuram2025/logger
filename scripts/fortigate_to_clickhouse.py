@@ -97,12 +97,19 @@ def parse_line(line: str) -> dict:
             data['timestamp'] = None
         data['raw_message'] = line.rstrip('\n')
     
-        # Ensure all numeric fields are integers
+        # Ensure all numeric fields are integers with proper range checking
         for field in NUMERIC_FIELDS:
             val = data.get(field, 0)
             try:
-                data[field] = int(val)
-            except Exception:
+                int_val = int(val)
+                # Handle UInt64 overflow (max value is 18446744073709551615)
+                if int_val < 0:
+                    data[field] = 0
+                elif int_val > 18446744073709551615:
+                    data[field] = 18446744073709551615
+                else:
+                    data[field] = int_val
+            except (ValueError, TypeError):
                 data[field] = 0
                 
         # Critical IP fields must have valid values
@@ -110,15 +117,30 @@ def parse_line(line: str) -> dict:
         for field in ['srcip', 'dstip']:
             if field not in data or not data[field] or data[field].strip() == '':
                 data[field] = '0.0.0.0'
-            # Ensure IP format is valid
-            parts = data[field].split('.')
-            if len(parts) != 4:
-                data[field] = '0.0.0.0'
+            else:
+                # Ensure IP format is valid
+                ip_str = data[field].strip()
+                try:
+                    parts = ip_str.split('.')
+                    if len(parts) != 4 or not all(0 <= int(part) <= 255 for part in parts):
+                        data[field] = '0.0.0.0'
+                except (ValueError, IndexError):
+                    data[field] = '0.0.0.0'
     
         # Handle all other IP-like fields that might exist in the data
         for field in IP_FIELDS:
-            if field in data and (not data[field] or data[field].strip() == ''):
-                data[field] = '0.0.0.0'
+            if field in data:
+                if not data[field] or data[field].strip() == '':
+                    data[field] = '0.0.0.0'
+                else:
+                    # Validate other IP fields too
+                    ip_str = data[field].strip()
+                    try:
+                        parts = ip_str.split('.')
+                        if len(parts) != 4 or not all(0 <= int(part) <= 255 for part in parts):
+                            data[field] = '0.0.0.0'
+                    except (ValueError, IndexError):
+                        data[field] = '0.0.0.0'
     
         # Assign defaults
         for field in ALL_FIELDS:
@@ -252,43 +274,52 @@ def main():
             except Exception as e:
                 logging.error(f"Parse error: {e} | line: {line.strip()}")
         if rows:
-            try:
-                CLIENT.execute(insert_query, rows)
-                logging.info(f"Inserted {len(rows)} rows to ClickHouse.")
-            except Exception as e:
-                logging.error(f"Batch insert error: {e}")
-                # Log a sample of the problematic data to help diagnose
-                if rows:
-                    sample_row = rows[0]
-                    sample_dict = dict(zip(ALL_FIELDS, sample_row))
-                    logging.error(f"Sample row that caused error: {sample_dict}")
-                    
-                    # Additional debugging - check the specific values of srcip and dstip
+            # Pre-validate all rows before insertion
+            valid_rows = []
+            for i, row in enumerate(rows):
+                try:
+                    # Validate critical fields
                     srcip_idx = ALL_FIELDS.index('srcip')
                     dstip_idx = ALL_FIELDS.index('dstip')
-                    logging.error(f"srcip value: '{rows[0][srcip_idx]}', type: {type(rows[0][srcip_idx])}")
-                    logging.error(f"dstip value: '{rows[0][dstip_idx]}', type: {type(rows[0][dstip_idx])}")
+                    eventtime_idx = ALL_FIELDS.index('eventtime')
                     
-                    # Try to insert valid records where possible by filtering out problematic rows
-                    valid_rows = []
-                    for r in rows:
-                        try:
-                            # Check if srcip and dstip are valid
-                            srcip = r[ALL_FIELDS.index('srcip')]
-                            dstip = r[ALL_FIELDS.index('dstip')]
-                            if srcip and isinstance(srcip, str) and '.' in srcip and dstip and isinstance(dstip, str) and '.' in dstip:
-                                valid_rows.append(r)
-                        except Exception:
-                            continue
+                    srcip = row[srcip_idx]
+                    dstip = row[dstip_idx]
+                    eventtime = row[eventtime_idx]
                     
-                    if valid_rows:
+                    # Validate IP addresses
+                    def is_valid_ip(ip):
                         try:
-                            CLIENT.execute(insert_query, valid_rows)
-                            logging.info(f"Inserted {len(valid_rows)} filtered valid rows to ClickHouse.")
-                        except Exception as e2:
-                            logging.error(f"Failed to insert filtered rows: {e2}")
+                            parts = str(ip).split('.')
+                            return len(parts) == 4 and all(0 <= int(part) <= 255 for part in parts)
+                        except:
+                            return False
+                    
+                    # Validate eventtime range
+                    if isinstance(eventtime, (int, float)) and (eventtime < 0 or eventtime > 18446744073709551615):
+                        logging.warning(f"Row {i}: Invalid eventtime {eventtime}, setting to 0")
+                        row[eventtime_idx] = 0
+                    
+                    if is_valid_ip(srcip) and is_valid_ip(dstip):
+                        valid_rows.append(row)
                     else:
-                        logging.warning("No valid rows found after filtering")
+                        logging.warning(f"Row {i}: Invalid IP addresses - srcip='{srcip}', dstip='{dstip}' - skipping")
+                        
+                except Exception as e:
+                    logging.warning(f"Row {i}: Validation error {e} - skipping row")
+            
+            if valid_rows:
+                try:
+                    CLIENT.execute(insert_query, valid_rows)
+                    logging.info(f"Inserted {len(valid_rows)} valid rows to ClickHouse (skipped {len(rows) - len(valid_rows)} invalid rows).")
+                except Exception as e:
+                    logging.error(f"Batch insert error: {e}")
+                    if valid_rows:
+                        sample_row = valid_rows[0]
+                        sample_dict = dict(zip(ALL_FIELDS, sample_row))
+                        logging.error(f"Sample row that caused error: {sample_dict}")
+            else:
+                logging.warning(f"No valid rows found in batch of {len(rows)} rows")
 
 
     # Create file handler and observer
