@@ -4,7 +4,14 @@
         <a href="#">Firewalls</a>
         <a href="{% url 'system_config' %}" {% if request.resolver_match.url_name == 'system_config' %}class="active"{% endif %}>System Config</a>
         <a href="#">Reports</a>
-        <a href="#">Settings</a>
+        <div class="dropdown">
+            <a href="#" class="dropdown-toggle">Settings <i class="fas fa-caret-down"></i></a>
+            <div class="dropdown-menu">
+                <a href="{% url 'system_config' %}" class="dropdown-item">System Config</a>
+                <a href="{% url 'log_sources' %}" class="dropdown-item">Log Sources</a>
+                <a href="{% url 'log_management' %}" class="dropdown-item">Log Management</a>
+            </div>
+        </div>
     </div>
     <div class="user-actions">
         <button class="icon-button">

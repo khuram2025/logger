@@ -1990,3 +1990,154 @@ if ($fromhost-ip == '{ip_address}') then {{
         return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Configuration save failed: {str(e)}'})
+
+
+def format_bytes(bytes_val):
+    """Format bytes to human readable format"""
+    if bytes_val == 0:
+        return "0 B"
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if bytes_val < 1024.0:
+            return f"{bytes_val:.1f} {unit}"
+        bytes_val /= 1024.0
+    return f"{bytes_val:.1f} PB"
+
+def log_management_status_view(request):
+    """View for displaying log management and rotation status"""
+    import json
+    import os
+    import time
+    import subprocess
+    from datetime import datetime
+    
+    STATUS_FILE = '/var/lib/log-manager/status.json'
+    
+    try:
+        # Load status from log monitor
+        status_data = {}
+        if os.path.exists(STATUS_FILE):
+            with open(STATUS_FILE, 'r') as f:
+                status_data = json.load(f)
+        
+        # If no status file exists, create basic status
+        if not status_data:
+            status_data = {
+                'timestamp': time.time(),
+                'timestamp_formatted': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'overall_status': 'unknown',
+                'files': {},
+                'processing_lag': {},
+                'rotation': {},
+                'summary': {
+                    'total_files': 0,
+                    'total_size': 0,
+                    'total_size_formatted': '0 B'
+                },
+                'alerts': []
+            }
+            
+            # Get basic file info
+            log_files = {
+                '/var/log/fortigate.log': 'FortiGate Traffic',
+                '/var/log/paloalto-1004.log': 'PaloAlto Traffic'
+            }
+            
+            for filepath, description in log_files.items():
+                if os.path.exists(filepath):
+                    stat = os.stat(filepath)
+                    size = stat.st_size
+                    
+                    status_data['files'][filepath] = {
+                        'exists': True,
+                        'size': size,
+                        'size_formatted': format_bytes(size),
+                        'description': description,
+                        'last_modified': stat.st_mtime,
+                        'last_modified_formatted': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+                        'alert_level': 'warning' if size > 1.5 * 1024 * 1024 * 1024 else 'ok',
+                        'percentage_of_limit': (size / (2 * 1024 * 1024 * 1024)) * 100
+                    }
+                    
+                    status_data['processing_lag'][filepath] = {
+                        'lag_bytes': 0,
+                        'lag_formatted': '0 B',
+                        'alert_level': 'unknown',
+                        'last_processed_time_formatted': 'Unknown'
+                    }
+                else:
+                    status_data['files'][filepath] = {
+                        'exists': False,
+                        'description': description,
+                        'alert_level': 'error'
+                    }
+            
+            # Update summary
+            total_size = sum(f.get('size', 0) for f in status_data['files'].values())
+            status_data['summary'].update({
+                'total_files': len([f for f in status_data['files'].values() if f.get('exists')]),
+                'total_size': total_size,
+                'total_size_formatted': format_bytes(total_size)
+            })
+        
+        # Add service status information
+        service_status = {}
+        services = [
+            'log-manager.service',
+            'fortigate_to_clickhouse.service', 
+            'paloalto_to_clickhouse.service',
+            'paloalto-url-loader.service'
+        ]
+        
+        for service_name in services:
+            try:
+                result = subprocess.run(
+                    ['systemctl', 'is-active', service_name],
+                    capture_output=True, text=True, timeout=5
+                )
+                is_active = result.stdout.strip() == 'active'
+                
+                # Get detailed status
+                status_result = subprocess.run(
+                    ['systemctl', 'status', service_name],
+                    capture_output=True, text=True, timeout=5
+                )
+                
+                # Parse memory usage and PID
+                main_pid = None
+                memory_usage = None
+                for line in status_result.stdout.split('\n'):
+                    if 'Main PID:' in line:
+                        main_pid = line.split('Main PID:')[1].strip().split(' ')[0]
+                    elif 'Memory:' in line:
+                        memory_usage = line.split('Memory:')[1].strip().split(' ')[0]
+                
+                service_status[service_name] = {
+                    'active': is_active,
+                    'status': result.stdout.strip(),
+                    'main_pid': main_pid,
+                    'memory_usage': memory_usage
+                }
+                
+            except Exception as e:
+                service_status[service_name] = {
+                    'active': False,
+                    'status': 'error',
+                    'error': str(e)
+                }
+        
+        status_data['services'] = service_status
+        
+        return render(request, 'dashboard/log_management.html', {
+            'status': status_data,
+            'refresh_interval': 30  # Auto-refresh every 30 seconds
+        })
+        
+    except Exception as e:
+        logging.error(f"Error loading log management status: {e}")
+        return render(request, 'dashboard/log_management.html', {
+            'status': {
+                'error': str(e),
+                'overall_status': 'error'
+            },
+            'refresh_interval': 30
+        })

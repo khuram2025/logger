@@ -21,4 +21,6 @@ urlpatterns = [
     path('logs-sources/add/', views.add_log_source_view, name='add_log_source'),
     path('logs-sources/configure/<int:source_id>/', views.configure_log_source_view, name='configure_log_source'),
     path('logs-sources/configure/<int:source_id>/save/', views.save_log_source_config_view, name='save_log_source_config'),
+    # Log Management
+    path('log-management/', views.log_management_status_view, name='log_management'),
 ]

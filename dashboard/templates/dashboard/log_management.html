@@ -1,0 +1,666 @@
+{% extends 'dashboard/base.html' %}
+
+{% load humanize %}
+{% block title %}Log Management{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='log_management' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+<div class="log-management-container">
+    <div class="log-management-content">
+        <!-- Header Section -->
+        <div class="page-header">
+            <div class="header-content">
+                <div class="page-title">
+                    <h1><i class="fas fa-cogs"></i> Log File Management</h1>
+                    <p class="subtitle">Real-time monitoring and management of log files with automatic rotation</p>
+                </div>
+                
+                <div class="header-controls">
+                    <div class="status-indicator status-{{ status.overall_status|default:'unknown' }}">
+                        <i class="fas fa-circle"></i>
+                        <span>{{ status.overall_status|default:'Unknown'|title }}</span>
+                    </div>
+                    
+                    <div class="header-actions">
+                        <button class="action-btn refresh-btn" onclick="window.location.reload()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <span class="last-updated">
+                            Last Updated: {{ status.timestamp_formatted|default:'Never' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Section -->
+        {% if status.alerts %}
+        <div class="alerts-section">
+            <h3><i class="fas fa-exclamation-triangle"></i> Active Alerts</h3>
+            <div class="alerts-grid">
+                {% for alert in status.alerts %}
+                <div class="alert-card alert-{{ alert.type }}">
+                    <div class="alert-icon">
+                        {% if alert.type == 'critical' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% elif alert.type == 'warning' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-message">{{ alert.message }}</div>
+                        <div class="alert-details">{{ alert.details }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ status.summary.total_files|default:0 }}</div>
+                    <div class="stat-label">Active Log Files</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-hdd"></i></div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ status.summary.total_size_formatted|default:'0 B' }}</div>
+                    <div class="stat-label">Total Log Size</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-history"></i></div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ status.rotation.total_rotated_files|default:0 }}</div>
+                    <div class="stat-label">Rotated Files</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ status.rotation.verified_files|default:0 }}</div>
+                    <div class="stat-label">Verified Safe</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Files Status -->
+        <div class="log-files-section">
+            <h3><i class="fas fa-files-o"></i> Log Files Status</h3>
+            <div class="files-grid">
+                {% for filepath, file_info in status.files.items %}
+                <div class="file-card status-{{ file_info.alert_level|default:'unknown' }}">
+                    <div class="file-header">
+                        <div class="file-name">
+                            <i class="fas fa-file-alt"></i>
+                            <span>{{ file_info.description|default:filepath }}</span>
+                        </div>
+                        <div class="file-status">
+                            <span class="status-badge status-{{ file_info.alert_level|default:'unknown' }}">
+                                {{ file_info.alert_level|default:'Unknown'|title }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {% if file_info.exists %}
+                    <div class="file-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Size:</span>
+                            <span class="detail-value">{{ file_info.size_formatted|default:'Unknown' }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Limit Usage:</span>
+                            <span class="detail-value">{{ file_info.percentage_of_limit|default:0|floatformat:1 }}% of 2GB</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Last Modified:</span>
+                            <span class="detail-value">{{ file_info.last_modified_formatted|default:'Unknown' }}</span>
+                        </div>
+                        
+                        <!-- Progress bar for size -->
+                        <div class="size-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ file_info.percentage_of_limit|default:0 }}%"></div>
+                            </div>
+                            <span class="progress-text">{{ file_info.percentage_of_limit|default:0|floatformat:1 }}%</span>
+                        </div>
+                        
+                        <!-- Processing lag info -->
+                        {% for lag_path, lag_info in status.processing_lag.items %}
+                            {% if lag_path == filepath %}
+                            <div class="processing-lag">
+                                <div class="detail-row">
+                                    <span class="detail-label">Processing Lag:</span>
+                                    <span class="detail-value lag-{{ lag_info.alert_level|default:'unknown' }}">
+                                        {{ lag_info.lag_formatted|default:'Unknown' }}
+                                    </span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Last Processed:</span>
+                                    <span class="detail-value">{{ lag_info.last_processed_time_formatted|default:'Unknown' }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="file-details">
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            File does not exist or is not accessible
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Services Status -->
+        <div class="services-section">
+            <h3><i class="fas fa-cog"></i> Processing Services</h3>
+            <div class="services-grid">
+                {% for service_name, service_info in status.services.items %}
+                <div class="service-card status-{{ service_info.active|yesno:'ok,error' }}">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <i class="fas fa-cog"></i>
+                            <span>{{ service_name }}</span>
+                        </div>
+                        <div class="service-status">
+                            <span class="status-badge status-{{ service_info.active|yesno:'ok,error' }}">
+                                {{ service_info.status|default:'Unknown'|title }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="service-details">
+                        {% if service_info.active %}
+                        <div class="detail-row">
+                            <span class="detail-label">PID:</span>
+                            <span class="detail-value">{{ service_info.main_pid|default:'Unknown' }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Memory:</span>
+                            <span class="detail-value">{{ service_info.memory_usage|default:'Unknown' }}</span>
+                        </div>
+                        {% else %}
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Service is not running
+                            {% if service_info.error %}
+                            <br><small>{{ service_info.error }}</small>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Rotation History -->
+        {% if status.rotation %}
+        <div class="rotation-section">
+            <h3><i class="fas fa-history"></i> Rotation & Cleanup Status</h3>
+            <div class="rotation-stats">
+                <div class="rotation-stat">
+                    <span class="stat-label">Total Rotated Files:</span>
+                    <span class="stat-value">{{ status.rotation.total_rotated_files|default:0 }}</span>
+                </div>
+                <div class="rotation-stat">
+                    <span class="stat-label">Verified for Deletion:</span>
+                    <span class="stat-value">{{ status.rotation.verified_files|default:0 }}</span>
+                </div>
+                <div class="rotation-stat">
+                    <span class="stat-label">Pending Verification:</span>
+                    <span class="stat-value">{{ status.rotation.pending_verification|default:0 }}</span>
+                </div>
+                <div class="rotation-stat">
+                    <span class="stat-label">Total Archived Size:</span>
+                    <span class="stat-value">{{ status.rotation.total_rotated_size_formatted|default:'0 B' }}</span>
+                </div>
+                <div class="rotation-stat">
+                    <span class="stat-label">Last Rotation:</span>
+                    <span class="stat-value">{{ status.rotation.last_rotation_time_formatted|default:'Never' }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+.log-management-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+}
+
+.log-management-content {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Header Section */
+.page-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.page-title h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-title h1 i {
+    color: #667eea;
+    font-size: 1.6rem;
+}
+
+.subtitle {
+    margin: 0.5rem 0 0 0;
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.status-ok { background: #d4edda; color: #155724; }
+.status-warning { background: #fff3cd; color: #856404; }
+.status-critical, .status-error { background: #f8d7da; color: #721c24; }
+.status-unknown { background: #e2e3e5; color: #383d41; }
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.action-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.action-btn:hover {
+    background: #f8f9fa;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.last-updated {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Alerts Section */
+.alerts-section {
+    margin-bottom: 2rem;
+}
+
+.alerts-section h3 {
+    margin-bottom: 1rem;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alerts-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+.alert-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.alert-critical {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    border-left-color: #ffc107;
+}
+
+.alert-info {
+    background: #d1ecf1;
+    border-left-color: #17a2b8;
+}
+
+.alert-icon {
+    font-size: 1.2rem;
+    margin-top: 0.2rem;
+}
+
+.alert-message {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.alert-details {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* Summary Stats */
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    color: #667eea;
+    width: 3rem;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #495057;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Sections */
+.log-files-section, .services-section, .rotation-section {
+    margin-bottom: 2rem;
+}
+
+.log-files-section h3, .services-section h3, .rotation-section h3 {
+    margin-bottom: 1rem;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* File Cards */
+.files-grid, .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1rem;
+}
+
+.file-card, .service-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+    overflow: hidden;
+}
+
+.file-header, .service-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1rem;
+    border-bottom: 1px solid #e1e5e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.file-name, .service-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.file-details, .service-details {
+    padding: 1rem;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.detail-value {
+    font-weight: 600;
+    color: #495057;
+}
+
+.lag-warning { color: #856404; }
+.lag-critical { color: #721c24; }
+
+/* Progress Bar */
+.size-progress {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745 0%, #ffc107 60%, #dc3545 80%);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #495057;
+    min-width: 3rem;
+}
+
+/* Error Messages */
+.error-message {
+    color: #721c24;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+/* Rotation Stats */
+.rotation-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+}
+
+.rotation-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.rotation-stat .stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.rotation-stat .stat-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .files-grid, .services-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .rotation-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Auto-refresh indicator */
+.refresh-indicator {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background: #667eea;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.refresh-indicator.show {
+    opacity: 1;
+}
+</style>
+
+<!-- Auto-refresh script -->
+<script>
+// Auto-refresh the page every {{ refresh_interval }} seconds
+{% if refresh_interval %}
+setTimeout(function() {
+    // Show refresh indicator
+    const indicator = document.createElement('div');
+    indicator.className = 'refresh-indicator show';
+    indicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing...';
+    document.body.appendChild(indicator);
+    
+    // Refresh after a short delay
+    setTimeout(function() {
+        window.location.reload();
+    }, 1000);
+}, {{ refresh_interval }} * 1000);
+{% endif %}
+
+// Refresh button animation
+document.querySelector('.refresh-btn').addEventListener('click', function() {
+    const icon = this.querySelector('i');
+    icon.style.animation = 'spin 1s linear infinite';
+    setTimeout(() => {
+        icon.style.animation = '';
+    }, 1000);
+});
+
+// Add CSS animation for spin
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
