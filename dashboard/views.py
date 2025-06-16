@@ -6,6 +6,7 @@ from django.db.models import Sum, Count
 
 import re
 import math
+import logging
 from clickhouse_driver import Client
 import os
 import json
@@ -280,13 +281,62 @@ def top_summary_view(request):
         for row in countries_rows
     ]
     
+    # Calculate summary statistics
+    total_connections = 0
+    total_bytes = 0
+    active_ips = 0
+    
+    try:
+        # Get total connection count
+        conn_query = f"""
+        SELECT COUNT(*) 
+        FROM fortigate_traffic 
+        WHERE timestamp >= parseDateTimeBestEffort('{since.strftime('%Y-%m-%d %H:%M:%S')}')
+        """
+        if time_range == 'custom' and 'until' in locals():
+            conn_query += f" AND timestamp <= parseDateTimeBestEffort('{until.strftime('%Y-%m-%d %H:%M:%S')}')"
+            
+        conn_result = client.execute(conn_query)
+        total_connections = conn_result[0][0] if conn_result else 0
+        
+        # Get total bytes transferred
+        bytes_query = f"""
+        SELECT SUM(sentbyte + rcvdbyte) 
+        FROM fortigate_traffic 
+        WHERE timestamp >= parseDateTimeBestEffort('{since.strftime('%Y-%m-%d %H:%M:%S')}')
+        """
+        if time_range == 'custom' and 'until' in locals():
+            bytes_query += f" AND timestamp <= parseDateTimeBestEffort('{until.strftime('%Y-%m-%d %H:%M:%S')}')"
+            
+        bytes_result = client.execute(bytes_query)
+        total_bytes = bytes_result[0][0] if bytes_result and bytes_result[0][0] else 0
+        
+        # Get active unique source IPs
+        ips_query = f"""
+        SELECT COUNT(DISTINCT srcip) 
+        FROM fortigate_traffic 
+        WHERE timestamp >= parseDateTimeBestEffort('{since.strftime('%Y-%m-%d %H:%M:%S')}')
+        """
+        if time_range == 'custom' and 'until' in locals():
+            ips_query += f" AND timestamp <= parseDateTimeBestEffort('{until.strftime('%Y-%m-%d %H:%M:%S')}')"
+            
+        ips_result = client.execute(ips_query)
+        active_ips = ips_result[0][0] if ips_result else 0
+        
+    except Exception as e:
+        print(f"Error calculating summary statistics: {e}")
+        # Keep default values of 0
+    
     return render(request, 'dashboard/top_summary.html', {
         'top_traffic': top_traffic,
         'top_categories': top_categories,
         'top_urls': top_urls,
         'top_users': top_users,
         'top_countries': top_countries,
-        'selected_time_range': selected_time_range
+        'selected_time_range': selected_time_range,
+        'total_connections': total_connections,
+        'total_bytes': total_bytes,
+        'active_ips': active_ips,
     })
 
 
@@ -325,17 +375,37 @@ def clickhouse_logs_view(request):
     # --- Time Filter ---
     time_range = request.GET.get('time_range', 'last_hour')
     now = datetime.utcnow()  # Use UTC to match ClickHouse 'now()'
-    if time_range == 'last_24_hours':
+    until = None
+    
+    if time_range == 'last_6_hours':
+        since = now - timedelta(hours=6)
+    elif time_range == 'last_24_hours':
         since = now - timedelta(hours=24)
     elif time_range == 'last_7_days':
         since = now - timedelta(days=7)
     elif time_range == 'last_30_days':
         since = now - timedelta(days=30)
     elif time_range == 'custom':
-        # Custom range logic can be added here in the future
+        # Handle custom time range
+        time_from = request.GET.get('time_from', '')
+        time_to = request.GET.get('time_to', '')
+        
+        if time_from:
+            try:
+                since = datetime.strptime(time_from, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                since = now - timedelta(hours=1)
+        else:
+            since = now - timedelta(hours=1)
+            
+        if time_to:
+            try:
+                until = datetime.strptime(time_to, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                until = None
+    else:  # default to last_hour
         since = now - timedelta(hours=1)
-    else:
-        since = now - timedelta(hours=1)
+    
     since_str = since.strftime('%Y-%m-%d %H:%M:%S')
     
     # --- Get filter values from request ---
@@ -359,10 +429,29 @@ def clickhouse_logs_view(request):
     max_duration_filter = request.GET.get('max_duration', '').strip()
     
     # Build WHERE clauses based on filter inputs
-    where_clauses = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"] 
+    where_clauses = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"]
+    
+    # Add until clause if custom time range with end date
+    if until:
+        until_str = until.strftime('%Y-%m-%d %H:%M:%S')
+        where_clauses.append(f"timestamp <= parseDateTimeBestEffort('{until_str}')") 
     
     if srcip_filter:
-        where_clauses.append(f"srcip = '{srcip_filter}'")
+        if srcip_filter == 'external_only':
+            # Filter for external IPs (not private networks)
+            where_clauses.append("""
+                NOT (
+                    srcip LIKE '10.%' OR 
+                    srcip LIKE '192.168.%' OR 
+                    srcip LIKE '172.16.%' OR srcip LIKE '172.17.%' OR srcip LIKE '172.18.%' OR srcip LIKE '172.19.%' OR
+                    srcip LIKE '172.20.%' OR srcip LIKE '172.21.%' OR srcip LIKE '172.22.%' OR srcip LIKE '172.23.%' OR
+                    srcip LIKE '172.24.%' OR srcip LIKE '172.25.%' OR srcip LIKE '172.26.%' OR srcip LIKE '172.27.%' OR
+                    srcip LIKE '172.28.%' OR srcip LIKE '172.29.%' OR srcip LIKE '172.30.%' OR srcip LIKE '172.31.%' OR
+                    srcip = '127.0.0.1' OR srcip LIKE '169.254.%'
+                )
+            """.strip())
+        else:
+            where_clauses.append(f"srcip = '{srcip_filter}'")
     if dstip_filter:
         where_clauses.append(f"dstip = '{dstip_filter}'")
     if srcport_filter:
@@ -640,6 +729,8 @@ def clickhouse_logs_view(request):
         'min_duration_filter': min_duration_filter,
         'max_duration_filter': max_duration_filter,
         'time_range': time_range,
+        'time_from': request.GET.get('time_from', ''),
+        'time_to': request.GET.get('time_to', ''),
     }
     return render(request, 'dashboard/logs2.html', context)
 

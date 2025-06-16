@@ -370,9 +370,205 @@
                 .logs-filter-sidebar::-webkit-scrollbar-thumb:hover {
                     background: #a8a8a8;
                 }
-                </style>
 
-            </div>
+                /* Enhanced Filter Styles */
+                .time-range-tabs {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 6px;
+                    margin-bottom: 8px;
+                }
+
+                .time-tab {
+                    padding: 6px 10px;
+                    border: 1px solid #dee2e6;
+                    background: #fff;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #6c757d;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    text-align: center;
+                }
+
+                .time-tab:hover {
+                    background: #f8f9fa;
+                    border-color: #667eea;
+                    color: #667eea;
+                }
+
+                .time-tab.active {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border-color: #667eea;
+                    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+                }
+
+                .custom-time-range {
+                    margin-top: 8px;
+                    padding-top: 8px;
+                    border-top: 1px solid #e9ecef;
+                }
+
+                .hidden {
+                    display: none !important;
+                }
+
+                /* Quick Filters */
+                .quick-filter-buttons {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 6px;
+                }
+
+                .quick-filter-btn {
+                    padding: 8px 10px;
+                    border: 1px solid #dee2e6;
+                    background: #fff;
+                    border-radius: 6px;
+                    font-size: 10px;
+                    font-weight: 500;
+                    color: #495057;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 4px;
+                    white-space: nowrap;
+                }
+
+                .quick-filter-btn:hover {
+                    background: #f8f9fa;
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                }
+
+                .quick-filter-btn.active {
+                    background: #667eea;
+                    color: white;
+                    border-color: #667eea;
+                }
+
+                .quick-filter-btn i {
+                    font-size: 11px;
+                }
+
+                /* Filter Counter Badge */
+                .filter-count-badge {
+                    background: #dc3545;
+                    color: white;
+                    font-size: 9px;
+                    padding: 2px 6px;
+                    border-radius: 10px;
+                    margin-left: 4px;
+                    font-weight: 600;
+                }
+
+                /* Real-time filter indicator */
+                .filter-input.filtering {
+                    border-color: #667eea;
+                    background: #f0f4ff;
+                }
+
+                /* Animated filter transitions */
+                .filter-section {
+                    transition: all 0.3s ease;
+                }
+
+                .filter-section:hover {
+                    background: rgba(102, 126, 234, 0.02);
+                }
+
+                /* Enhanced IP input with validation */
+                .filter-input.invalid {
+                    border-color: #dc3545;
+                    background: #fff5f5;
+                }
+
+                .filter-input.valid {
+                    border-color: #28a745;
+                    background: #f5fff5;
+                }
+
+                /* Filter search box */
+                .filter-search-box {
+                    margin-bottom: 12px;
+                    position: relative;
+                }
+
+                .filter-search-box input {
+                    width: 100%;
+                    padding: 8px 12px 8px 32px;
+                    font-size: 11px;
+                    border: 1px solid #dee2e6;
+                    border-radius: 6px;
+                    background: #f8f9fa;
+                }
+
+                .filter-search-box i {
+                    position: absolute;
+                    left: 10px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #6c757d;
+                    font-size: 11px;
+                }
+
+                /* Loading indicator */
+                .filter-loading {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    display: none;
+                }
+
+                .filter-loading.active {
+                    display: block;
+                }
+
+                /* Enhanced mobile responsiveness */
+                @media (max-width: 480px) {
+                    .quick-filter-buttons {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .time-range-tabs {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                }
+
+                /* Filter tooltips */
+                .filter-tooltip {
+                    position: relative;
+                    display: inline-block;
+                }
+
+                .filter-tooltip .tooltip-text {
+                    visibility: hidden;
+                    width: 120px;
+                    background-color: #333;
+                    color: #fff;
+                    text-align: center;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                    position: absolute;
+                    z-index: 1;
+                    bottom: 125%;
+                    left: 50%;
+                    margin-left: -60px;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                    font-size: 10px;
+                }
+
+                .filter-tooltip:hover .tooltip-text {
+                    visibility: visible;
+                    opacity: 1;
+                }
+                </style>
 
             <!-- If you want a chart, add a canvas element here, e.g.: -->
             <!-- <canvas id="logsChart" style="width:100%;max-width:700px;height:200px;margin-bottom:20px;"></canvas> -->
@@ -484,6 +680,30 @@
             </div>
             
             <div class="filter-sections">
+                <!-- Quick Filters -->
+                <div class="filter-section quick-filters-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-bolt"></i>
+                        <span>Quick Filters</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <div class="quick-filter-buttons">
+                            <button type="button" class="quick-filter-btn" data-filter="denied">
+                                <i class="fas fa-ban"></i> Denied Traffic
+                            </button>
+                            <button type="button" class="quick-filter-btn" data-filter="high-traffic">
+                                <i class="fas fa-chart-line"></i> High Traffic
+                            </button>
+                            <button type="button" class="quick-filter-btn" data-filter="suspicious">
+                                <i class="fas fa-exclamation-triangle"></i> Suspicious
+                            </button>
+                            <button type="button" class="quick-filter-btn" data-filter="external">
+                                <i class="fas fa-globe-americas"></i> External Only
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Time Range Filter -->
                 <div class="filter-section">
                     <div class="filter-section-header">
@@ -491,13 +711,32 @@
                         <span>Time Range</span>
                     </div>
                     <div class="filter-section-content">
-                        <select class="filter-input" name="time_range" id="timeRangeFilter">
+                        <div class="time-range-tabs">
+                            <button type="button" class="time-tab active" data-range="last_hour">1H</button>
+                            <button type="button" class="time-tab" data-range="last_6_hours">6H</button>
+                            <button type="button" class="time-tab" data-range="last_24_hours">24H</button>
+                            <button type="button" class="time-tab" data-range="last_7_days">7D</button>
+                            <button type="button" class="time-tab" data-range="last_30_days">30D</button>
+                            <button type="button" class="time-tab" data-range="custom">Custom</button>
+                        </div>
+                        <select class="filter-input hidden" name="time_range" id="timeRangeFilter">
                             <option value="last_hour" {% if time_range == 'last_hour' %}selected{% endif %}>Last Hour</option>
                             <option value="last_6_hours" {% if time_range == 'last_6_hours' %}selected{% endif %}>Last 6 Hours</option>
                             <option value="last_24_hours" {% if time_range == 'last_24_hours' %}selected{% endif %}>Last 24 Hours</option>
                             <option value="last_7_days" {% if time_range == 'last_7_days' %}selected{% endif %}>Last 7 Days</option>
                             <option value="last_30_days" {% if time_range == 'last_30_days' %}selected{% endif %}>Last 30 Days</option>
+                            <option value="custom" {% if time_range == 'custom' %}selected{% endif %}>Custom Range</option>
                         </select>
+                        <div class="custom-time-range" id="customTimeRange" style="display: none;">
+                            <div class="filter-group">
+                                <label>From</label>
+                                <input type="datetime-local" class="filter-input" name="time_from" id="timeFrom" value="{{ time_from|default:'' }}">
+                            </div>
+                            <div class="filter-group">
+                                <label>To</label>
+                                <input type="datetime-local" class="filter-input" name="time_to" id="timeTo" value="{{ time_to|default:'' }}">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -719,7 +958,7 @@ function applyFilters() {
     form.action = window.location.pathname;
 
     // Collect all filter values
-    const filterInputs = document.querySelectorAll('.filter-input');
+    const filterInputs = document.querySelectorAll('.filter-input:not(.hidden)');
     filterInputs.forEach(input => {
         if (input.value.trim()) {
             const hiddenInput = document.createElement('input');
@@ -729,6 +968,27 @@ function applyFilters() {
             form.appendChild(hiddenInput);
         }
     });
+
+    // Check for custom time range
+    const timeRange = document.getElementById('timeRangeFilter').value;
+    if (timeRange === 'custom') {
+        const timeFrom = document.getElementById('timeFrom').value;
+        const timeTo = document.getElementById('timeTo').value;
+        if (timeFrom) {
+            const fromInput = document.createElement('input');
+            fromInput.type = 'hidden';
+            fromInput.name = 'time_from';
+            fromInput.value = timeFrom;
+            form.appendChild(fromInput);
+        }
+        if (timeTo) {
+            const toInput = document.createElement('input');
+            toInput.type = 'hidden';
+            toInput.name = 'time_to';
+            toInput.value = timeTo;
+            form.appendChild(toInput);
+        }
+    }
 
     // Preserve current page if exists
     const urlParams = new URLSearchParams(window.location.search);
@@ -830,6 +1090,195 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+    });
+
+    // Time range tabs functionality
+    const timeTabs = document.querySelectorAll('.time-tab');
+    const timeRangeSelect = document.getElementById('timeRangeFilter');
+    const customTimeRange = document.getElementById('customTimeRange');
+    
+    // Set active tab based on current selection
+    const currentTimeRange = timeRangeSelect.value;
+    timeTabs.forEach(tab => {
+        if (tab.dataset.range === currentTimeRange) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+    
+    // Show custom time range if selected
+    if (currentTimeRange === 'custom') {
+        customTimeRange.style.display = 'block';
+    }
+    
+    timeTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remove active class from all tabs
+            timeTabs.forEach(t => t.classList.remove('active'));
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Update hidden select value
+            const range = this.dataset.range;
+            timeRangeSelect.value = range;
+            
+            // Show/hide custom time range
+            if (range === 'custom') {
+                customTimeRange.style.display = 'block';
+            } else {
+                customTimeRange.style.display = 'none';
+                // Auto-apply filters for non-custom ranges
+                applyFilters();
+            }
+        });
+    });
+
+    // Quick filters functionality
+    const quickFilterBtns = document.querySelectorAll('.quick-filter-btn');
+    quickFilterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filterType = this.dataset.filter;
+            
+            // Clear existing filters
+            document.querySelectorAll('.filter-input').forEach(input => {
+                if (input.type === 'select-one') {
+                    input.selectedIndex = 0;
+                } else {
+                    input.value = '';
+                }
+            });
+            
+            // Apply quick filter presets
+            switch(filterType) {
+                case 'denied':
+                    document.querySelector('select[name="action"]').value = 'deny';
+                    break;
+                case 'high-traffic':
+                    document.querySelector('input[name="min_bytes"]').value = '1000000';
+                    break;
+                case 'suspicious':
+                    document.querySelector('input[name="min_duration"]').value = '10000';
+                    document.querySelector('select[name="action"]').value = 'deny';
+                    break;
+                case 'external':
+                    // Filter for external IPs - we'll set a special marker that backend can handle
+                    document.querySelector('input[name="srcip"]').value = 'external_only';
+                    break;
+            }
+            
+            // Mark button as active
+            quickFilterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Apply filters
+            applyFilters();
+        });
+    });
+
+    // IP validation
+    const ipInputs = document.querySelectorAll('input[name="srcip"], input[name="dstip"]');
+    ipInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value === '') {
+                this.classList.remove('valid', 'invalid');
+                return;
+            }
+            
+            // Basic IP validation regex
+            const ipRegex = /^(\d{1,3}\.){0,3}\d{0,3}$/;
+            const fullIpRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            
+            if (ipRegex.test(value)) {
+                if (fullIpRegex.test(value)) {
+                    // Validate each octet
+                    const octets = value.split('.');
+                    const isValid = octets.every(octet => parseInt(octet) <= 255);
+                    this.classList.toggle('valid', isValid);
+                    this.classList.toggle('invalid', !isValid);
+                } else {
+                    // Partial IP, remove validation classes
+                    this.classList.remove('valid', 'invalid');
+                }
+            } else {
+                this.classList.add('invalid');
+                this.classList.remove('valid');
+            }
+        });
+        
+        // Real-time filtering on Enter key
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+    });
+
+    // Port validation
+    const portInputs = document.querySelectorAll('input[name="srcport"], input[name="dstport"]');
+    portInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value === '') {
+                this.classList.remove('valid', 'invalid');
+                return;
+            }
+            
+            // Allow single port or range (e.g., 80 or 80-443)
+            const portRegex = /^\d{1,5}(-\d{1,5})?$/;
+            if (portRegex.test(value)) {
+                const ports = value.split('-');
+                const isValid = ports.every(port => {
+                    const portNum = parseInt(port);
+                    return portNum >= 1 && portNum <= 65535;
+                });
+                this.classList.toggle('valid', isValid);
+                this.classList.toggle('invalid', !isValid);
+            } else {
+                this.classList.add('invalid');
+                this.classList.remove('valid');
+            }
+        });
+    });
+
+    // Show active filter count
+    function updateFilterCount() {
+        let count = 0;
+        document.querySelectorAll('.filter-input:not(.hidden)').forEach(input => {
+            if (input.value.trim() && input.value !== '') {
+                if (input.type === 'select-one' && input.selectedIndex !== 0) {
+                    count++;
+                } else if (input.type !== 'select-one') {
+                    count++;
+                }
+            }
+        });
+        
+        // Update filter button with count
+        const filterBtn = document.querySelector('button[onclick="toggleFilters()"]');
+        if (filterBtn) {
+            const existingBadge = filterBtn.querySelector('.filter-count-badge');
+            if (existingBadge) {
+                existingBadge.remove();
+            }
+            
+            if (count > 0) {
+                const badge = document.createElement('span');
+                badge.className = 'filter-count-badge';
+                badge.textContent = count;
+                filterBtn.appendChild(badge);
+            }
+        }
+    }
+    
+    // Update filter count on page load
+    updateFilterCount();
+    
+    // Update filter count when filters change
+    document.querySelectorAll('.filter-input').forEach(input => {
+        input.addEventListener('change', updateFilterCount);
+        input.addEventListener('input', updateFilterCount);
     });
 });
 

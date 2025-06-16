@@ -11,644 +11,845 @@
 {% endblock %}
 
 {% block content %}
-
-<div class="analytics-container" style="max-width:1400px;margin:2rem auto;padding:0 1rem;">
-    <!-- Header with Time Filter -->
-    <div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
-        <h1 style="margin:0;font-weight:600;color:#333;">Network Analytics Dashboard</h1>
-        
-        <!-- Professional Time Filter Dropdown -->
-        <div class="time-filter-container">
-            <div class="time-filter-dropdown">
-                <button type="button" class="time-filter-btn" id="timeFilterButton">
-                    <i class="fas fa-clock"></i>
-                    <span id="timeFilterLabel">Last 1 Hour</span>
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-                <div class="time-filter-menu" id="timeFilterMenu">
-                    <div class="filter-section">
-                        <div class="section-title">Quick Filters</div>
-                        <a href="#" class="filter-option active" data-value="1h" data-label="Last 1 Hour">
-                            <i class="fas fa-clock"></i>
-                            <span>Last 1 Hour</span>
-                        </a>
-                        <a href="#" class="filter-option" data-value="1d" data-label="Last 1 Day">
-                            <i class="fas fa-calendar-day"></i>
-                            <span>Last 1 Day</span>
-                        </a>
-                        <a href="#" class="filter-option" data-value="7d" data-label="Last 7 Days">
-                            <i class="fas fa-calendar-week"></i>
-                            <span>Last 7 Days</span>
-                        </a>
-                        <a href="#" class="filter-option" data-value="1m" data-label="Last 1 Month">
-                            <i class="fas fa-calendar-alt"></i>
-                            <span>Last 1 Month</span>
-                        </a>
+<div class="top-summary-container">
+    <div class="top-summary-content">
+        <!-- Header Section -->
+        <div class="page-header">
+            <div class="header-content">
+                <div class="page-title">
+                    <h1><i class="fas fa-chart-line"></i> Network Analytics Dashboard</h1>
+                    <p class="subtitle">Real-time network traffic analysis and insights</p>
+                </div>
+                
+                <div class="header-controls">
+                    <div class="summary-stats">
+                        <div class="stat-card">
+                            <div class="stat-value">{{ total_connections|default:"0"|intcomma }}</div>
+                            <div class="stat-label">Total Connections</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ total_bytes|bytes_humanize|default:"0 B" }}</div>
+                            <div class="stat-label">Total Traffic</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ active_ips|default:"0"|intcomma }}</div>
+                            <div class="stat-label">Active IPs</div>
+                        </div>
                     </div>
-                    <div class="filter-section">
-                        <div class="section-title">Custom Range</div>
-                        <div class="custom-date-range">
-                            <div class="date-input-group">
-                                <label>From:</label>
-                                <input type="datetime-local" id="startDate" class="date-input">
-                            </div>
-                            <div class="date-input-group">
-                                <label>To:</label>
-                                <input type="datetime-local" id="endDate" class="date-input">
-                            </div>
-                            <button type="button" class="apply-custom-btn" onclick="applyCustomDateRange()">
-                                <i class="fas fa-check"></i>
-                                Apply Custom Range
+                    
+                    <div class="time-filter-section">
+                        <div class="time-range-tabs">
+                            <button type="button" class="time-tab active" data-range="1h">1H</button>
+                            <button type="button" class="time-tab" data-range="1d">1D</button>
+                            <button type="button" class="time-tab" data-range="7d">7D</button>
+                            <button type="button" class="time-tab" data-range="1m">1M</button>
+                            <button type="button" class="time-tab" data-range="custom">Custom</button>
+                        </div>
+                        
+                        <div class="header-actions">
+                            <button class="action-btn refresh-btn" onclick="refreshDashboard()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="action-btn export-btn">
+                                <i class="fas fa-download"></i> Export
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Grid layout for multiple sections -->
-    <div class="analytics-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(500px, 1fr));gap:2rem;">
-        
-        <!-- Top Traffic Section -->
-        <div class="content-card" style="box-shadow:var(--card-shadow);border-radius:10px;background:#fff;padding:1.5rem;">
-            <h3 style="margin-bottom:1.5rem;font-weight:600;color:#2c3e50;border-bottom:2px solid #3498db;padding-bottom:0.5rem;">
-                <i class="fas fa-network-wired"></i> Top 10 Traffic Flows
-            </h3>
-            <div class="table-responsive">
-                <table class="logs-table compact-table">
-                    <thead>
-                        <tr>
-                            <th>Source</th>
-                            <th>Destination</th>
-                            <th>Port</th>
-                            <th>Total Bytes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in top_traffic %}
-                        <tr>
-                            <td title="{{ entry.srcip }}">
-                                <a href="/logs/?srcip={{ entry.srcip }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    {{ entry.srcip|truncatechars:15 }}
-                                </a>
-                            </td>
-                            <td title="{{ entry.dstip }}">
-                                <a href="/logs/?dstip={{ entry.dstip }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    {{ entry.dstip|truncatechars:15 }}
-                                </a>
-                            </td>
-                            <td>
-                                <a href="/logs/?dstport={{ entry.dstport }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    {{ entry.dstport }}
-                                </a>
-                            </td>
-                            <td style="font-weight:600;">
-                                <a href="/logs/?srcip={{ entry.srcip }}&dstip={{ entry.dstip }}&dstport={{ entry.dstport }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    <span title="{{ entry.total_bytes|intcomma }} bytes">{{ entry.total_bytes|bytes_humanize }}</span>
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="4" class="text-center">No traffic data found.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
 
-        <!-- Top Categories Section -->
-        <div class="content-card" style="box-shadow:var(--card-shadow);border-radius:10px;background:#fff;padding:1.5rem;">
-            <h3 style="margin-bottom:1.5rem;font-weight:600;color:#2c3e50;border-bottom:2px solid #e74c3c;padding-bottom:0.5rem;">
-                <i class="fas fa-tags"></i> Top 10 Application Categories
-            </h3>
-            <div class="table-responsive">
-                <table class="logs-table compact-table">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Count</th>
-                            <th>Total Bytes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in top_categories %}
-                        <tr>
-                            <td>
-                                <a href="/logs/?appcategory={{ entry.category|urlencode }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    <strong>{{ entry.category }}</strong>
-                                </a>
-                            </td>
-                            <td>{{ entry.count|intcomma }}</td>
-                            <td>
-                                <span title="{{ entry.total_bytes|intcomma }} bytes">{{ entry.total_bytes|bytes_humanize }}</span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="3" class="text-center">No category data found.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <!-- Analytics Grid -->
+        <div class="analytics-grid">
+            <!-- Top Traffic Flows -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-network-wired"></i> Top Traffic Flows</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View All">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Source IP</th>
+                                    <th>Destination IP</th>
+                                    <th>Port</th>
+                                    <th>Total Bytes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in top_traffic %}
+                                <tr>
+                                    <td>
+                                        <a href="/logs/?srcip={{ entry.srcip }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="ip-address">{{ entry.srcip }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/logs/?dstip={{ entry.dstip }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="ip-address">{{ entry.dstip }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/logs/?dstport={{ entry.dstport }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="port-badge">{{ entry.dstport }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/logs/?srcip={{ entry.srcip }}&dstip={{ entry.dstip }}&dstport={{ entry.dstport }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="bytes-display" title="{{ entry.total_bytes|intcomma }} bytes">
+                                                {{ entry.total_bytes|bytes_humanize }}
+                                            </span>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="no-data">No traffic data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Top URLs Section -->
-        <div class="content-card" style="box-shadow:var(--card-shadow);border-radius:10px;background:#fff;padding:1.5rem;">
-            <h3 style="margin-bottom:1.5rem;font-weight:600;color:#2c3e50;border-bottom:2px solid #f39c12;padding-bottom:0.5rem;">
-                <i class="fas fa-globe"></i> Top 10 URLs/Hostnames
-            </h3>
-            <div class="table-responsive">
-                <table class="logs-table compact-table">
-                    <thead>
-                        <tr>
-                            <th>URL/Hostname</th>
-                            <th>Count</th>
-                            <th>Total Bytes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in top_urls %}
-                        <tr>
-                            <td title="{{ entry.url }}">
-                                <a href="/logs/?hostname={{ entry.url|urlencode }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    <strong>{{ entry.url|truncatechars:30 }}</strong>
-                                </a>
-                            </td>
-                            <td>{{ entry.count|intcomma }}</td>
-                            <td>
-                                <span title="{{ entry.total_bytes|intcomma }} bytes">{{ entry.total_bytes|bytes_humanize }}</span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="3" class="text-center">No URL data found.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <!-- Top Application Categories -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-tags"></i> Application Categories</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View All">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Count</th>
+                                    <th>Total Bytes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in top_categories %}
+                                <tr>
+                                    <td>
+                                        <a href="/logs/?appcategory={{ entry.category|urlencode }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="category-name">{{ entry.category }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="count-badge">{{ entry.count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="bytes-display" title="{{ entry.total_bytes|intcomma }} bytes">
+                                            {{ entry.total_bytes|bytes_humanize }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="3" class="no-data">No category data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Top Users Section -->
-        <div class="content-card" style="box-shadow:var(--card-shadow);border-radius:10px;background:#fff;padding:1.5rem;">
-            <h3 style="margin-bottom:1.5rem;font-weight:600;color:#2c3e50;border-bottom:2px solid #9b59b6;padding-bottom:0.5rem;">
-                <i class="fas fa-users"></i> Top 10 Users
-            </h3>
-            <div class="table-responsive">
-                <table class="logs-table compact-table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Count</th>
-                            <th>Total Bytes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in top_users %}
-                        <tr>
-                            <td>
-                                <a href="/logs/?username={{ entry.username|urlencode }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    <strong>{{ entry.username }}</strong>
-                                </a>
-                            </td>
-                            <td>{{ entry.count|intcomma }}</td>
-                            <td>
-                                <span title="{{ entry.total_bytes|intcomma }} bytes">{{ entry.total_bytes|bytes_humanize }}</span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="3" class="text-center">No user data found.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <!-- Top URLs/Hostnames -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-globe"></i> Top URLs/Hostnames</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View All">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>URL/Hostname</th>
+                                    <th>Count</th>
+                                    <th>Total Bytes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in top_urls %}
+                                <tr>
+                                    <td>
+                                        <a href="/logs/?hostname={{ entry.url|urlencode }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="url-display" title="{{ entry.url }}">{{ entry.url|truncatechars:35 }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="count-badge">{{ entry.count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="bytes-display" title="{{ entry.total_bytes|intcomma }} bytes">
+                                            {{ entry.total_bytes|bytes_humanize }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="3" class="no-data">No URL data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Top Destination Countries Section -->
-        <div class="content-card" style="box-shadow:var(--card-shadow);border-radius:10px;background:#fff;padding:1.5rem;">
-            <h3 style="margin-bottom:1.5rem;font-weight:600;color:#2c3e50;border-bottom:2px solid #1abc9c;padding-bottom:0.5rem;">
-                <i class="fas fa-map-marked-alt"></i> Top 10 Destination Countries
-            </h3>
-            <div class="table-responsive">
-                <table class="logs-table compact-table">
-                    <thead>
-                        <tr>
-                            <th>Country</th>
-                            <th>Count</th>
-                            <th>Total Bytes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in top_countries %}
-                        <tr>
-                            <td>
-                                <a href="/logs/?dstcountry={{ entry.country|urlencode }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    <strong>{{ entry.country }}</strong>
-                                    {% if entry.country == 'US' %}
-                                        <span class="flag">🇺🇸</span>
-                                    {% elif entry.country == 'CN' %}
-                                        <span class="flag">🇨🇳</span>
-                                    {% elif entry.country == 'GB' %}
-                                        <span class="flag">🇬🇧</span>
-                                    {% elif entry.country == 'DE' %}
-                                        <span class="flag">🇩🇪</span>
-                                    {% elif entry.country == 'FR' %}
-                                        <span class="flag">🇫🇷</span>
-                                    {% elif entry.country == 'JP' %}
-                                        <span class="flag">🇯🇵</span>
-                                    {% elif entry.country == 'IN' %}
-                                        <span class="flag">🇮🇳</span>
-                                    {% elif entry.country == 'BR' %}
-                                        <span class="flag">🇧🇷</span>
-                                    {% elif entry.country == 'CA' %}
-                                        <span class="flag">🇨🇦</span>
-                                    {% elif entry.country == 'AU' %}
-                                        <span class="flag">🇦🇺</span>
-                                    {% endif %}
-                                </a>
-                            </td>
-                            <td>{{ entry.count|intcomma }}</td>
-                            <td>
-                                <span title="{{ entry.total_bytes|intcomma }} bytes">{{ entry.total_bytes|bytes_humanize }}</span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="3" class="text-center">No country data found.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <!-- Top Users -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-users"></i> Top Users</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View All">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Count</th>
+                                    <th>Total Bytes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in top_users %}
+                                <tr>
+                                    <td>
+                                        <a href="/logs/?username={{ entry.username|urlencode }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="username-display">{{ entry.username }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="count-badge">{{ entry.count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="bytes-display" title="{{ entry.total_bytes|intcomma }} bytes">
+                                            {{ entry.total_bytes|bytes_humanize }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="3" class="no-data">No user data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Detailed Traffic Summary Section (Full Width) -->
-        <div class="content-card" style="grid-column:1/-1;box-shadow:var(--card-shadow);border-radius:10px;background:#fff;padding:1.5rem;">
-            <h3 style="margin-bottom:1.5rem;font-weight:600;color:#2c3e50;border-bottom:2px solid #34495e;padding-bottom:0.5rem;">
-                <i class="fas fa-chart-line"></i> Detailed Traffic Summary
-            </h3>
-            <div class="table-responsive">
-                <table class="logs-table">
-                    <thead>
-                        <tr>
-                            <th>Source IP</th>
-                            <th>Destination IP</th>
-                            <th>Port</th>
-                            <th>Sent</th>
-                            <th>Received</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in top_traffic %}
-                        <tr>
-                            <td>
-                                <a href="/logs/?srcip={{ entry.srcip }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    <strong>{{ entry.srcip }}</strong>
-                                </a>
-                            </td>
-                            <td>
-                                <a href="/logs/?dstip={{ entry.dstip }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    <strong>{{ entry.dstip }}</strong>
-                                </a>
-                            </td>
-                            <td>
-                                <a href="/logs/?dstport={{ entry.dstport }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    {{ entry.dstport }}
-                                </a>
-                            </td>
-                            <td>
-                                <span title="{{ entry.total_sent|intcomma }} bytes">{{ entry.total_sent|bytes_humanize }}</span>
-                            </td>
-                            <td>
-                                <span title="{{ entry.total_rcvd|intcomma }} bytes">{{ entry.total_rcvd|bytes_humanize }}</span>
-                            </td>
-                            <td style="font-weight:600;">
-                                <a href="/logs/?srcip={{ entry.srcip }}&dstip={{ entry.dstip }}&dstport={{ entry.dstport }}&time_range={{ selected_time_range }}" class="detail-link">
-                                    <span title="{{ entry.total_bytes|intcomma }} bytes">{{ entry.total_bytes|bytes_humanize }}</span>
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="6" class="text-center">No traffic data found.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <!-- Top Countries -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-map-marked-alt"></i> Destination Countries</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View All">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Country</th>
+                                    <th>Count</th>
+                                    <th>Total Bytes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in top_countries %}
+                                <tr>
+                                    <td>
+                                        <a href="/logs/?dstcountry={{ entry.country }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="country-display">
+                                                {% if entry.country == 'US' %}🇺🇸
+                                                {% elif entry.country == 'CN' %}🇨🇳
+                                                {% elif entry.country == 'GB' %}🇬🇧
+                                                {% elif entry.country == 'DE' %}🇩🇪
+                                                {% elif entry.country == 'FR' %}🇫🇷
+                                                {% elif entry.country == 'JP' %}🇯🇵
+                                                {% elif entry.country == 'IN' %}🇮🇳
+                                                {% elif entry.country == 'BR' %}🇧🇷
+                                                {% elif entry.country == 'CA' %}🇨🇦
+                                                {% elif entry.country == 'AU' %}🇦🇺
+                                                {% else %}🌍{% endif %}
+                                                {{ entry.country }}
+                                            </span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="count-badge">{{ entry.count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="bytes-display" title="{{ entry.total_bytes|intcomma }} bytes">
+                                            {{ entry.total_bytes|bytes_humanize }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="3" class="no-data">No country data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Traffic Summary (Full Width) -->
+            <div class="summary-card full-width">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-line"></i> Detailed Traffic Summary</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="Export">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Source IP</th>
+                                    <th>Destination IP</th>
+                                    <th>Port</th>
+                                    <th>Sent</th>
+                                    <th>Received</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in top_traffic %}
+                                <tr>
+                                    <td>
+                                        <a href="/logs/?srcip={{ entry.srcip }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="ip-address">{{ entry.srcip }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/logs/?dstip={{ entry.dstip }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="ip-address">{{ entry.dstip }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/logs/?dstport={{ entry.dstport }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="port-badge">{{ entry.dstport }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="bytes-display" title="{{ entry.total_sent|intcomma }} bytes">
+                                            {{ entry.total_sent|bytes_humanize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="bytes-display" title="{{ entry.total_rcvd|intcomma }} bytes">
+                                            {{ entry.total_rcvd|bytes_humanize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="/logs/?srcip={{ entry.srcip }}&dstip={{ entry.dstip }}&dstport={{ entry.dstport }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="bytes-display total-bytes" title="{{ entry.total_bytes|intcomma }} bytes">
+                                                {{ entry.total_bytes|bytes_humanize }}
+                                            </span>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="no-data">No traffic data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-.compact-table {
-    font-size: 0.9rem;
+/* Modern Top Summary Page Styles - Matching Logs Page Design */
+.top-summary-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
 }
 
-.compact-table td, .compact-table th {
-    padding: 0.5rem;
+.top-summary-content {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
-.flag {
-    font-size: 1.2rem;
-    margin-left: 0.5rem;
+/* Header Section */
+.page-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
 }
 
-.analytics-grid .content-card h3 i {
-    margin-right: 0.5rem;
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    flex-wrap: wrap;
 }
 
-@media (max-width: 768px) {
-    .analytics-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
-
-.detail-link {
-    color: #3498db;
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.detail-link:hover {
-    color: #2980b9;
-    text-decoration: underline;
-}
-
-.detail-link strong {
-    color: inherit;
-}
-
-tr:hover .detail-link {
-    color: #2980b9;
-}
-
-/* Professional Time Filter Styles */
-.time-filter-container {
-    position: relative;
-}
-
-.time-filter-dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.time-filter-btn {
+.page-title h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #495057;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1rem;
+}
+
+.page-title h1 i {
+    color: #667eea;
+    font-size: 1.6rem;
+}
+
+.subtitle {
+    margin: 0.5rem 0 0 0;
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+.header-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: flex-end;
+}
+
+/* Summary Stats */
+.summary-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+    text-align: center;
+    min-width: 120px;
+}
+
+.stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #667eea;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.25rem;
+}
+
+/* Time Filter Section */
+.time-filter-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.time-range-tabs {
+    display: flex;
+    gap: 0.5rem;
+    background: white;
+    padding: 0.25rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+}
+
+.time-tab {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.time-tab:hover {
+    background: #f8f9fa;
+    color: #667eea;
+}
+
+.time-tab.active {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 6px;
+    font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    min-width: 160px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.time-filter-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+.action-btn:hover {
+    background: #f8f9fa;
+    border-color: #667eea;
+    color: #667eea;
 }
 
-.time-filter-btn .fas.fa-chevron-down {
-    transition: transform 0.3s ease;
-    margin-left: auto;
+.refresh-btn:hover {
+    transform: rotate(90deg);
 }
 
-.time-filter-dropdown.active .time-filter-btn .fas.fa-chevron-down {
-    transform: rotate(180deg);
+/* Analytics Grid */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 1.5rem;
 }
 
-.time-filter-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    min-width: 280px;
+/* Summary Cards */
+.summary-card {
     background: white;
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     border: 1px solid #e1e5e9;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
+    overflow: hidden;
     transition: all 0.3s ease;
-    z-index: 1000;
-    margin-top: 0.5rem;
 }
 
-.time-filter-dropdown.active .time-filter-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+.summary-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
 }
 
-.filter-section {
-    padding: 1rem;
+.summary-card.full-width {
+    grid-column: 1 / -1;
 }
 
-.filter-section:not(:last-child) {
-    border-bottom: 1px solid #f1f3f4;
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e1e5e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.section-title {
-    font-size: 0.75rem;
+.card-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
     font-weight: 600;
-    text-transform: uppercase;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-header h3 i {
+    color: #667eea;
+    font-size: 1rem;
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.card-action-btn {
+    padding: 0.25rem 0.5rem;
+    background: transparent;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
     color: #6c757d;
-    margin-bottom: 0.75rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+}
+
+.card-action-btn:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.card-content {
+    padding: 0;
+}
+
+/* Summary Tables */
+.summary-table-container {
+    overflow-x: auto;
+}
+
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.summary-table thead th {
+    background: #f8f9fa;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #e1e5e9;
+    font-size: 0.85rem;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.filter-option {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    text-decoration: none;
-    color: #495057;
-    border-radius: 6px;
+.summary-table tbody tr {
+    border-bottom: 1px solid #f1f3f4;
     transition: all 0.2s ease;
-    margin-bottom: 0.25rem;
 }
 
-.filter-option:hover {
-    background-color: #f8f9fa;
+.summary-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.summary-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.summary-table tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+/* Table Elements */
+.table-link {
     color: #495057;
     text-decoration: none;
-}
-
-.filter-option.active {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-    color: #667eea;
-    font-weight: 500;
-}
-
-.filter-option i {
-    width: 16px;
-    text-align: center;
-    opacity: 0.7;
-}
-
-.custom-date-range {
-    margin-top: 0.5rem;
-}
-
-.date-input-group {
-    margin-bottom: 0.75rem;
-}
-
-.date-input-group label {
+    transition: all 0.2s ease;
     display: block;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #495057;
-    margin-bottom: 0.25rem;
 }
 
-.date-input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
+.table-link:hover {
+    color: #667eea;
+}
+
+.ip-address {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 0.85rem;
-    transition: all 0.2s ease;
+    font-weight: 500;
 }
 
-.date-input:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.apply-custom-btn {
-    width: 100%;
-    padding: 0.75rem;
+.port-badge {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.count-badge {
+    background: #f8f9fa;
+    color: #495057;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid #e1e5e9;
+}
+
+.bytes-display {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.bytes-display.total-bytes {
+    color: #667eea;
+    font-weight: 700;
+}
+
+.category-name, .username-display {
     font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
+}
+
+.url-display {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.8rem;
+}
+
+.country-display {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 0.5rem;
+    font-weight: 500;
 }
 
-.apply-custom-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+.no-data {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 2rem 1rem;
 }
 
+/* Responsive Design */
 @media (max-width: 768px) {
-    .dashboard-header {
+    .header-content {
         flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start !important;
+        align-items: stretch;
     }
     
-    .time-filter-menu {
-        right: auto;
-        left: 0;
-        min-width: 260px;
+    .header-controls {
+        align-items: stretch;
+    }
+    
+    .time-filter-section {
+        flex-direction: column;
+    }
+    
+    .summary-stats {
+        justify-content: space-between;
+    }
+    
+    .stat-card {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .time-range-tabs {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .time-tab {
+        flex: 1;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .top-summary-content {
+        padding: 1rem;
+    }
+    
+    .page-header {
+        padding: 1.5rem;
+    }
+    
+    .page-title h1 {
+        font-size: 1.5rem;
+    }
+    
+    .summary-stats {
+        flex-direction: column;
+        gap: 0.5rem;
     }
 }
 </style>
 
 <script>
+// Dashboard functionality
 document.addEventListener('DOMContentLoaded', function() {
-    const timeFilterBtn = document.getElementById('timeFilterButton');
-    const timeFilterMenu = document.getElementById('timeFilterMenu');
-    const timeFilterDropdown = document.querySelector('.time-filter-dropdown');
-    const timeFilterLabel = document.getElementById('timeFilterLabel');
-    const filterOptions = document.querySelectorAll('.filter-option');
-
-    // Toggle dropdown
-    timeFilterBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        timeFilterDropdown.classList.toggle('active');
-    });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!timeFilterDropdown.contains(e.target)) {
-            timeFilterDropdown.classList.remove('active');
-        }
-    });
-
-    // Handle filter option selection
-    filterOptions.forEach(option => {
-        option.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Remove active class from all options
-            filterOptions.forEach(opt => opt.classList.remove('active'));
-            
-            // Add active class to clicked option
+    // Time range tabs functionality
+    const timeTabs = document.querySelectorAll('.time-tab');
+    
+    timeTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remove active class from all tabs
+            timeTabs.forEach(t => t.classList.remove('active'));
+            // Add active class to clicked tab
             this.classList.add('active');
             
-            // Update button label
-            const label = this.getAttribute('data-label');
-            const value = this.getAttribute('data-value');
-            timeFilterLabel.textContent = label;
-            
-            // Close dropdown
-            timeFilterDropdown.classList.remove('active');
-            
-            // Apply filter and reload page
-            applyTimeFilter(value);
+            // Handle time range change
+            const range = this.dataset.range;
+            if (range !== 'custom') {
+                // Redirect with new time range
+                const url = new URL(window.location);
+                url.searchParams.set('time_range', range);
+                window.location.href = url.toString();
+            }
         });
     });
-
-    // Set current filter as active based on URL parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentTimeRange = urlParams.get('time_range') || '1h';
     
-    filterOptions.forEach(option => {
-        const value = option.getAttribute('data-value');
-        if (value === currentTimeRange) {
-            option.classList.add('active');
-            timeFilterLabel.textContent = option.getAttribute('data-label');
+    // Set active tab based on current selection
+    const currentTimeRange = '{{ selected_time_range|default:"1h" }}';
+    timeTabs.forEach(tab => {
+        if (tab.dataset.range === currentTimeRange) {
+            tab.classList.add('active');
         } else {
-            option.classList.remove('active');
+            tab.classList.remove('active');
         }
     });
 });
 
-function applyTimeFilter(timeRange) {
-    const url = new URL(window.location);
-    url.searchParams.set('time_range', timeRange);
-    window.location.href = url.toString();
+function refreshDashboard() {
+    window.location.reload();
 }
 
-function applyCustomDateRange() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    
-    if (!startDate || !endDate) {
-        alert('Please select both start and end dates');
-        return;
+// Add loading animation to action buttons
+document.querySelectorAll('.action-btn, .card-action-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        if (icon && icon.classList.contains('fa-sync-alt')) {
+            icon.style.animation = 'spin 1s linear infinite';
+            setTimeout(() => {
+                icon.style.animation = '';
+            }, 1000);
+        }
+    });
+});
+
+// Add CSS animation for spin
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
-    
-    if (new Date(startDate) >= new Date(endDate)) {
-        alert('End date must be after start date');
-        return;
-    }
-    
-    const url = new URL(window.location);
-    url.searchParams.set('time_range', 'custom');
-    url.searchParams.set('start_date', startDate);
-    url.searchParams.set('end_date', endDate);
-    
-    // Update button label
-    document.getElementById('timeFilterLabel').textContent = 'Custom Range';
-    
-    // Close dropdown
-    document.querySelector('.time-filter-dropdown').classList.remove('active');
-    
-    window.location.href = url.toString();
-}
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}
