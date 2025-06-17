@@ -67,9 +67,6 @@ def get_pagination_range(current_page, total_pages, neighbors=2):
         
     return page_range
 
-def dmu_view(request):
-    # Renders the static UI template
-    return render(request, 'dashboard/index.html')
 
 def top_summary_view(request):
     client = Client(

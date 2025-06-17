@@ -1,17 +1,11 @@
 <header class="main-header">
     <div class="main-nav-links">
-        <a href="{% url 'dmu' %}" {% if request.resolver_match.url_name == 'dmu' %}class="active"{% endif %}>Dashboard</a>
-        <a href="#">Firewalls</a>
+        <a href="{% url 'top_summary' %}" {% if request.resolver_match.url_name == 'top_summary' %}class="active"{% endif %}>Top Summary</a>
+        <a href="{% url 'clickhouse_logs' %}" {% if request.resolver_match.url_name == 'clickhouse_logs' %}class="active"{% endif %}>Logs</a>
+        <a href="{% url 'grouped_logs' %}" {% if request.resolver_match.url_name == 'grouped_logs' %}class="active"{% endif %}>Grouped Logs</a>
         <a href="{% url 'system_config' %}" {% if request.resolver_match.url_name == 'system_config' %}class="active"{% endif %}>System Config</a>
-        <a href="#">Reports</a>
-        <div class="dropdown">
-            <a href="#" class="dropdown-toggle">Settings <i class="fas fa-caret-down"></i></a>
-            <div class="dropdown-menu">
-                <a href="{% url 'system_config' %}" class="dropdown-item">System Config</a>
-                <a href="{% url 'log_sources' %}" class="dropdown-item">Log Sources</a>
-                <a href="{% url 'log_management' %}" class="dropdown-item">Log Management</a>
-            </div>
-        </div>
+        <a href="{% url 'log_sources' %}" {% if request.resolver_match.url_name == 'log_sources' %}class="active"{% endif %}>Log Sources</a>
+        <a href="{% url 'log_management' %}" {% if request.resolver_match.url_name == 'log_management' %}class="active"{% endif %}>Log Management</a>
     </div>
     <div class="user-actions">
         <button class="icon-button">
