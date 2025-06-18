@@ -6,6 +6,7 @@
 
 describe network_logs.threat_logs
 describe network_logs.pa_traffic
+network_logs.pa_urls
 USE network_logs
 
 
