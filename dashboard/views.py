@@ -418,6 +418,16 @@ def clickhouse_logs_view(request):
     
     since_str = since.strftime('%Y-%m-%d %H:%M:%S')
     
+    # Create user-friendly time range display
+    time_range_display = {
+        'last_hour': 'Last Hour',
+        'last_6_hours': 'Last 6 Hours', 
+        'last_24_hours': 'Last 24 Hours',
+        'last_7_days': 'Last 7 Days',
+        'last_30_days': 'Last 30 Days',
+        'custom': 'Custom Range'
+    }.get(time_range, 'Last Hour')
+    
     # --- Get filter values from request ---
     srcip_filter = request.GET.get('srcip', '').strip()
     dstip_filter = request.GET.get('dstip', '').strip()
@@ -531,26 +541,37 @@ def clickhouse_logs_view(request):
     # Combine all WHERE clauses
     where_clause = ' AND '.join(where_clauses)
     
-    # --- Fetch available action values for dropdown ---
-    action_query = f"""
-        SELECT DISTINCT action 
-        FROM fortigate_traffic 
-        WHERE {where_clause}
-        ORDER BY action
-    """
+    # --- Fetch available action values for dropdown from all tables ---
+    action_queries = []
+    if has_fortigate_traffic:
+        action_queries.append(f"SELECT DISTINCT action FROM fortigate_traffic WHERE {where_clause}")
+    if has_pa_traffic:
+        pa_where_clause = where_clause.replace('srcip', 'src_ip').replace('dstip', 'dst_ip').replace('srcport', 'src_port').replace('dstport', 'dst_port').replace('devname', 'device_name').replace('appcategory', 'app_category').replace('hostname', 'application').replace('username', 'src_user').replace('dstcountry', 'dst_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
+        action_queries.append(f"SELECT DISTINCT action FROM pa_traffic WHERE {pa_where_clause}")
+    
+    if action_queries:
+        action_query = f"SELECT DISTINCT action FROM ({' UNION ALL '.join(action_queries)}) AS combined_actions ORDER BY action"
+    else:
+        action_query = "SELECT 'allow' as action"
     
     try:
         available_actions = [row[0] for row in client.execute(action_query)]
     except Exception as e:
-        available_actions = []
+        available_actions = ['allow', 'deny', 'drop', 'accept']  # Default fallback
 
-    # --- Fetch available device names for dropdown ---
-    device_query = f"""
-        SELECT DISTINCT devname 
-        FROM fortigate_traffic 
-        WHERE {where_clause}  # Consider if devname filter should apply to its own dropdown population
-        ORDER BY devname
-    """
+    # --- Fetch available device names for dropdown from all tables ---
+    device_queries = []
+    if has_fortigate_traffic:
+        device_queries.append(f"SELECT DISTINCT devname as device_name FROM fortigate_traffic WHERE {where_clause}")
+    if has_pa_traffic:
+        pa_where_clause = where_clause.replace('srcip', 'src_ip').replace('dstip', 'dst_ip').replace('srcport', 'src_port').replace('dstport', 'dst_port').replace('devname', 'device_name').replace('appcategory', 'app_category').replace('hostname', 'application').replace('username', 'src_user').replace('dstcountry', 'dst_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
+        device_queries.append(f"SELECT DISTINCT device_name FROM pa_traffic WHERE {pa_where_clause}")
+    
+    if device_queries:
+        device_query = f"SELECT DISTINCT device_name FROM ({' UNION ALL '.join(device_queries)}) AS combined_devices ORDER BY device_name"
+    else:
+        device_query = "SELECT 'N/A' as device_name"
+    
     try:
         available_devices = [row[0] for row in client.execute(device_query)]
     except Exception as e:
@@ -913,6 +934,7 @@ def clickhouse_logs_view(request):
         'min_duration_filter': min_duration_filter,
         'max_duration_filter': max_duration_filter,
         'time_range': time_range,
+        'time_range_display': time_range_display,
         'time_from': request.GET.get('time_from', ''),
         'time_to': request.GET.get('time_to', ''),
         'log_source_filter': log_source_filter,

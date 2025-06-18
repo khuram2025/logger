@@ -24,11 +24,7 @@
                         {% if total_logs_count|default:0 > 1000 %}(Log Throttling may be ON){% endif %}
                     </div>
                     <div class="date-range-display">
-                        {% if time_range %}
-                            {{ time_range|title }}
-                        {% else %}
-                            Last Hour
-                        {% endif %}
+                        {{ time_range_display|default:"Last Hour" }}
                     </div>
                     <div class="action-buttons">
                         <button class="icon-text-button" onclick="refreshLogs()"><i class="fas fa-sync-alt"></i></button>
@@ -737,12 +733,12 @@
                     </div>
                     <div class="filter-section-content">
                         <div class="time-range-tabs">
-                            <button type="button" class="time-tab active" data-range="last_hour">1H</button>
-                            <button type="button" class="time-tab" data-range="last_6_hours">6H</button>
-                            <button type="button" class="time-tab" data-range="last_24_hours">24H</button>
-                            <button type="button" class="time-tab" data-range="last_7_days">7D</button>
-                            <button type="button" class="time-tab" data-range="last_30_days">30D</button>
-                            <button type="button" class="time-tab" data-range="custom">Custom</button>
+                            <button type="button" class="time-tab {% if time_range == 'last_hour' %}active{% endif %}" data-range="last_hour">1H</button>
+                            <button type="button" class="time-tab {% if time_range == 'last_6_hours' %}active{% endif %}" data-range="last_6_hours">6H</button>
+                            <button type="button" class="time-tab {% if time_range == 'last_24_hours' %}active{% endif %}" data-range="last_24_hours">24H</button>
+                            <button type="button" class="time-tab {% if time_range == 'last_7_days' %}active{% endif %}" data-range="last_7_days">7D</button>
+                            <button type="button" class="time-tab {% if time_range == 'last_30_days' %}active{% endif %}" data-range="last_30_days">30D</button>
+                            <button type="button" class="time-tab {% if time_range == 'custom' %}active{% endif %}" data-range="custom">Custom</button>
                         </div>
                         <select class="filter-input hidden" name="time_range" id="timeRangeFilter">
                             <option value="last_hour" {% if time_range == 'last_hour' %}selected{% endif %}>Last Hour</option>
@@ -1010,8 +1006,15 @@ function applyFilters() {
         }
     });
 
-    // Check for custom time range
+    // Always include time range parameter
     const timeRange = document.getElementById('timeRangeFilter').value;
+    const timeRangeInput = document.createElement('input');
+    timeRangeInput.type = 'hidden';
+    timeRangeInput.name = 'time_range';
+    timeRangeInput.value = timeRange;
+    form.appendChild(timeRangeInput);
+    
+    // Check for custom time range
     if (timeRange === 'custom') {
         const timeFrom = document.getElementById('timeFrom').value;
         const timeTo = document.getElementById('timeTo').value;
