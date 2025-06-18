@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('logs/', views.clickhouse_logs_view, name='clickhouse_logs'),
+    path('url-logs/', views.url_filtering_logs_view, name='url_filtering_logs'),
     path('top-summary/', views.top_summary_view, name='top_summary'),
     path('grouped-logs/', views.grouped_logs_view, name='grouped_logs'),
     path('system-config/', views.system_config_view, name='system_config'),

@@ -1,0 +1,35 @@
+2025-06-18 13:14:35,823 [INFO] main:1186 - 🚀 Starting PaloAlto URL Filtering Log Parser
+2025-06-18 13:14:35,823 [INFO] main:1187 - 📁 Monitoring: /var/log/paloalto-1004.log
+2025-06-18 13:14:35,823 [INFO] main:1188 - 🔗 ClickHouse: localhost:9000/network_logs
+2025-06-18 13:14:35,823 [INFO] main:1189 - 📊 Batch Size: 5, Flush Interval: 2s
+2025-06-18 13:14:35,829 [INFO] main:1194 - ✅ ClickHouse connection successful
+2025-06-18 13:14:35,832 [INFO] main:1202 - ✅ Table pa_urls found
+2025-06-18 13:14:35,832 [INFO] _open_file:1065 - Opened log file: /var/log/paloalto-1004.log (position: 3226319863)
+2025-06-18 13:14:35,834 [INFO] main:1257 - 👀 Monitoring started for: /var/log/paloalto-1004.log
+2025-06-18 13:14:35,894 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:14:35,894 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,091 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:14:36,091 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,095 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:14:36,095 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:14:36,096 [INFO] on_modified:1133 - Processed 5 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,137 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,181 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,205 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,230 [INFO] on_modified:1133 - Processed 4 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,275 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,282 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,320 [INFO] on_modified:1133 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,418 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,455 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,501 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,503 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,838 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,998 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 1
+2025-06-18 13:14:36,998 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 2
+2025-06-18 13:14:36,999 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 3
+2025-06-18 13:14:36,999 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 4
+2025-06-18 13:14:37,000 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer 2025-06-18 13:16:33,762 [INFO] shutdown_handler:1260 - 🛑 Shutdown signal received
+ batch process
+2025-06-18 13:14:37,834 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 6
+2025-06-18 13:16:33,762 [INFO] shutdown_handler:1261 - 🛑 Shutdown signal received

@@ -1,0 +1,1226 @@
+2025-06-18 13:03:32,010 [INFO] main:1179 - 🚀 Starting PaloAlto URL Filtering Log Parser
+2025-06-18 13:03:32,010 [INFO] main:1180 - 📁 Monitoring: /var/log/paloalto-1004.log
+2025-06-18 13:03:32,010 [INFO] main:1181 - 🔗 ClickHouse: localhost:9000/network_logs
+2025-06-18 13:03:32,010 [INFO] main:1182 - 📊 Batch Size: 1000, Flush Interval: 2s
+2025-06-18 13:03:32,018 [INFO] main:1187 - ✅ ClickHouse connection successful
+2025-06-18 13:03:32,021 [INFO] main:1195 - ✅ Table pa_urls found
+2025-06-18 13:03:32,021 [INFO] _open_file:1059 - Opened log file: /var/log/paloalto-1004.log (position: 3199805974)
+2025-06-18 13:03:32,023 [INFO] main:1250 - 👀 Monitoring started for: /var/log/paloalto-1004.log
+2025-06-18 13:03:32,086 [INFO] on_modified:1126 - Processed 4 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:32,137 [INFO] on_modified:1126 - Processed 53 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:32,170 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:32,197 [INFO] on_modified:1126 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:32,263 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:32,325 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:32,353 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:32,444 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:32,489 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:33,079 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:33,109 [INFO] on_modified:1126 - Processed 8 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:33,132 [INFO] on_modified:1126 - Processed 22 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:33,170 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:33,193 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:33,263 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:33,354 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:33,376 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:33,407 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:34,035 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:34,037 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:34,080 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:03:34,084 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:00,281 [INFO] main:1179 - 🚀 Starting PaloAlto URL Filtering Log Parser
+2025-06-18 13:04:00,281 [INFO] main:1180 - 📁 Monitoring: /var/log/paloalto-1004.log
+2025-06-18 13:04:00,281 [INFO] main:1181 - 🔗 ClickHouse: localhost:9000/network_logs
+2025-06-18 13:04:00,281 [INFO] main:1182 - 📊 Batch Size: 1000, Flush Interval: 2s
+2025-06-18 13:04:00,287 [INFO] main:1187 - ✅ ClickHouse connection successful
+2025-06-18 13:04:00,288 [INFO] main:1195 - ✅ Table pa_urls found
+2025-06-18 13:04:00,288 [INFO] _open_file:1059 - Opened log file: /var/log/paloalto-1004.log (position: 3201045252)
+2025-06-18 13:04:00,290 [INFO] main:1250 - 👀 Monitoring started for: /var/log/paloalto-1004.log
+2025-06-18 13:04:00,313 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:00,376 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:00,406 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:00,495 [INFO] on_modified:1126 - Processed 6 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:01,034 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:01,081 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:01,141 [INFO] on_modified:1126 - Processed 30 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:01,171 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:01,266 [INFO] on_modified:1126 - Processed 5 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:01,308 [INFO] on_modified:1126 - Processed 4 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:01,355 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:01,377 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:01,443 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:01,492 [INFO] on_modified:1126 - Processed 6 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,085 [INFO] on_modified:1126 - Processed 9 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,122 [INFO] on_modified:1126 - Processed 26 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,125 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,170 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,195 [INFO] on_modified:1126 - Processed 4 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,216 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,262 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,307 [INFO] on_modified:1126 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,358 [INFO] on_modified:1126 - Processed 4 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,407 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,447 [INFO] on_modified:1126 - Processed 4 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,489 [INFO] on_modified:1126 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:04:02,492 [INFO] on_modified:1126 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:07:59,450 [INFO] shutdown_handler:1254 - 🛑 Shutdown signal received
+2025-06-18 13:07:59,450 [INFO] shutdown_handler:1254 - 🛑 Shutdown signal received
+2025-06-18 13:08:25,727 [INFO] main:1185 - 🚀 Starting PaloAlto URL Filtering Log Parser
+2025-06-18 13:08:25,728 [INFO] main:1186 - 📁 Monitoring: /var/log/paloalto-1004.log
+2025-06-18 13:08:25,728 [INFO] main:1187 - 🔗 ClickHouse: localhost:9000/network_logs
+2025-06-18 13:08:25,728 [INFO] main:1188 - 📊 Batch Size: 1000, Flush Interval: 2s
+2025-06-18 13:08:25,733 [INFO] main:1193 - ✅ ClickHouse connection successful
+2025-06-18 13:08:25,735 [INFO] main:1201 - ✅ Table pa_urls found
+2025-06-18 13:08:25,735 [INFO] _open_file:1065 - Opened log file: /var/log/paloalto-1004.log (position: 3212170850)
+2025-06-18 13:08:25,736 [INFO] main:1256 - 👀 Monitoring started for: /var/log/paloalto-1004.log
+2025-06-18 13:08:25,808 [INFO] _is_url_filtering_log:673 - Log type: 'THREAT', subtype: 'url', is_url_log: True
+2025-06-18 13:08:25,809 [INFO] _is_url_filtering_log:673 - Log type: 'THREAT', subtype: 'url', is_url_log: True
+2025-06-18 13:08:25,810 [INFO] _is_url_filtering_log:673 - Log type: 'THREAT', subtype: 'url', is_url_log: True
+2025-06-18 13:08:25,810 [INFO] _is_url_filtering_log:673 - Log type: 'THREAT', subtype: 'url', is_url_log: True
+2025-06-18 13:08:25,814 [INFO] on_modified:1132 - Processed 23 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,084 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,131 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,175 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,199 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,222 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,266 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,310 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,359 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,411 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,448 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:26,811 [INFO] on_modified:1132 - Processed 13 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,087 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,130 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,176 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,199 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,266 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,312 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,359 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,380 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,411 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,417 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,448 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:27,493 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:28,039 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:08:28,084 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:26,806 [INFO] shutdown_handler:1254 - 🛑 Shutdown signal received
+2025-06-18 13:11:26,806 [INFO] shutdown_handler:1260 - 🛑 Shutdown signal received
+2025-06-18 13:11:26,806 [INFO] shutdown_handler:1254 - 🛑 Shutdown signal received
+2025-06-18 13:11:54,927 [INFO] main:1185 - 🚀 Starting PaloAlto URL Filtering Log Parser
+2025-06-18 13:11:54,927 [INFO] main:1186 - 📁 Monitoring: /var/log/paloalto-1004.log
+2025-06-18 13:11:54,927 [INFO] main:1187 - 🔗 ClickHouse: localhost:9000/network_logs
+2025-06-18 13:11:54,927 [INFO] main:1188 - 📊 Batch Size: 5, Flush Interval: 2s
+2025-06-18 13:11:54,933 [INFO] main:1193 - ✅ ClickHouse connection successful
+2025-06-18 13:11:54,935 [INFO] main:1201 - ✅ Table pa_urls found
+2025-06-18 13:11:54,935 [INFO] _open_file:1065 - Opened log file: /var/log/paloalto-1004.log (position: 3220477567)
+2025-06-18 13:11:54,936 [INFO] main:1256 - 👀 Monitoring started for: /var/log/paloalto-1004.log
+2025-06-18 13:11:55,044 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:11:55,044 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,087 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:11:55,088 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:11:55,088 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:11:55,088 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,092 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,093 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,178 [INFO] on_modified:1132 - Processed 4 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,204 [INFO] on_modified:1132 - Processed 5 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,225 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,270 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,273 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,316 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,362 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,384 [INFO] on_modified:1132 - Processed 5 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,416 [INFO] on_modified:1132 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,497 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:55,501 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:56,044 [INFO] on_modified:1132 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:56,088 [INFO] on_modified:1132 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:11:56,090 [INFO] on_modified:1132 - Processed 4 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:13:32,996 [INFO] shutdown_handler:1254 - 🛑 Shutdown signal received
+2025-06-18 13:13:32,996 [INFO] shutdown_handler:1260 - 🛑 Shutdown signal received
+2025-06-18 13:13:32,996 [INFO] shutdown_handler:1260 - 🛑 Shutdown signal received
+2025-06-18 13:13:32,996 [INFO] shutdown_handler:1254 - 🛑 Shutdown signal received
+2025-06-18 13:14:04,558 [INFO] shutdown_handler:1254 - 🛑 Shutdown signal received
+2025-06-18 13:14:04,559 [INFO] shutdown_handler:1254 - 🛑 Shutdown signal received
+2025-06-18 13:14:04,559 [INFO] shutdown_handler:1260 - 🛑 Shutdown signal received
+2025-06-18 13:14:04,559 [INFO] shutdown_handler:1260 - 🛑 Shutdown signal received
+2025-06-18 13:14:35,823 [INFO] main:1186 - 🚀 Starting PaloAlto URL Filtering Log Parser
+2025-06-18 13:14:35,823 [INFO] main:1187 - 📁 Monitoring: /var/log/paloalto-1004.log
+2025-06-18 13:14:35,823 [INFO] main:1188 - 🔗 ClickHouse: localhost:9000/network_logs
+2025-06-18 13:14:35,823 [INFO] main:1189 - 📊 Batch Size: 5, Flush Interval: 2s
+2025-06-18 13:14:35,829 [INFO] main:1194 - ✅ ClickHouse connection successful
+2025-06-18 13:14:35,832 [INFO] main:1202 - ✅ Table pa_urls found
+2025-06-18 13:14:35,832 [INFO] _open_file:1065 - Opened log file: /var/log/paloalto-1004.log (position: 3226319863)
+2025-06-18 13:14:35,834 [INFO] main:1257 - 👀 Monitoring started for: /var/log/paloalto-1004.log
+2025-06-18 13:14:35,894 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:14:35,894 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,091 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:14:36,091 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,095 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:14:36,095 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:14:36,096 [INFO] on_modified:1133 - Processed 5 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,137 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,181 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,205 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,230 [INFO] on_modified:1133 - Processed 4 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,275 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,282 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,320 [INFO] on_modified:1133 - Processed 3 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,418 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,455 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,501 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,503 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,838 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:14:36,998 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 1
+2025-06-18 13:14:36,998 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 2
+2025-06-18 13:14:36,999 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 3
+2025-06-18 13:14:36,999 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 4
+2025-06-18 13:14:37,000 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 5
+2025-06-18 13:14:37,000 [INFO] on_modified:1126 - Buffer full (5), triggering batch process
+2025-06-18 13:14:37,834 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 6
+2025-06-18 13:16:33,762 [INFO] shutdown_handler:1260 - 🛑 Shutdown signal received
+2025-06-18 13:16:33,762 [INFO] shutdown_handler:1260 - 🛑 Shutdown signal received
+2025-06-18 13:16:33,762 [INFO] shutdown_handler:1261 - 🛑 Shutdown signal received
+2025-06-18 13:16:33,762 [INFO] shutdown_handler:1254 - 🛑 Shutdown signal received
+2025-06-18 13:16:33,762 [INFO] shutdown_handler:1254 - 🛑 Shutdown signal received
+2025-06-18 13:17:37,517 [INFO] main:1186 - 🚀 Starting PaloAlto URL Filtering Log Parser
+2025-06-18 13:17:37,518 [INFO] main:1187 - 📁 Monitoring: /var/log/paloalto-1004.log
+2025-06-18 13:17:37,518 [INFO] main:1188 - 🔗 ClickHouse: localhost:9000/network_logs
+2025-06-18 13:17:37,518 [INFO] main:1189 - 📊 Batch Size: 5, Flush Interval: 2s
+2025-06-18 13:17:37,524 [INFO] main:1194 - ✅ ClickHouse connection successful
+2025-06-18 13:17:37,526 [INFO] main:1202 - ✅ Table pa_urls found
+2025-06-18 13:17:37,527 [INFO] _open_file:1065 - Opened log file: /var/log/paloalto-1004.log (position: 3234171891)
+2025-06-18 13:17:37,528 [INFO] main:1262 - 👀 Monitoring started for: /var/log/paloalto-1004.log
+2025-06-18 13:17:38,056 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:17:38,057 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:17:38,057 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:17:38,082 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:17:38,082 [INFO] on_modified:1133 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:17:38,100 [INFO] _is_url_filtering_log:673 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-18 13:17:38,101 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:17:38,141 [INFO] on_modified:1133 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-18 13:17:38,162 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 1
+2025-06-18 13:17:38,163 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 2
+2025-06-18 13:17:38,165 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 3
+2025-06-18 13:17:38,166 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 4
+2025-06-18 13:17:38,168 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 5
+2025-06-18 13:17:38,168 [INFO] on_modified:1126 - Buffer full (5), triggering batch process
+2025-06-18 13:17:38,168 [INFO] process_batch:1220 - 🔄 Starting batch processing...
+2025-06-18 13:17:39,529 [INFO] on_modified:1120 - ✅ Successfully parsed URL log, buffer size: 6
+2025-06-18 14:58:05,748 [INFO] main:1110 - 🚀 Starting PaloAlto URL Filtering Log Parser
+2025-06-18 14:58:05,749 [INFO] main:1111 - 📁 Monitoring: /var/log/paloalto-1004.log
+2025-06-18 14:58:05,749 [INFO] main:1112 - 🔗 ClickHouse: localhost:9000/network_logs
+2025-06-18 14:58:05,749 [INFO] main:1113 - 📊 Batch Size: 1000, Flush Interval: 2s
+2025-06-18 14:58:05,754 [INFO] main:1118 - ✅ ClickHouse connection successful
+2025-06-18 14:58:05,756 [INFO] main:1126 - ✅ Table pa_urls_optimized found
+2025-06-18 14:58:05,756 [INFO] _open_file:985 - Opened log file: /var/log/paloalto-1004.log (starting from beginning)
+2025-06-18 14:58:05,757 [INFO] main:1186 - 👀 Monitoring started for: /var/log/paloalto-1004.log
+2025-06-18 14:58:06,161 [INFO] _is_url_filtering_log:593 - Log type: 'THREAT', subtype: 'url', is_url_log: True
+2025-06-18 14:58:06,162 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 1
+2025-06-18 14:58:06,162 [INFO] _is_url_filtering_log:593 - Log type: 'THREAT', subtype: 'url', is_url_log: True
+2025-06-18 14:58:06,162 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 2
+2025-06-18 14:58:06,163 [INFO] _is_url_filtering_log:593 - Log type: 'THREAT', subtype: 'url', is_url_log: True
+2025-06-18 14:58:06,163 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 3
+2025-06-18 14:58:06,163 [INFO] _is_url_filtering_log:593 - Log type: 'THREAT', subtype: 'url', is_url_log: True
+2025-06-18 14:58:06,163 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 4
+2025-06-18 14:58:06,163 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 5
+2025-06-18 14:58:06,164 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 6
+2025-06-18 14:58:06,164 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 7
+2025-06-18 14:58:06,164 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 8
+2025-06-18 14:58:06,165 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 9
+2025-06-18 14:58:06,165 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 10
+2025-06-18 14:58:06,165 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 11
+2025-06-18 14:58:06,165 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 12
+2025-06-18 14:58:06,166 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 13
+2025-06-18 14:58:06,166 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 14
+2025-06-18 14:58:06,166 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 15
+2025-06-18 14:58:06,166 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 16
+2025-06-18 14:58:06,166 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 17
+2025-06-18 14:58:06,167 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 18
+2025-06-18 14:58:06,167 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 19
+2025-06-18 14:58:06,167 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 20
+2025-06-18 14:58:06,167 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 21
+2025-06-18 14:58:06,168 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 22
+2025-06-18 14:58:06,168 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 23
+2025-06-18 14:58:06,168 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 24
+2025-06-18 14:58:06,168 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 25
+2025-06-18 14:58:06,169 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 26
+2025-06-18 14:58:06,169 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 27
+2025-06-18 14:58:06,169 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 28
+2025-06-18 14:58:06,169 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 29
+2025-06-18 14:58:06,170 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 30
+2025-06-18 14:58:06,170 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 31
+2025-06-18 14:58:06,170 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 32
+2025-06-18 14:58:06,170 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 33
+2025-06-18 14:58:06,171 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 34
+2025-06-18 14:58:06,171 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 35
+2025-06-18 14:58:06,171 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 36
+2025-06-18 14:58:06,171 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 37
+2025-06-18 14:58:06,172 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 38
+2025-06-18 14:58:06,172 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 39
+2025-06-18 14:58:06,172 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 40
+2025-06-18 14:58:06,172 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 41
+2025-06-18 14:58:06,173 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 42
+2025-06-18 14:58:06,173 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 43
+2025-06-18 14:58:06,173 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 44
+2025-06-18 14:58:06,173 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 45
+2025-06-18 14:58:06,173 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 46
+2025-06-18 14:58:06,174 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 47
+2025-06-18 14:58:06,174 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 48
+2025-06-18 14:58:06,174 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 49
+2025-06-18 14:58:06,174 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 50
+2025-06-18 14:58:06,175 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 51
+2025-06-18 14:58:06,175 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 52
+2025-06-18 14:58:06,175 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 53
+2025-06-18 14:58:06,175 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 54
+2025-06-18 14:58:06,175 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 55
+2025-06-18 14:58:06,176 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 56
+2025-06-18 14:58:06,176 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 57
+2025-06-18 14:58:06,178 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 58
+2025-06-18 14:58:06,179 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 59
+2025-06-18 14:58:06,179 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 60
+2025-06-18 14:58:06,179 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 61
+2025-06-18 14:58:06,179 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 62
+2025-06-18 14:58:06,180 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 63
+2025-06-18 14:58:06,180 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 64
+2025-06-18 14:58:06,180 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 65
+2025-06-18 14:58:06,181 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 66
+2025-06-18 14:58:06,181 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 67
+2025-06-18 14:58:06,181 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 68
+2025-06-18 14:58:06,181 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 69
+2025-06-18 14:58:06,182 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 70
+2025-06-18 14:58:06,182 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 71
+2025-06-18 14:58:06,182 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 72
+2025-06-18 14:58:06,182 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 73
+2025-06-18 14:58:06,182 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 74
+2025-06-18 14:58:06,183 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 75
+2025-06-18 14:58:06,183 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 76
+2025-06-18 14:58:06,183 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 77
+2025-06-18 14:58:06,184 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 78
+2025-06-18 14:58:06,184 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 79
+2025-06-18 14:58:06,184 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 80
+2025-06-18 14:58:06,184 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 81
+2025-06-18 14:58:06,184 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 82
+2025-06-18 14:58:06,185 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 83
+2025-06-18 14:58:06,185 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 84
+2025-06-18 14:58:06,185 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 85
+2025-06-18 14:58:06,185 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 86
+2025-06-18 14:58:06,186 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 87
+2025-06-18 14:58:06,186 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 88
+2025-06-18 14:58:06,186 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 89
+2025-06-18 14:58:06,186 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 90
+2025-06-18 14:58:06,187 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 91
+2025-06-18 14:58:06,187 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 92
+2025-06-18 14:58:06,187 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 93
+2025-06-18 14:58:06,187 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 94
+2025-06-18 14:58:06,187 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 95
+2025-06-18 14:58:06,188 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 96
+2025-06-18 14:58:06,191 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 97
+2025-06-18 14:58:06,192 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 98
+2025-06-18 14:58:06,192 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 99
+2025-06-18 14:58:06,192 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 100
+2025-06-18 14:58:06,192 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 101
+2025-06-18 14:58:06,192 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 102
+2025-06-18 14:58:06,193 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 103
+2025-06-18 14:58:06,193 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 104
+2025-06-18 14:58:06,193 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 105
+2025-06-18 14:58:06,193 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 106
+2025-06-18 14:58:06,193 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 107
+2025-06-18 14:58:06,194 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 108
+2025-06-18 14:58:06,194 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 109
+2025-06-18 14:58:06,194 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 110
+2025-06-18 14:58:06,195 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 111
+2025-06-18 14:58:06,195 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 112
+2025-06-18 14:58:06,195 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 113
+2025-06-18 14:58:06,196 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 114
+2025-06-18 14:58:06,196 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 115
+2025-06-18 14:58:06,196 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 116
+2025-06-18 14:58:06,196 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 117
+2025-06-18 14:58:06,197 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 118
+2025-06-18 14:58:06,197 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 119
+2025-06-18 14:58:06,197 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 120
+2025-06-18 14:58:06,197 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 121
+2025-06-18 14:58:06,198 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 122
+2025-06-18 14:58:06,198 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 123
+2025-06-18 14:58:06,198 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 124
+2025-06-18 14:58:06,198 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 125
+2025-06-18 14:58:06,198 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 126
+2025-06-18 14:58:06,199 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 127
+2025-06-18 14:58:06,204 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 128
+2025-06-18 14:58:06,205 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 129
+2025-06-18 14:58:06,205 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 130
+2025-06-18 14:58:06,206 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 131
+2025-06-18 14:58:06,206 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 132
+2025-06-18 14:58:06,206 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 133
+2025-06-18 14:58:06,207 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 134
+2025-06-18 14:58:06,207 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 135
+2025-06-18 14:58:06,207 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 136
+2025-06-18 14:58:06,207 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 137
+2025-06-18 14:58:06,207 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 138
+2025-06-18 14:58:06,208 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 139
+2025-06-18 14:58:06,208 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 140
+2025-06-18 14:58:06,208 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 141
+2025-06-18 14:58:06,208 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 142
+2025-06-18 14:58:06,209 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 143
+2025-06-18 14:58:06,209 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 144
+2025-06-18 14:58:06,209 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 145
+2025-06-18 14:58:06,210 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 146
+2025-06-18 14:58:06,210 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 147
+2025-06-18 14:58:06,210 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 148
+2025-06-18 14:58:06,211 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 149
+2025-06-18 14:58:06,211 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 150
+2025-06-18 14:58:06,211 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 151
+2025-06-18 14:58:06,211 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 152
+2025-06-18 14:58:06,212 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 153
+2025-06-18 14:58:06,212 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 154
+2025-06-18 14:58:06,212 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 155
+2025-06-18 14:58:06,212 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 156
+2025-06-18 14:58:06,212 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 157
+2025-06-18 14:58:06,217 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 158
+2025-06-18 14:58:06,218 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 159
+2025-06-18 14:58:06,218 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 160
+2025-06-18 14:58:06,218 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 161
+2025-06-18 14:58:06,218 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 162
+2025-06-18 14:58:06,218 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 163
+2025-06-18 14:58:06,219 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 164
+2025-06-18 14:58:06,219 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 165
+2025-06-18 14:58:06,220 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 166
+2025-06-18 14:58:06,220 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 167
+2025-06-18 14:58:06,220 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 168
+2025-06-18 14:58:06,220 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 169
+2025-06-18 14:58:06,221 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 170
+2025-06-18 14:58:06,221 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 171
+2025-06-18 14:58:06,221 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 172
+2025-06-18 14:58:06,221 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 173
+2025-06-18 14:58:06,222 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 174
+2025-06-18 14:58:06,222 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 175
+2025-06-18 14:58:06,222 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 176
+2025-06-18 14:58:06,222 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 177
+2025-06-18 14:58:06,223 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 178
+2025-06-18 14:58:06,223 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 179
+2025-06-18 14:58:06,223 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 180
+2025-06-18 14:58:06,223 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 181
+2025-06-18 14:58:06,223 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 182
+2025-06-18 14:58:06,224 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 183
+2025-06-18 14:58:06,224 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 184
+2025-06-18 14:58:06,224 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 185
+2025-06-18 14:58:06,225 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 186
+2025-06-18 14:58:06,228 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 187
+2025-06-18 14:58:06,228 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 188
+2025-06-18 14:58:06,229 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 189
+2025-06-18 14:58:06,229 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 190
+2025-06-18 14:58:06,229 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 191
+2025-06-18 14:58:06,229 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 192
+2025-06-18 14:58:06,229 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 193
+2025-06-18 14:58:06,230 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 194
+2025-06-18 14:58:06,230 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 195
+2025-06-18 14:58:06,230 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 196
+2025-06-18 14:58:06,230 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 197
+2025-06-18 14:58:06,230 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 198
+2025-06-18 14:58:06,231 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 199
+2025-06-18 14:58:06,231 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 200
+2025-06-18 14:58:06,231 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 201
+2025-06-18 14:58:06,231 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 202
+2025-06-18 14:58:06,232 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 203
+2025-06-18 14:58:06,232 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 204
+2025-06-18 14:58:06,232 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 205
+2025-06-18 14:58:06,232 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 206
+2025-06-18 14:58:06,232 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 207
+2025-06-18 14:58:06,233 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 208
+2025-06-18 14:58:06,233 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 209
+2025-06-18 14:58:06,233 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 210
+2025-06-18 14:58:06,233 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 211
+2025-06-18 14:58:06,233 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 212
+2025-06-18 14:58:06,234 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 213
+2025-06-18 14:58:06,234 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 214
+2025-06-18 14:58:06,234 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 215
+2025-06-18 14:58:06,234 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 216
+2025-06-18 14:58:06,234 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 217
+2025-06-18 14:58:06,235 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 218
+2025-06-18 14:58:06,235 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 219
+2025-06-18 14:58:06,235 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 220
+2025-06-18 14:58:06,235 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 221
+2025-06-18 14:58:06,236 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 222
+2025-06-18 14:58:06,236 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 223
+2025-06-18 14:58:06,236 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 224
+2025-06-18 14:58:06,236 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 225
+2025-06-18 14:58:06,236 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 226
+2025-06-18 14:58:06,237 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 227
+2025-06-18 14:58:06,237 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 228
+2025-06-18 14:58:06,237 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 229
+2025-06-18 14:58:06,237 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 230
+2025-06-18 14:58:06,237 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 231
+2025-06-18 14:58:06,238 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 232
+2025-06-18 14:58:06,238 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 233
+2025-06-18 14:58:06,238 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 234
+2025-06-18 14:58:06,238 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 235
+2025-06-18 14:58:06,239 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 236
+2025-06-18 14:58:06,239 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 237
+2025-06-18 14:58:06,239 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 238
+2025-06-18 14:58:06,239 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 239
+2025-06-18 14:58:06,239 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 240
+2025-06-18 14:58:06,242 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 241
+2025-06-18 14:58:06,243 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 242
+2025-06-18 14:58:06,243 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 243
+2025-06-18 14:58:06,243 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 244
+2025-06-18 14:58:06,243 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 245
+2025-06-18 14:58:06,244 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 246
+2025-06-18 14:58:06,244 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 247
+2025-06-18 14:58:06,244 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 248
+2025-06-18 14:58:06,244 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 249
+2025-06-18 14:58:06,244 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 250
+2025-06-18 14:58:06,245 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 251
+2025-06-18 14:58:06,245 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 252
+2025-06-18 14:58:06,245 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 253
+2025-06-18 14:58:06,246 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 254
+2025-06-18 14:58:06,246 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 255
+2025-06-18 14:58:06,246 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 256
+2025-06-18 14:58:06,246 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 257
+2025-06-18 14:58:06,247 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 258
+2025-06-18 14:58:06,247 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 259
+2025-06-18 14:58:06,247 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 260
+2025-06-18 14:58:06,247 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 261
+2025-06-18 14:58:06,248 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 262
+2025-06-18 14:58:06,248 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 263
+2025-06-18 14:58:06,248 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 264
+2025-06-18 14:58:06,248 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 265
+2025-06-18 14:58:06,248 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 266
+2025-06-18 14:58:06,249 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 267
+2025-06-18 14:58:06,249 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 268
+2025-06-18 14:58:06,249 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 269
+2025-06-18 14:58:06,249 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 270
+2025-06-18 14:58:06,249 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 271
+2025-06-18 14:58:06,250 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 272
+2025-06-18 14:58:06,250 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 273
+2025-06-18 14:58:06,250 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 274
+2025-06-18 14:58:06,251 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 275
+2025-06-18 14:58:06,253 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 276
+2025-06-18 14:58:06,254 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 277
+2025-06-18 14:58:06,255 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 278
+2025-06-18 14:58:06,264 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 279
+2025-06-18 14:58:06,264 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 280
+2025-06-18 14:58:06,264 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 281
+2025-06-18 14:58:06,264 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 282
+2025-06-18 14:58:06,264 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 283
+2025-06-18 14:58:06,265 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 284
+2025-06-18 14:58:06,265 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 285
+2025-06-18 14:58:06,265 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 286
+2025-06-18 14:58:06,265 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 287
+2025-06-18 14:58:06,266 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 288
+2025-06-18 14:58:06,266 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 289
+2025-06-18 14:58:06,266 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 290
+2025-06-18 14:58:06,267 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 291
+2025-06-18 14:58:06,267 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 292
+2025-06-18 14:58:06,267 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 293
+2025-06-18 14:58:06,267 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 294
+2025-06-18 14:58:06,268 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 295
+2025-06-18 14:58:06,268 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 296
+2025-06-18 14:58:06,268 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 297
+2025-06-18 14:58:06,268 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 298
+2025-06-18 14:58:06,272 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 299
+2025-06-18 14:58:06,272 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 300
+2025-06-18 14:58:06,272 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 301
+2025-06-18 14:58:06,272 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 302
+2025-06-18 14:58:06,272 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 303
+2025-06-18 14:58:06,273 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 304
+2025-06-18 14:58:06,273 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 305
+2025-06-18 14:58:06,273 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 306
+2025-06-18 14:58:06,273 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 307
+2025-06-18 14:58:06,273 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 308
+2025-06-18 14:58:06,274 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 309
+2025-06-18 14:58:06,274 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 310
+2025-06-18 14:58:06,274 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 311
+2025-06-18 14:58:06,274 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 312
+2025-06-18 14:58:06,275 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 313
+2025-06-18 14:58:06,275 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 314
+2025-06-18 14:58:06,275 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 315
+2025-06-18 14:58:06,275 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 316
+2025-06-18 14:58:06,275 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 317
+2025-06-18 14:58:06,276 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 318
+2025-06-18 14:58:06,276 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 319
+2025-06-18 14:58:06,276 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 320
+2025-06-18 14:58:06,276 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 321
+2025-06-18 14:58:06,276 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 322
+2025-06-18 14:58:06,277 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 323
+2025-06-18 14:58:06,278 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 324
+2025-06-18 14:58:06,279 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 325
+2025-06-18 14:58:06,279 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 326
+2025-06-18 14:58:06,279 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 327
+2025-06-18 14:58:06,279 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 328
+2025-06-18 14:58:06,279 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 329
+2025-06-18 14:58:06,280 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 330
+2025-06-18 14:58:06,280 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 331
+2025-06-18 14:58:06,280 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 332
+2025-06-18 14:58:06,280 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 333
+2025-06-18 14:58:06,281 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 334
+2025-06-18 14:58:06,281 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 335
+2025-06-18 14:58:06,281 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 336
+2025-06-18 14:58:06,281 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 337
+2025-06-18 14:58:06,282 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 338
+2025-06-18 14:58:06,282 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 339
+2025-06-18 14:58:06,282 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 340
+2025-06-18 14:58:06,282 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 341
+2025-06-18 14:58:06,282 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 342
+2025-06-18 14:58:06,283 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 343
+2025-06-18 14:58:06,283 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 344
+2025-06-18 14:58:06,283 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 345
+2025-06-18 14:58:06,283 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 346
+2025-06-18 14:58:06,284 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 347
+2025-06-18 14:58:06,284 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 348
+2025-06-18 14:58:06,288 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 349
+2025-06-18 14:58:06,288 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 350
+2025-06-18 14:58:06,288 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 351
+2025-06-18 14:58:06,288 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 352
+2025-06-18 14:58:06,289 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 353
+2025-06-18 14:58:06,289 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 354
+2025-06-18 14:58:06,289 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 355
+2025-06-18 14:58:06,289 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 356
+2025-06-18 14:58:06,290 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 357
+2025-06-18 14:58:06,290 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 358
+2025-06-18 14:58:06,290 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 359
+2025-06-18 14:58:06,290 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 360
+2025-06-18 14:58:06,290 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 361
+2025-06-18 14:58:06,291 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 362
+2025-06-18 14:58:06,291 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 363
+2025-06-18 14:58:06,291 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 364
+2025-06-18 14:58:06,291 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 365
+2025-06-18 14:58:06,292 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 366
+2025-06-18 14:58:06,292 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 367
+2025-06-18 14:58:06,292 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 368
+2025-06-18 14:58:06,292 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 369
+2025-06-18 14:58:06,293 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 370
+2025-06-18 14:58:06,293 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 371
+2025-06-18 14:58:06,293 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 372
+2025-06-18 14:58:06,293 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 373
+2025-06-18 14:58:06,293 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 374
+2025-06-18 14:58:06,295 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 375
+2025-06-18 14:58:06,295 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 376
+2025-06-18 14:58:06,295 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 377
+2025-06-18 14:58:06,296 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 378
+2025-06-18 14:58:06,296 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 379
+2025-06-18 14:58:06,296 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 380
+2025-06-18 14:58:06,297 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 381
+2025-06-18 14:58:06,298 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 382
+2025-06-18 14:58:06,298 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 383
+2025-06-18 14:58:06,298 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 384
+2025-06-18 14:58:06,298 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 385
+2025-06-18 14:58:06,298 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 386
+2025-06-18 14:58:06,299 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 387
+2025-06-18 14:58:06,299 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 388
+2025-06-18 14:58:06,299 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 389
+2025-06-18 14:58:06,299 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 390
+2025-06-18 14:58:06,300 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 391
+2025-06-18 14:58:06,300 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 392
+2025-06-18 14:58:06,300 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 393
+2025-06-18 14:58:06,300 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 394
+2025-06-18 14:58:06,300 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 395
+2025-06-18 14:58:06,301 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 396
+2025-06-18 14:58:06,301 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 397
+2025-06-18 14:58:06,301 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 398
+2025-06-18 14:58:06,301 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 399
+2025-06-18 14:58:06,302 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 400
+2025-06-18 14:58:06,305 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 401
+2025-06-18 14:58:06,305 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 402
+2025-06-18 14:58:06,305 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 403
+2025-06-18 14:58:06,305 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 404
+2025-06-18 14:58:06,306 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 405
+2025-06-18 14:58:06,306 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 406
+2025-06-18 14:58:06,306 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 407
+2025-06-18 14:58:06,306 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 408
+2025-06-18 14:58:06,307 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 409
+2025-06-18 14:58:06,307 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 410
+2025-06-18 14:58:06,307 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 411
+2025-06-18 14:58:06,307 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 412
+2025-06-18 14:58:06,307 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 413
+2025-06-18 14:58:06,308 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 414
+2025-06-18 14:58:06,308 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 415
+2025-06-18 14:58:06,308 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 416
+2025-06-18 14:58:06,308 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 417
+2025-06-18 14:58:06,309 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 418
+2025-06-18 14:58:06,309 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 419
+2025-06-18 14:58:06,309 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 420
+2025-06-18 14:58:06,309 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 421
+2025-06-18 14:58:06,310 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 422
+2025-06-18 14:58:06,310 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 423
+2025-06-18 14:58:06,310 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 424
+2025-06-18 14:58:06,310 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 425
+2025-06-18 14:58:06,310 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 426
+2025-06-18 14:58:06,314 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 427
+2025-06-18 14:58:06,314 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 428
+2025-06-18 14:58:06,315 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 429
+2025-06-18 14:58:06,315 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 430
+2025-06-18 14:58:06,315 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 431
+2025-06-18 14:58:06,315 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 432
+2025-06-18 14:58:06,315 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 433
+2025-06-18 14:58:06,316 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 434
+2025-06-18 14:58:06,316 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 435
+2025-06-18 14:58:06,316 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 436
+2025-06-18 14:58:06,316 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 437
+2025-06-18 14:58:06,316 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 438
+2025-06-18 14:58:06,317 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 439
+2025-06-18 14:58:06,317 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 440
+2025-06-18 14:58:06,318 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 441
+2025-06-18 14:58:06,318 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 442
+2025-06-18 14:58:06,319 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 443
+2025-06-18 14:58:06,319 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 444
+2025-06-18 14:58:06,319 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 445
+2025-06-18 14:58:06,319 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 446
+2025-06-18 14:58:06,320 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 447
+2025-06-18 14:58:06,320 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 448
+2025-06-18 14:58:06,320 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 449
+2025-06-18 14:58:06,320 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 450
+2025-06-18 14:58:06,320 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 451
+2025-06-18 14:58:06,321 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 452
+2025-06-18 14:58:06,321 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 453
+2025-06-18 14:58:06,321 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 454
+2025-06-18 14:58:06,321 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 455
+2025-06-18 14:58:06,327 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 456
+2025-06-18 14:58:06,327 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 457
+2025-06-18 14:58:06,327 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 458
+2025-06-18 14:58:06,328 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 459
+2025-06-18 14:58:06,328 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 460
+2025-06-18 14:58:06,328 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 461
+2025-06-18 14:58:06,328 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 462
+2025-06-18 14:58:06,329 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 463
+2025-06-18 14:58:06,329 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 464
+2025-06-18 14:58:06,329 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 465
+2025-06-18 14:58:06,333 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 466
+2025-06-18 14:58:06,333 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 467
+2025-06-18 14:58:06,333 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 468
+2025-06-18 14:58:06,333 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 469
+2025-06-18 14:58:06,333 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 470
+2025-06-18 14:58:06,334 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 471
+2025-06-18 14:58:06,334 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 472
+2025-06-18 14:58:06,334 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 473
+2025-06-18 14:58:06,334 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 474
+2025-06-18 14:58:06,335 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 475
+2025-06-18 14:58:06,335 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 476
+2025-06-18 14:58:06,335 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 477
+2025-06-18 14:58:06,335 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 478
+2025-06-18 14:58:06,336 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 479
+2025-06-18 14:58:06,336 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 480
+2025-06-18 14:58:06,336 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 481
+2025-06-18 14:58:06,336 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 482
+2025-06-18 14:58:06,336 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 483
+2025-06-18 14:58:06,341 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 484
+2025-06-18 14:58:06,341 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 485
+2025-06-18 14:58:06,342 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 486
+2025-06-18 14:58:06,342 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 487
+2025-06-18 14:58:06,342 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 488
+2025-06-18 14:58:06,343 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 489
+2025-06-18 14:58:06,343 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 490
+2025-06-18 14:58:06,343 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 491
+2025-06-18 14:58:06,343 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 492
+2025-06-18 14:58:06,344 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 493
+2025-06-18 14:58:06,344 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 494
+2025-06-18 14:58:06,344 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 495
+2025-06-18 14:58:06,344 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 496
+2025-06-18 14:58:06,345 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 497
+2025-06-18 14:58:06,345 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 498
+2025-06-18 14:58:06,345 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 499
+2025-06-18 14:58:06,345 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 500
+2025-06-18 14:58:06,346 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 501
+2025-06-18 14:58:06,346 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 502
+2025-06-18 14:58:06,346 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 503
+2025-06-18 14:58:06,346 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 504
+2025-06-18 14:58:06,346 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 505
+2025-06-18 14:58:06,347 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 506
+2025-06-18 14:58:06,347 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 507
+2025-06-18 14:58:06,347 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 508
+2025-06-18 14:58:06,347 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 509
+2025-06-18 14:58:06,348 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 510
+2025-06-18 14:58:06,348 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 511
+2025-06-18 14:58:06,348 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 512
+2025-06-18 14:58:06,348 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 513
+2025-06-18 14:58:06,352 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 514
+2025-06-18 14:58:06,353 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 515
+2025-06-18 14:58:06,353 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 516
+2025-06-18 14:58:06,353 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 517
+2025-06-18 14:58:06,353 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 518
+2025-06-18 14:58:06,354 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 519
+2025-06-18 14:58:06,354 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 520
+2025-06-18 14:58:06,354 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 521
+2025-06-18 14:58:06,354 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 522
+2025-06-18 14:58:06,354 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 523
+2025-06-18 14:58:06,355 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 524
+2025-06-18 14:58:06,355 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 525
+2025-06-18 14:58:06,355 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 526
+2025-06-18 14:58:06,355 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 527
+2025-06-18 14:58:06,355 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 528
+2025-06-18 14:58:06,356 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 529
+2025-06-18 14:58:06,356 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 530
+2025-06-18 14:58:06,356 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 531
+2025-06-18 14:58:06,356 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 532
+2025-06-18 14:58:06,357 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 533
+2025-06-18 14:58:06,357 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 534
+2025-06-18 14:58:06,357 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 535
+2025-06-18 14:58:06,357 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 536
+2025-06-18 14:58:06,357 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 537
+2025-06-18 14:58:06,359 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 538
+2025-06-18 14:58:06,360 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 539
+2025-06-18 14:58:06,361 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 540
+2025-06-18 14:58:06,361 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 541
+2025-06-18 14:58:06,361 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 542
+2025-06-18 14:58:06,361 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 543
+2025-06-18 14:58:06,361 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 544
+2025-06-18 14:58:06,362 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 545
+2025-06-18 14:58:06,362 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 546
+2025-06-18 14:58:06,362 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 547
+2025-06-18 14:58:06,362 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 548
+2025-06-18 14:58:06,362 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 549
+2025-06-18 14:58:06,363 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 550
+2025-06-18 14:58:06,363 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 551
+2025-06-18 14:58:06,363 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 552
+2025-06-18 14:58:06,363 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 553
+2025-06-18 14:58:06,364 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 554
+2025-06-18 14:58:06,364 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 555
+2025-06-18 14:58:06,365 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 556
+2025-06-18 14:58:06,365 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 557
+2025-06-18 14:58:06,365 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 558
+2025-06-18 14:58:06,366 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 559
+2025-06-18 14:58:06,367 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 560
+2025-06-18 14:58:06,368 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 561
+2025-06-18 14:58:06,368 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 562
+2025-06-18 14:58:06,368 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 563
+2025-06-18 14:58:06,368 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 564
+2025-06-18 14:58:06,369 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 565
+2025-06-18 14:58:06,369 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 566
+2025-06-18 14:58:06,369 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 567
+2025-06-18 14:58:06,369 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 568
+2025-06-18 14:58:06,369 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 569
+2025-06-18 14:58:06,370 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 570
+2025-06-18 14:58:06,370 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 571
+2025-06-18 14:58:06,370 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 572
+2025-06-18 14:58:06,370 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 573
+2025-06-18 14:58:06,371 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 574
+2025-06-18 14:58:06,371 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 575
+2025-06-18 14:58:06,371 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 576
+2025-06-18 14:58:06,371 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 577
+2025-06-18 14:58:06,372 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 578
+2025-06-18 14:58:06,372 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 579
+2025-06-18 14:58:06,372 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 580
+2025-06-18 14:58:06,372 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 581
+2025-06-18 14:58:06,373 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 582
+2025-06-18 14:58:06,373 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 583
+2025-06-18 14:58:06,373 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 584
+2025-06-18 14:58:06,373 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 585
+2025-06-18 14:58:06,373 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 586
+2025-06-18 14:58:06,374 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 587
+2025-06-18 14:58:06,374 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 588
+2025-06-18 14:58:06,376 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 589
+2025-06-18 14:58:06,376 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 590
+2025-06-18 14:58:06,376 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 591
+2025-06-18 14:58:06,376 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 592
+2025-06-18 14:58:06,376 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 593
+2025-06-18 14:58:06,377 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 594
+2025-06-18 14:58:06,377 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 595
+2025-06-18 14:58:06,377 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 596
+2025-06-18 14:58:06,377 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 597
+2025-06-18 14:58:06,377 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 598
+2025-06-18 14:58:06,378 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 599
+2025-06-18 14:58:06,378 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 600
+2025-06-18 14:58:06,378 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 601
+2025-06-18 14:58:06,378 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 602
+2025-06-18 14:58:06,379 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 603
+2025-06-18 14:58:06,379 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 604
+2025-06-18 14:58:06,379 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 605
+2025-06-18 14:58:06,379 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 606
+2025-06-18 14:58:06,380 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 607
+2025-06-18 14:58:06,380 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 608
+2025-06-18 14:58:06,380 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 609
+2025-06-18 14:58:06,380 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 610
+2025-06-18 14:58:06,380 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 611
+2025-06-18 14:58:06,381 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 612
+2025-06-18 14:58:06,381 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 613
+2025-06-18 14:58:06,381 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 614
+2025-06-18 14:58:06,381 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 615
+2025-06-18 14:58:06,382 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 616
+2025-06-18 14:58:06,382 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 617
+2025-06-18 14:58:06,382 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 618
+2025-06-18 14:58:06,384 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 619
+2025-06-18 14:58:06,385 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 620
+2025-06-18 14:58:06,385 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 621
+2025-06-18 14:58:06,385 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 622
+2025-06-18 14:58:06,385 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 623
+2025-06-18 14:58:06,386 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 624
+2025-06-18 14:58:06,386 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 625
+2025-06-18 14:58:06,386 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 626
+2025-06-18 14:58:06,387 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 627
+2025-06-18 14:58:06,387 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 628
+2025-06-18 14:58:06,387 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 629
+2025-06-18 14:58:06,387 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 630
+2025-06-18 14:58:06,387 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 631
+2025-06-18 14:58:06,388 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 632
+2025-06-18 14:58:06,388 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 633
+2025-06-18 14:58:06,388 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 634
+2025-06-18 14:58:06,388 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 635
+2025-06-18 14:58:06,389 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 636
+2025-06-18 14:58:06,389 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 637
+2025-06-18 14:58:06,389 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 638
+2025-06-18 14:58:06,389 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 639
+2025-06-18 14:58:06,390 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 640
+2025-06-18 14:58:06,390 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 641
+2025-06-18 14:58:06,390 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 642
+2025-06-18 14:58:06,390 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 643
+2025-06-18 14:58:06,390 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 644
+2025-06-18 14:58:06,391 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 645
+2025-06-18 14:58:06,391 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 646
+2025-06-18 14:58:06,391 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 647
+2025-06-18 14:58:06,391 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 648
+2025-06-18 14:58:06,392 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 649
+2025-06-18 14:58:06,393 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 650
+2025-06-18 14:58:06,393 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 651
+2025-06-18 14:58:06,394 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 652
+2025-06-18 14:58:06,394 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 653
+2025-06-18 14:58:06,394 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 654
+2025-06-18 14:58:06,394 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 655
+2025-06-18 14:58:06,395 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 656
+2025-06-18 14:58:06,395 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 657
+2025-06-18 14:58:06,395 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 658
+2025-06-18 14:58:06,395 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 659
+2025-06-18 14:58:06,395 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 660
+2025-06-18 14:58:06,396 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 661
+2025-06-18 14:58:06,396 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 662
+2025-06-18 14:58:06,396 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 663
+2025-06-18 14:58:06,396 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 664
+2025-06-18 14:58:06,397 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 665
+2025-06-18 14:58:06,397 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 666
+2025-06-18 14:58:06,397 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 667
+2025-06-18 14:58:06,397 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 668
+2025-06-18 14:58:06,397 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 669
+2025-06-18 14:58:06,398 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 670
+2025-06-18 14:58:06,398 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 671
+2025-06-18 14:58:06,398 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 672
+2025-06-18 14:58:06,398 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 673
+2025-06-18 14:58:06,399 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 674
+2025-06-18 14:58:06,399 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 675
+2025-06-18 14:58:06,399 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 676
+2025-06-18 14:58:06,399 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 677
+2025-06-18 14:58:06,400 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 678
+2025-06-18 14:58:06,400 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 679
+2025-06-18 14:58:06,400 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 680
+2025-06-18 14:58:06,401 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 681
+2025-06-18 14:58:06,401 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 682
+2025-06-18 14:58:06,401 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 683
+2025-06-18 14:58:06,401 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 684
+2025-06-18 14:58:06,404 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 685
+2025-06-18 14:58:06,404 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 686
+2025-06-18 14:58:06,405 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 687
+2025-06-18 14:58:06,405 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 688
+2025-06-18 14:58:06,405 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 689
+2025-06-18 14:58:06,405 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 690
+2025-06-18 14:58:06,406 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 691
+2025-06-18 14:58:06,406 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 692
+2025-06-18 14:58:06,406 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 693
+2025-06-18 14:58:06,406 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 694
+2025-06-18 14:58:06,406 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 695
+2025-06-18 14:58:06,407 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 696
+2025-06-18 14:58:06,407 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 697
+2025-06-18 14:58:06,407 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 698
+2025-06-18 14:58:06,407 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 699
+2025-06-18 14:58:06,408 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 700
+2025-06-18 14:58:06,408 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 701
+2025-06-18 14:58:06,408 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 702
+2025-06-18 14:58:06,408 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 703
+2025-06-18 14:58:06,408 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 704
+2025-06-18 14:58:06,409 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 705
+2025-06-18 14:58:06,409 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 706
+2025-06-18 14:58:06,409 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 707
+2025-06-18 14:58:06,409 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 708
+2025-06-18 14:58:06,412 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 709
+2025-06-18 14:58:06,412 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 710
+2025-06-18 14:58:06,412 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 711
+2025-06-18 14:58:06,413 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 712
+2025-06-18 14:58:06,413 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 713
+2025-06-18 14:58:06,413 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 714
+2025-06-18 14:58:06,413 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 715
+2025-06-18 14:58:06,414 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 716
+2025-06-18 14:58:06,414 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 717
+2025-06-18 14:58:06,414 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 718
+2025-06-18 14:58:06,414 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 719
+2025-06-18 14:58:06,414 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 720
+2025-06-18 14:58:06,415 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 721
+2025-06-18 14:58:06,415 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 722
+2025-06-18 14:58:06,415 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 723
+2025-06-18 14:58:06,415 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 724
+2025-06-18 14:58:06,416 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 725
+2025-06-18 14:58:06,416 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 726
+2025-06-18 14:58:06,416 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 727
+2025-06-18 14:58:06,416 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 728
+2025-06-18 14:58:06,416 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 729
+2025-06-18 14:58:06,417 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 730
+2025-06-18 14:58:06,417 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 731
+2025-06-18 14:58:06,417 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 732
+2025-06-18 14:58:06,417 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 733
+2025-06-18 14:58:06,417 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 734
+2025-06-18 14:58:06,418 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 735
+2025-06-18 14:58:06,418 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 736
+2025-06-18 14:58:06,418 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 737
+2025-06-18 14:58:06,418 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 738
+2025-06-18 14:58:06,418 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 739
+2025-06-18 14:58:06,419 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 740
+2025-06-18 14:58:06,419 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 741
+2025-06-18 14:58:06,419 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 742
+2025-06-18 14:58:06,419 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 743
+2025-06-18 14:58:06,419 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 744
+2025-06-18 14:58:06,420 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 745
+2025-06-18 14:58:06,420 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 746
+2025-06-18 14:58:06,420 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 747
+2025-06-18 14:58:06,420 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 748
+2025-06-18 14:58:06,421 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 749
+2025-06-18 14:58:06,421 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 750
+2025-06-18 14:58:06,421 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 751
+2025-06-18 14:58:06,421 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 752
+2025-06-18 14:58:06,423 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 753
+2025-06-18 14:58:06,424 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 754
+2025-06-18 14:58:06,424 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 755
+2025-06-18 14:58:06,424 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 756
+2025-06-18 14:58:06,424 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 757
+2025-06-18 14:58:06,425 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 758
+2025-06-18 14:58:06,425 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 759
+2025-06-18 14:58:06,425 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 760
+2025-06-18 14:58:06,425 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 761
+2025-06-18 14:58:06,425 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 762
+2025-06-18 14:58:06,426 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 763
+2025-06-18 14:58:06,426 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 764
+2025-06-18 14:58:06,426 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 765
+2025-06-18 14:58:06,426 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 766
+2025-06-18 14:58:06,426 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 767
+2025-06-18 14:58:06,427 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 768
+2025-06-18 14:58:06,427 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 769
+2025-06-18 14:58:06,427 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 770
+2025-06-18 14:58:06,427 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 771
+2025-06-18 14:58:06,428 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 772
+2025-06-18 14:58:06,428 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 773
+2025-06-18 14:58:06,428 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 774
+2025-06-18 14:58:06,428 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 775
+2025-06-18 14:58:06,428 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 776
+2025-06-18 14:58:06,429 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 777
+2025-06-18 14:58:06,429 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 778
+2025-06-18 14:58:06,429 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 779
+2025-06-18 14:58:06,429 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 780
+2025-06-18 14:58:06,429 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 781
+2025-06-18 14:58:06,430 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 782
+2025-06-18 14:58:06,430 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 783
+2025-06-18 14:58:06,430 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 784
+2025-06-18 14:58:06,430 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 785
+2025-06-18 14:58:06,431 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 786
+2025-06-18 14:58:06,431 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 787
+2025-06-18 14:58:06,431 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 788
+2025-06-18 14:58:06,431 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 789
+2025-06-18 14:58:06,431 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 790
+2025-06-18 14:58:06,432 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 791
+2025-06-18 14:58:06,432 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 792
+2025-06-18 14:58:06,432 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 793
+2025-06-18 14:58:06,432 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 794
+2025-06-18 14:58:06,432 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 795
+2025-06-18 14:58:06,433 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 796
+2025-06-18 14:58:06,433 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 797
+2025-06-18 14:58:06,433 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 798
+2025-06-18 14:58:06,433 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 799
+2025-06-18 14:58:06,433 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 800
+2025-06-18 14:58:06,434 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 801
+2025-06-18 14:58:06,434 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 802
+2025-06-18 14:58:06,434 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 803
+2025-06-18 14:58:06,434 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 804
+2025-06-18 14:58:06,434 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 805
+2025-06-18 14:58:06,435 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 806
+2025-06-18 14:58:06,435 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 807
+2025-06-18 14:58:06,435 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 808
+2025-06-18 14:58:06,438 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 809
+2025-06-18 14:58:06,438 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 810
+2025-06-18 14:58:06,438 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 811
+2025-06-18 14:58:06,438 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 812
+2025-06-18 14:58:06,439 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 813
+2025-06-18 14:58:06,439 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 814
+2025-06-18 14:58:06,439 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 815
+2025-06-18 14:58:06,439 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 816
+2025-06-18 14:58:06,440 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 817
+2025-06-18 14:58:06,440 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 818
+2025-06-18 14:58:06,440 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 819
+2025-06-18 14:58:06,440 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 820
+2025-06-18 14:58:06,440 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 821
+2025-06-18 14:58:06,441 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 822
+2025-06-18 14:58:06,441 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 823
+2025-06-18 14:58:06,441 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 824
+2025-06-18 14:58:06,441 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 825
+2025-06-18 14:58:06,441 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 826
+2025-06-18 14:58:06,442 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 827
+2025-06-18 14:58:06,442 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 828
+2025-06-18 14:58:06,442 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 829
+2025-06-18 14:58:06,442 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 830
+2025-06-18 14:58:06,443 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 831
+2025-06-18 14:58:06,443 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 832
+2025-06-18 14:58:06,443 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 833
+2025-06-18 14:58:06,443 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 834
+2025-06-18 14:58:06,444 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 835
+2025-06-18 14:58:06,444 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 836
+2025-06-18 14:58:06,444 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 837
+2025-06-18 14:58:06,444 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 838
+2025-06-18 14:58:06,444 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 839
+2025-06-18 14:58:06,445 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 840
+2025-06-18 14:58:06,445 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 841
+2025-06-18 14:58:06,445 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 842
+2025-06-18 14:58:06,445 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 843
+2025-06-18 14:58:06,446 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 844
+2025-06-18 14:58:06,446 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 845
+2025-06-18 14:58:06,446 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 846
+2025-06-18 14:58:06,446 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 847
+2025-06-18 14:58:06,446 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 848
+2025-06-18 14:58:06,447 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 849
+2025-06-18 14:58:06,447 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 850
+2025-06-18 14:58:06,447 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 851
+2025-06-18 14:58:06,447 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 852
+2025-06-18 14:58:06,448 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 853
+2025-06-18 14:58:06,448 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 854
+2025-06-18 14:58:06,448 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 855
+2025-06-18 14:58:06,448 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 856
+2025-06-18 14:58:06,448 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 857
+2025-06-18 14:58:06,449 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 858
+2025-06-18 14:58:06,449 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 859
+2025-06-18 14:58:06,449 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 860
+2025-06-18 14:58:06,449 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 861
+2025-06-18 14:58:06,449 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 862
+2025-06-18 14:58:06,450 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 863
+2025-06-18 14:58:06,450 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 864
+2025-06-18 14:58:06,450 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 865
+2025-06-18 14:58:06,450 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 866
+2025-06-18 14:58:06,451 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 867
+2025-06-18 14:58:06,451 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 868
+2025-06-18 14:58:06,451 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 869
+2025-06-18 14:58:06,453 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 870
+2025-06-18 14:58:06,453 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 871
+2025-06-18 14:58:06,453 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 872
+2025-06-18 14:58:06,454 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 873
+2025-06-18 14:58:06,454 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 874
+2025-06-18 14:58:06,454 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 875
+2025-06-18 14:58:06,454 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 876
+2025-06-18 14:58:06,455 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 877
+2025-06-18 14:58:06,455 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 878
+2025-06-18 14:58:06,455 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 879
+2025-06-18 14:58:06,455 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 880
+2025-06-18 14:58:06,455 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 881
+2025-06-18 14:58:06,456 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 882
+2025-06-18 14:58:06,456 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 883
+2025-06-18 14:58:06,456 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 884
+2025-06-18 14:58:06,456 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 885
+2025-06-18 14:58:06,456 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 886
+2025-06-18 14:58:06,457 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 887
+2025-06-18 14:58:06,457 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 888
+2025-06-18 14:58:06,457 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 889
+2025-06-18 14:58:06,457 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 890
+2025-06-18 14:58:06,458 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 891
+2025-06-18 14:58:06,458 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 892
+2025-06-18 14:58:06,458 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 893
+2025-06-18 14:58:06,458 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 894
+2025-06-18 14:58:06,458 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 895
+2025-06-18 14:58:06,459 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 896
+2025-06-18 14:58:06,459 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 897
+2025-06-18 14:58:06,459 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 898
+2025-06-18 14:58:06,459 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 899
+2025-06-18 14:58:06,460 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 900
+2025-06-18 14:58:06,460 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 901
+2025-06-18 14:58:06,460 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 902
+2025-06-18 14:58:06,460 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 903
+2025-06-18 14:58:06,460 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 904
+2025-06-18 14:58:06,461 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 905
+2025-06-18 14:58:06,461 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 906
+2025-06-18 14:58:06,461 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 907
+2025-06-18 14:58:06,461 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 908
+2025-06-18 14:58:06,461 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 909
+2025-06-18 14:58:06,462 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 910
+2025-06-18 14:58:06,462 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 911
+2025-06-18 14:58:06,462 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 912
+2025-06-18 14:58:06,462 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 913
+2025-06-18 14:58:06,463 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 914
+2025-06-18 14:58:06,463 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 915
+2025-06-18 14:58:06,463 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 916
+2025-06-18 14:58:06,463 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 917
+2025-06-18 14:58:06,464 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 918
+2025-06-18 14:58:06,464 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 919
+2025-06-18 14:58:06,464 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 920
+2025-06-18 14:58:06,464 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 921
+2025-06-18 14:58:06,465 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 922
+2025-06-18 14:58:06,465 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 923
+2025-06-18 14:58:06,465 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 924
+2025-06-18 14:58:06,465 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 925
+2025-06-18 14:58:06,466 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 926
+2025-06-18 14:58:06,466 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 927
+2025-06-18 14:58:06,466 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 928
+2025-06-18 14:58:06,466 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 929
+2025-06-18 14:58:06,466 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 930
+2025-06-18 14:58:06,467 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 931
+2025-06-18 14:58:06,467 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 932
+2025-06-18 14:58:06,467 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 933
+2025-06-18 14:58:06,467 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 934
+2025-06-18 14:58:06,467 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 935
+2025-06-18 14:58:06,468 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 936
+2025-06-18 14:58:06,468 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 937
+2025-06-18 14:58:06,468 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 938
+2025-06-18 14:58:06,468 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 939
+2025-06-18 14:58:06,469 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 940
+2025-06-18 14:58:06,469 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 941
+2025-06-18 14:58:06,469 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 942
+2025-06-18 14:58:06,469 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 943
+2025-06-18 14:58:06,469 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 944
+2025-06-18 14:58:06,470 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 945
+2025-06-18 14:58:06,470 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 946
+2025-06-18 14:58:06,470 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 947
+2025-06-18 14:58:06,470 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 948
+2025-06-18 14:58:06,470 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 949
+2025-06-18 14:58:06,471 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 950
+2025-06-18 14:58:06,477 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 951
+2025-06-18 14:58:06,477 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 952
+2025-06-18 14:58:06,477 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 953
+2025-06-18 14:58:06,477 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 954
+2025-06-18 14:58:06,477 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 955
+2025-06-18 14:58:06,478 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 956
+2025-06-18 14:58:06,478 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 957
+2025-06-18 14:58:06,478 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 958
+2025-06-18 14:58:06,478 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 959
+2025-06-18 14:58:06,478 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 960
+2025-06-18 14:58:06,479 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 961
+2025-06-18 14:58:06,479 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 962
+2025-06-18 14:58:06,479 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 963
+2025-06-18 14:58:06,479 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 964
+2025-06-18 14:58:06,480 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 965
+2025-06-18 14:58:06,480 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 966
+2025-06-18 14:58:06,480 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 967
+2025-06-18 14:58:06,481 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 968
+2025-06-18 14:58:06,481 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 969
+2025-06-18 14:58:06,481 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 970
+2025-06-18 14:58:06,481 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 971
+2025-06-18 14:58:06,482 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 972
+2025-06-18 14:58:06,482 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 973
+2025-06-18 14:58:06,482 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 974
+2025-06-18 14:58:06,482 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 975
+2025-06-18 14:58:06,486 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 976
+2025-06-18 14:58:06,486 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 977
+2025-06-18 14:58:06,486 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 978
+2025-06-18 14:58:06,486 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 979
+2025-06-18 14:58:06,486 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 980
+2025-06-18 14:58:06,487 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 981
+2025-06-18 14:58:06,487 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 982
+2025-06-18 14:58:06,487 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 983
+2025-06-18 14:58:06,487 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 984
+2025-06-18 14:58:06,488 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 985
+2025-06-18 14:58:06,488 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 986
+2025-06-18 14:58:06,488 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 987
+2025-06-18 14:58:06,488 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 988
+2025-06-18 14:58:06,489 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 989
+2025-06-18 14:58:06,489 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 990
+2025-06-18 14:58:06,489 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 991
+2025-06-18 14:58:06,489 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 992
+2025-06-18 14:58:06,489 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 993
+2025-06-18 14:58:06,490 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 994
+2025-06-18 14:58:06,490 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 995
+2025-06-18 14:58:06,490 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 996
+2025-06-18 14:58:06,490 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 997
+2025-06-18 14:58:06,491 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 998
+2025-06-18 14:58:06,491 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 999
+2025-06-18 14:58:06,491 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 1000
+2025-06-18 14:58:06,491 [INFO] on_modified:1050 - Buffer full (1000), triggering batch process
+2025-06-18 14:58:06,491 [INFO] process_batch:1144 - 🔄 Starting batch processing...
+2025-06-18 14:58:07,759 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 1001
+2025-06-18 14:58:15,533 [INFO] shutdown_handler:1190 - 🛑 Shutdown signal received
+2025-06-18 14:58:15,533 [INFO] process_batch:1144 - 🔄 Starting batch processing...

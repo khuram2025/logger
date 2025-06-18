@@ -942,6 +942,285 @@ def clickhouse_logs_view(request):
     return render(request, 'dashboard/logs2.html', context)
 
 
+def url_filtering_logs_view(request):
+    """
+    View for PaloAlto URL Filtering Logs with advanced filtering and search capabilities
+    """
+    client = Client(
+        host=CH_HOST,
+        port=CH_PORT,
+        user=CH_USER,
+        password=CH_PASSWORD,
+        database=CH_DB
+    )
+    
+    # Check if pa_urls table exists
+    try:
+        client.execute("DESCRIBE network_logs.pa_urls")
+        has_pa_urls = True
+    except Exception as e:
+        has_pa_urls = False
+        print(f"pa_urls table not available: {e}")
+    
+    # Get client IP for context
+    client_ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', 'Unknown'))
+    if client_ip and ',' in client_ip:
+        client_ip = client_ip.split(',')[0].strip()
+    
+    # Time range filtering
+    time_range = request.GET.get('time_range', 'Last_Hour')
+    now = datetime.now()
+    
+    time_mapping = {
+        'Last_Hour': now - timedelta(hours=1),
+        'Last_6_Hours': now - timedelta(hours=6),
+        'Last_24_Hours': now - timedelta(hours=24),
+        'Last_7_Days': now - timedelta(days=7),
+        'Last_30_Days': now - timedelta(days=30)
+    }
+    
+    since = time_mapping.get(time_range, now - timedelta(hours=1))
+    since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Time range display mapping for user-friendly display
+    time_range_display_mapping = {
+        'Last_Hour': 'Last Hour',
+        'Last_6_Hours': 'Last 6 Hours', 
+        'Last_24_Hours': 'Last 24 Hours',
+        'Last_7_Days': 'Last 7 Days',
+        'Last_30_Days': 'Last 30 Days'
+    }
+    time_range_display = time_range_display_mapping.get(time_range, 'Last Hour')
+    
+    # Get filter parameters for URL logs
+    url_filter = request.GET.get('url', '').strip()
+    domain_filter = request.GET.get('domain', '').strip()
+    category_filter = request.GET.get('category', '').strip()
+    action_filter = request.GET.get('action', '').strip()
+    source_ip_filter = request.GET.get('source_ip', '').strip()
+    destination_ip_filter = request.GET.get('destination_ip', '').strip()
+    user_filter = request.GET.get('user', '').strip()
+    device_filter = request.GET.get('device', '').strip()
+    method_filter = request.GET.get('method', '').strip()
+    response_code_filter = request.GET.get('response_code', '').strip()
+    application_filter = request.GET.get('application', '').strip()
+    search_query = request.GET.get('search', '').strip()
+    
+    # Build WHERE clause for URL filtering logs
+    where_conditions = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"]
+    
+    if url_filter:
+        where_conditions.append(f"positionCaseInsensitive(url, '{url_filter}') > 0")
+    if domain_filter:
+        where_conditions.append(f"positionCaseInsensitive(url_domain, '{domain_filter}') > 0")
+    if category_filter:
+        where_conditions.append(f"url_category = '{category_filter}'")
+    if action_filter:
+        where_conditions.append(f"action = '{action_filter}'")
+    if source_ip_filter:
+        where_conditions.append(f"source_address = '{source_ip_filter}'")
+    if destination_ip_filter:
+        where_conditions.append(f"destination_address = '{destination_ip_filter}'")
+    if user_filter:
+        where_conditions.append(f"positionCaseInsensitive(source_user, '{user_filter}') > 0")
+    if device_filter:
+        where_conditions.append(f"positionCaseInsensitive(device_name, '{device_filter}') > 0")
+    if method_filter:
+        where_conditions.append(f"http_method = '{method_filter}'")
+    if response_code_filter:
+        where_conditions.append(f"response_code = {response_code_filter}")
+    if application_filter:
+        where_conditions.append(f"positionCaseInsensitive(application, '{application_filter}') > 0")
+    if search_query:
+        search_conditions = [
+            f"positionCaseInsensitive(url, '{search_query}') > 0",
+            f"positionCaseInsensitive(url_domain, '{search_query}') > 0", 
+            f"positionCaseInsensitive(source_user, '{search_query}') > 0",
+            f"positionCaseInsensitive(user_agent, '{search_query}') > 0",
+            f"positionCaseInsensitive(rule_name, '{search_query}') > 0"
+        ]
+        where_conditions.append(f"({' OR '.join(search_conditions)})")
+    
+    where_clause = ' AND '.join(where_conditions)
+    
+    # Get available filter values for dropdowns
+    available_categories = []
+    available_actions = []
+    available_devices = []
+    available_methods = []
+    available_applications = []
+    
+    if has_pa_urls:
+        try:
+            # Get URL categories
+            category_query = f"SELECT DISTINCT url_category FROM network_logs.pa_urls WHERE {where_clause} AND url_category != '' ORDER BY url_category"
+            available_categories = [row[0] for row in client.execute(category_query)]
+            
+            # Get actions
+            action_query = f"SELECT DISTINCT action FROM network_logs.pa_urls WHERE {where_clause} AND action != '' ORDER BY action"
+            available_actions = [row[0] for row in client.execute(action_query)]
+            
+            # Get devices
+            device_query = f"SELECT DISTINCT device_name FROM network_logs.pa_urls WHERE {where_clause} AND device_name != '' ORDER BY device_name"
+            available_devices = [row[0] for row in client.execute(device_query)]
+            
+            # Get HTTP methods
+            method_query = f"SELECT DISTINCT http_method FROM network_logs.pa_urls WHERE {where_clause} AND http_method != '' ORDER BY http_method"
+            available_methods = [row[0] for row in client.execute(method_query)]
+            
+            # Get applications
+            app_query = f"SELECT DISTINCT application FROM network_logs.pa_urls WHERE {where_clause} AND application != '' ORDER BY application"
+            available_applications = [row[0] for row in client.execute(app_query)]
+            
+        except Exception as e:
+            print(f"Error fetching filter values: {e}")
+    
+    # Pagination setup
+    page = int(request.GET.get('page', 1))
+    per_page = 50
+    offset = (page - 1) * per_page
+    
+    # Get total count
+    total_logs_count = 0
+    if has_pa_urls:
+        try:
+            count_query = f"SELECT COUNT(*) FROM network_logs.pa_urls WHERE {where_clause}"
+            total_logs_count = client.execute(count_query)[0][0]
+        except Exception as e:
+            print(f"Error getting total count: {e}")
+    
+    # Calculate pagination
+    total_pages = math.ceil(total_logs_count / per_page) if total_logs_count > 0 else 1
+    
+    # Fetch URL filtering logs
+    logs = []
+    if has_pa_urls and total_logs_count > 0:
+        try:
+            # Main query to fetch URL logs
+            main_query = f"""
+            SELECT 
+                timestamp,
+                url,
+                url_domain,
+                url_category,
+                action,
+                source_address,
+                destination_address,
+                device_name,
+                http_method,
+                response_code,
+                user_agent,
+                source_user,
+                rule_name,
+                application,
+                bytes_sent,
+                bytes_received,
+                raw_message
+            FROM network_logs.pa_urls 
+            WHERE {where_clause}
+            ORDER BY timestamp DESC 
+            LIMIT {per_page} 
+            OFFSET {offset}
+            """
+            
+            results = client.execute(main_query)
+            
+            # Process results for template
+            for row in results:
+                log_entry = {
+                    'timestamp': row[0].strftime('%Y-%m-%d %H:%M:%S') if row[0] else 'N/A',
+                    'url': row[1] or 'N/A',
+                    'url_domain': row[2] or 'N/A', 
+                    'url_category': row[3] or 'uncategorized',
+                    'action': row[4] or 'N/A',
+                    'source_address': row[5] or 'N/A',
+                    'destination_address': row[6] or 'N/A',
+                    'device_name': row[7] or 'N/A',
+                    'http_method': row[8] or 'N/A',
+                    'response_code': row[9] or 0,
+                    'user_agent': row[10] or 'N/A',
+                    'source_user': row[11] or 'N/A',
+                    'rule_name': row[12] or 'N/A',
+                    'application': row[13] or 'N/A',
+                    'bytes_sent': row[14] or 0,
+                    'bytes_received': row[15] or 0,
+                    'raw_message': row[16] or '',
+                    'log_source': 'pa_urls',
+                    'timestamp_obj': row[0]  # Keep original datetime for template formatting
+                }
+                
+                # Format bytes
+                def format_bytes(bytes_value):
+                    if bytes_value == 0:
+                        return "0 B"
+                    size_names = ["B", "KB", "MB", "GB", "TB"]
+                    i = int(math.floor(math.log(bytes_value, 1024)))
+                    p = math.pow(1024, i)
+                    s = round(bytes_value / p, 2)
+                    return f"{s} {size_names[i]}"
+                
+                log_entry['bytes_sent_formatted'] = format_bytes(log_entry['bytes_sent'])
+                log_entry['bytes_received_formatted'] = format_bytes(log_entry['bytes_received'])
+                log_entry['total_bytes'] = log_entry['bytes_sent'] + log_entry['bytes_received']
+                log_entry['total_bytes_formatted'] = format_bytes(log_entry['total_bytes'])
+                
+                logs.append(log_entry)
+                
+        except Exception as e:
+            print(f"Error fetching URL logs: {e}")
+    
+    # Pagination range calculation
+    pagination_range = []
+    if total_pages > 1:
+        max_pages_to_show = 5
+        start_page = max(1, page - 2)
+        end_page = min(total_pages, start_page + max_pages_to_show - 1)
+        
+        if end_page - start_page < max_pages_to_show - 1:
+            start_page = max(1, end_page - max_pages_to_show + 1)
+        
+        pagination_range = list(range(start_page, end_page + 1))
+    
+    # Prepare context for template
+    context = {
+        'logs': logs,
+        'total_logs_count': total_logs_count,
+        'current_page': page,
+        'total_pages': total_pages,
+        'pagination_range': pagination_range,
+        'has_previous': page > 1,
+        'has_next': page < total_pages,
+        'previous_page_number': page - 1 if page > 1 else None,
+        'next_page_number': page + 1 if page < total_pages else None,
+        'time_range': time_range,
+        'time_range_display': time_range_display,
+        'client_ip': client_ip,
+        # Filters
+        'url_filter': url_filter,
+        'domain_filter': domain_filter,
+        'category_filter': category_filter,
+        'action_filter': action_filter,
+        'source_ip_filter': source_ip_filter,
+        'destination_ip_filter': destination_ip_filter,
+        'user_filter': user_filter,
+        'device_filter': device_filter,
+        'method_filter': method_filter,
+        'response_code_filter': response_code_filter,
+        'application_filter': application_filter,
+        'search_query': search_query,
+        # Dropdown options
+        'available_categories': available_categories,
+        'available_actions': available_actions,
+        'available_devices': available_devices,
+        'available_methods': available_methods,
+        'available_applications': available_applications,
+        # Status
+        'has_pa_urls': has_pa_urls,
+    }
+    
+    return render(request, 'dashboard/url_logs.html', context)
+
+
 def grouped_logs_view(request):
     client = Client(
         host=CH_HOST,

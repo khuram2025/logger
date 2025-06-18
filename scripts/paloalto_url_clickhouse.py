@@ -4,7 +4,7 @@ paloalto_url_clickhouse.py
 
 Ultra-advanced PaloAlto Networks URL Filtering Log Parser
 Continuously tails /var/log/paloalto-1004.log and extracts URL filtering entries,
-parsing them with intelligent field mapping and inserting into ClickHouse table `network_logs.pa_urls`.
+parsing them with intelligent field mapping and inserting into ClickHouse table `network_logs.pa_urls_optimized`.
 
 Features:
 - Intelligent log type detection (URL filtering vs other types)
@@ -56,10 +56,11 @@ CH_USER = os.getenv('CH_USER', 'default')
 CH_PASSWORD = os.getenv('CH_PASSWORD', 'Read@123')
 CH_DB = os.getenv('CH_DB', 'network_logs')
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+PROCESS_FROM_BEGINNING = os.getenv('PROCESS_FROM_BEGINNING', 'false').lower() == 'true'
 
 # Processing configuration
 LOG_FILE = '/var/log/paloalto-1004.log'
-BATCH_SIZE = 1000  # Optimized batch size for URL logs
+BATCH_SIZE = 1000  # Larger batch size for better performance
 BATCH_FLUSH_INTERVAL = 2  # seconds
 FILE_CHECK_INTERVAL = 1   # seconds
 MAX_URL_LENGTH = 2048     # Maximum URL length to process
@@ -86,7 +87,7 @@ logging.basicConfig(
     format='%(asctime)s [%(levelname)s] %(funcName)s:%(lineno)d - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('/var/log/paloalto_url_parser.log', mode='a')
+        logging.FileHandler('paloalto_url_parser.log', mode='a')
     ]
 )
 
@@ -110,104 +111,32 @@ CLIENT = Client(
 # 📊 FIELD DEFINITIONS & MAPPINGS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Complete field list for pa_urls table (in insertion order)
+# Essential field list for pa_urls_optimized table (50 fields)
 PA_URL_FIELDS = [
-    # Timestamp and Metadata
-    'timestamp', 'receive_time', 'generated_time', 'start_time', 'high_resolution_timestamp',
+    # Core Identification & Timestamps (8 fields)
+    'timestamp', 'receive_time', 'generated_time', 'processing_timestamp',
+    'sequence_number', 'session_id', 'device_name', 'serial_number',
     
-    # Device and System Identification
-    'serial_number', 'device_name', 'host_id', 'virtual_system', 'virtual_system_name',
-    
-    # Log Metadata
-    'log_type', 'log_subtype', 'config_version', 'sequence_number',
-    
-    # Session Information
-    'session_id', 'repeat_count', 'session_end_reason', 'start_time_utc', 'elapsed_time',
-    
-    # Network Connection Information
+    # Network & Connection Information (12 fields)
     'source_address', 'destination_address', 'nat_source_ip', 'nat_destination_ip',
-    'source_port', 'destination_port', 'nat_source_port', 'nat_destination_port',
-    'ip_protocol', 'protocol',
+    'source_port', 'destination_port', 'source_zone', 'destination_zone',
+    'inbound_interface', 'outbound_interface', 'ip_protocol', 'protocol',
     
-    # Zone and Interface Information
-    'source_zone', 'destination_zone', 'inbound_interface', 'outbound_interface',
+    # URL & Web Analysis (12 fields)
+    'url', 'url_domain', 'url_path', 'url_query', 'url_category',
+    'url_category_list', 'http_method', 'user_agent', 'referer', 'content_type',
+    'response_code', 'response_size',
     
-    # User and Authentication
-    'source_user', 'destination_user', 'source_user_domain', 'destination_user_domain',
+    # Security & Policy (8 fields)
+    'rule_name', 'rule_uuid', 'action', 'severity', 'direction',
+    'threat_id', 'threat_category', 'log_action',
     
-    # URL and Web-Specific Fields
-    'url', 'url_domain', 'url_path', 'url_query', 'url_fragment',
-    'url_category_list', 'url_category', 'url_index',
+    # User & Application (6 fields)
+    'source_user', 'destination_user', 'application', 'application_category',
+    'source_country', 'destination_country',
     
-    # HTTP/HTTPS Specific Fields
-    'http_method', 'http_version', 'user_agent', 'referer', 'content_type',
-    'content_length', 'response_code', 'response_size', 'request_size',
-    
-    # SSL/TLS Information
-    'ssl_version', 'ssl_cipher', 'ssl_certificate_subject', 'ssl_certificate_issuer',
-    'ssl_certificate_serial', 'ssl_certificate_fingerprint',
-    
-    # Security and Policy
-    'rule_name', 'rule_uuid', 'policy_id', 'policy_name', 'url_filtering_profile',
-    'action', 'action_source', 'log_action',
-    
-    # Application Information
-    'application', 'application_category', 'application_subcategory',
-    'application_technology', 'application_risk', 'application_characteristic',
-    'tunneled_application',
-    
-    # Geographic Information
-    'source_country', 'destination_country', 'source_location', 'destination_location',
-    
-    # Device Identification (Source)
-    'source_device_category', 'source_device_profile', 'source_device_model',
-    'source_device_vendor', 'source_device_os_family', 'source_device_os_version',
-    'source_hostname', 'source_mac_address',
-    
-    # Device Identification (Destination)
-    'destination_device_category', 'destination_device_profile', 'destination_device_model',
-    'destination_device_vendor', 'destination_device_os_family', 'destination_device_os_version',
-    'destination_hostname', 'destination_mac_address',
-    
-    # Traffic Metrics
-    'bytes_sent', 'bytes_received', 'packets_sent', 'packets_received',
-    'total_bytes', 'total_packets',
-    
-    # Security Threat Information
-    'threat_id', 'threat_category', 'severity', 'direction', 'file_digest',
-    'file_type', 'wildfire_verdict',
-    
-    # Advanced Features
-    'xff_address', 'dynamic_user_group_name', 'source_external_dynamic_list',
-    'destination_external_dynamic_list', 'source_dynamic_address_group',
-    'destination_dynamic_address_group',
-    
-    # Hierarchy and Organization
-    'device_group_hierarchy_level_1', 'device_group_hierarchy_level_2',
-    'device_group_hierarchy_level_3', 'device_group_hierarchy_level_4',
-    
-    # Container and Cloud Information
-    'container_id', 'pod_namespace', 'pod_name', 'cloud_instance_id',
-    'cloud_provider', 'cloud_region',
-    
-    # QoS and Performance
-    'qos_class', 'qos_rule', 'response_time_ms', 'dns_resolution_time_ms',
-    'tcp_handshake_time_ms', 'ssl_handshake_time_ms',
-    
-    # URL Override and Audit
-    'override_user', 'override_reason', 'override_timestamp', 'audit_comment',
-    
-    # Machine Learning and Analytics
-    'risk_score', 'anomaly_score', 'reputation_score',
-    
-    # Compliance and Legal
-    'data_classification', 'compliance_tag', 'legal_hold_flag',
-    
-    # Custom and Future Fields
-    'custom_field_1', 'custom_field_2', 'custom_field_3', 'tags',
-    
-    # System Fields
-    'raw_message', 'processing_timestamp', 'log_date', 'log_hour'
+    # System & Raw Data (4 fields)
+    'raw_message', 'log_type', 'log_subtype', 'virtual_system'
 ]
 
 # PaloAlto URL filtering log field positions (based on CSV structure)
@@ -321,28 +250,19 @@ URL_FIELD_MAPPING = {
     107: 'justification'
 }
 
-# Field type definitions for proper parsing
+# Field type definitions for proper parsing (optimized for essential fields)
 NUMERIC_FIELDS = {
-    'sequence_number', 'session_id', 'repeat_count', 'source_port', 'destination_port',
-    'nat_source_port', 'nat_destination_port', 'ip_protocol', 'url_index', 'content_length',
-    'response_code', 'response_size', 'request_size', 'policy_id', 'application_risk',
-    'bytes_sent', 'bytes_received', 'packets_sent', 'packets_received', 'total_bytes',
-    'total_packets', 'elapsed_time', 'response_time_ms', 'dns_resolution_time_ms',
-    'tcp_handshake_time_ms', 'ssl_handshake_time_ms', 'legal_hold_flag'
+    'sequence_number', 'session_id', 'source_port', 'destination_port',
+    'ip_protocol', 'response_code', 'response_size'
 }
 
-FLOAT_FIELDS = {
-    'risk_score', 'anomaly_score', 'reputation_score'
-}
+FLOAT_FIELDS = set()  # No float fields in optimized schema
 
 DATETIME_FIELDS = {
-    'timestamp', 'receive_time', 'generated_time', 'start_time', 'start_time_utc',
-    'override_timestamp', 'processing_timestamp', 'high_resolution_timestamp'
+    'timestamp', 'receive_time', 'generated_time', 'processing_timestamp'
 }
 
-DATE_FIELDS = {
-    'log_date'
-}
+DATE_FIELDS = set()  # No date fields in optimized schema
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 🧠 ADVANCED URL PARSING AND ANALYSIS
@@ -666,8 +586,14 @@ class PaloAltoURLParser:
         log_type = fields[3].strip().upper() if len(fields) > 3 else ''
         log_subtype = fields[4].strip().lower() if len(fields) > 4 else ''
         
-        # URL filtering logs typically have type "URL" and various subtypes
-        return log_type == 'URL' or log_subtype in ['url', 'filtering', 'category']
+        is_url_log = log_type == 'THREAT' and log_subtype == 'url'
+        
+        # Debug logging for first few logs
+        if STATS['total_lines_processed'] < 5:
+            logger.info(f"Log type: '{log_type}', subtype: '{log_subtype}', is_url_log: {is_url_log}")
+        
+        # URL filtering logs are THREAT logs with subtype "url"
+        return is_url_log
     
     def _parse_timestamps(self, syslog_parts: Dict, fields: List[str]) -> Dict[str, Any]:
         """Parse all timestamp fields"""
@@ -1054,9 +980,13 @@ class LogHandler(FileSystemEventHandler):
                 self.file_handle.close()
                 
             self.file_handle = open(self.filepath, 'r', encoding='utf-8', errors='ignore')
-            self.file_handle.seek(0, os.SEEK_END)  # Start from end for new logs only
+            if PROCESS_FROM_BEGINNING:
+                self.file_handle.seek(0, os.SEEK_SET)  # Start from beginning
+                logger.info(f"Opened log file: {self.filepath} (starting from beginning)")
+            else:
+                self.file_handle.seek(0, os.SEEK_END)  # Start from end for new logs only
+                logger.info(f"Opened log file: {self.filepath} (starting from end)")
             self.last_position = self.file_handle.tell()
-            logger.info(f"Opened log file: {self.filepath} (position: {self.last_position})")
             
         except Exception as e:
             logger.error(f"Error opening log file: {e}")
@@ -1111,12 +1041,13 @@ class LogHandler(FileSystemEventHandler):
                 # Parse the line
                 parsed_data = self.parser.parse_log_line(line)
                 if parsed_data:
+                    logger.info(f"✅ Successfully parsed URL log, buffer size: {len(self.buffer)+1}")
                     with self.buffer_lock:
                         self.buffer.append(parsed_data)
                         
                         # Trigger batch processing if buffer is full
                         if len(self.buffer) >= BATCH_SIZE:
-                            logger.debug(f"Buffer full ({len(self.buffer)}), triggering batch process")
+                            logger.info(f"Buffer full ({len(self.buffer)}), triggering batch process")
                             self.process_batch_func()
                         elif len(self.buffer) >= MAX_BUFFER_SIZE:
                             logger.warning(f"Buffer overflow ({len(self.buffer)}), forcing flush")
@@ -1191,10 +1122,10 @@ def main():
     
     # Verify table exists
     try:
-        CLIENT.execute(f"DESCRIBE TABLE {CH_DB}.pa_urls")
-        logger.info("✅ Table pa_urls found")
+        CLIENT.execute(f"DESCRIBE TABLE {CH_DB}.pa_urls_optimized")
+        logger.info("✅ Table pa_urls_optimized found")
     except Exception as e:
-        logger.error(f"❌ Table pa_urls not found: {e}")
+        logger.error(f"❌ Table pa_urls_optimized not found: {e}")
         logger.error("Please create the table using the schema file first")
         sys.exit(1)
     
@@ -1205,20 +1136,24 @@ def main():
     
     # Prepare insert query
     insert_query = f"""
-        INSERT INTO {CH_DB}.pa_urls ({', '.join(PA_URL_FIELDS)}) VALUES
+        INSERT INTO {CH_DB}.pa_urls_optimized ({', '.join(PA_URL_FIELDS)}) VALUES
     """
     
     def process_batch():
         """Process accumulated batch of parsed logs"""
+        logger.info(f"🔄 Starting batch processing...")
         with buffer_lock:
             if not buffer:
+                logger.info(f"🔄 Buffer is empty, nothing to process")
                 return
             batch = list(buffer)
             buffer.clear()
         
         if not batch:
+            logger.info(f"🔄 Batch is empty after clearing buffer")
             return
         
+        logger.info(f"🔄 Processing batch of {len(batch)} items")
         try:
             # Convert to rows for ClickHouse
             rows = []
@@ -1226,11 +1161,12 @@ def main():
                 row = [data.get(field, None) for field in PA_URL_FIELDS]
                 rows.append(row)
             
+            logger.info(f"🔄 Converted to {len(rows)} rows, executing insert...")
             # Insert to ClickHouse
             CLIENT.execute(insert_query, rows)
             
             STATS['insert_success'] += len(rows)
-            logger.info(f"✅ Inserted {len(rows)} URL logs to pa_urls table")
+            logger.info(f"✅ Inserted {len(rows)} URL logs to pa_urls_optimized table")
             
         except Exception as e:
             STATS['insert_errors'] += len(batch)

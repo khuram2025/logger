@@ -1,0 +1,561 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}URL Filtering Logs{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='url_logs' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+<div class="logs-page-container">
+    <div class="logs-main-content sidebar-hidden">
+        <div class="logs-content-header">
+            <div class="controls-bar logs-controls-row">
+                <div class="logs-controls-group">
+                    <div class="search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search URLs, domains, users..." id="globalSearch" value="{{ search_query }}" />
+                    </div>
+                    <div class="log-summary">
+                        Total: <span id="total-logs">{{ total_logs_count|default:"0" }}</span> URL Requests
+                        {% if total_logs_count|default:0 > 1000 %}(High Traffic Volume){% endif %}
+                    </div>
+                    <div class="date-range-display">
+                        {{ time_range_display|default:"Last Hour" }}
+                    </div>
+                    <div class="action-buttons">
+                        <button class="icon-text-button" onclick="refreshLogs()"><i class="fas fa-sync-alt"></i></button>
+                        <button class="icon-text-button" onclick="toggleFilters()"><i class="fas fa-filter"></i></button>
+                        <button class="icon-text-button"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                </div>
+                <div class="logs-controls-filter">
+                    <button class="filter-toggle-btn" onclick="toggleFilters()">
+                        <i class="fas fa-filter"></i> Filters
+                    </button>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Table -->
+        <div class="logs-table-container">
+            {% if not has_pa_urls %}
+                <div class="alert alert-warning" style="margin: 20px 0; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; color: #856404;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>URL Filtering Table Not Available</strong><br>
+                    The pa_urls table is not available in the database. Please ensure the URL filtering log parser is running and the table has been created.
+                </div>
+            {% elif total_logs_count == 0 %}
+                <div class="alert alert-info" style="margin: 20px 0; padding: 15px; background: #d1ecf1; border: 1px solid #b0d4dd; border-radius: 8px; color: #0c5460;">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>No URL Requests Found</strong><br>
+                    No URL filtering logs match your current filters for the selected time range.
+                </div>
+            {% else %}
+                <table class="logs-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>URL</th>
+                            <th>Domain</th>
+                            <th>Category</th>
+                            <th>Action</th>
+                            <th>Source IP</th>
+                            <th>User</th>
+                            <th>Method</th>
+                            <th>Code</th>
+                            <th>Traffic</th>
+                            <th>Device</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        {% for log in logs %}
+                            <tr>
+                                <td>{{ log.timestamp_obj|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    <div class="url-text" title="{{ log.url }}">{{ log.url|truncatechars:50 }}</div>
+                                </td>
+                                <td>{{ log.url_domain }}</td>
+                                <td>
+                                    <span class="url-category-badge category-{{ log.url_category|lower|slugify }}">
+                                        {{ log.url_category }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="action-badge action-{{ log.action|lower }}">{{ log.action }}</span>
+                                </td>
+                                <td>{{ log.source_address }}</td>
+                                <td>{{ log.source_user }}</td>
+                                <td>
+                                    <span class="method-badge method-{{ log.http_method|lower }}">{{ log.http_method }}</span>
+                                </td>
+                                <td>
+                                    <span class="response-code code-{% if log.response_code < 300 %}2xx{% elif log.response_code < 400 %}3xx{% elif log.response_code < 500 %}4xx{% else %}5xx{% endif %}">
+                                        {{ log.response_code }}
+                                    </span>
+                                </td>
+                                <td>{{ log.total_bytes_formatted }}</td>
+                                <td>{{ log.device_name }}</td>
+                                <td><button class="expand-log-button" data-log-index="{{ forloop.counter0 }}"><i class="fas fa-plus"></i></button></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+
+            <!-- Pagination -->
+            {% if total_pages > 1 %}
+                <nav class="pagination-nav" style="margin-top: 20px; display: flex; justify-content: center;">
+                    <div class="pagination">
+                        {% if has_previous %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ previous_page_number }}" class="page-link prev">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        {% endif %}
+
+                        {% for page_num in pagination_range %}
+                            {% if page_num == current_page %}
+                                <span class="page-link current">{{ page_num }}</span>
+                            {% else %}
+                                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_num }}" class="page-link">{{ page_num }}</a>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if has_next %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ next_page_number }}" class="page-link next">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </nav>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filter Sidebar -->
+    <div class="logs-filter-sidebar hidden" id="filterSidebar">
+        <div class="filter-sidebar-header">
+            <h3><i class="fas fa-filter"></i> Filters</h3>
+            <button class="clear-all-filters" onclick="clearAllFilters()">
+                <i class="fas fa-times"></i> Clear All
+            </button>
+        </div>
+        <div class="filter-sections">
+            <form id="filterForm" method="get">
+                <!-- Quick Filters -->
+                <div class="filter-section">
+                    <div class="filter-section-header collapsible-header" data-target="quickFiltersContent">
+                        <i class="fas fa-plus filter-icon"></i>
+                        <span>Quick Filters</span>
+                    </div>
+                    <div class="filter-section-content" id="quickFiltersContent" style="display: none;">
+                        <div class="quick-filter-item">
+                            <span class="quick-filter-icon">🚫</span>
+                            <span>Denied Traffic</span>
+                        </div>
+                        <div class="quick-filter-item">
+                            <span class="quick-filter-icon">⚠️</span>
+                            <span>Suspicious</span>
+                        </div>
+                        <div class="quick-filter-item">
+                            <span class="quick-filter-icon">🔗</span>
+                            <span>External URLs</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Range -->
+                <div class="filter-section">
+                    <div class="filter-section-header collapsible-header" data-target="timeRangeContent">
+                        <i class="fas fa-minus filter-icon"></i>
+                        <span>Time Range</span>
+                    </div>
+                    <div class="filter-section-content" id="timeRangeContent">
+                        <div class="time-range-tabs">
+                            <button type="button" class="time-range-tab {% if time_range == 'Last_Hour' %}active{% endif %}" data-range="Last_Hour">1H</button>
+                            <button type="button" class="time-range-tab {% if time_range == 'Last_6_Hours' %}active{% endif %}" data-range="Last_6_Hours">6H</button>
+                            <button type="button" class="time-range-tab {% if time_range == 'Last_24_Hours' %}active{% endif %}" data-range="Last_24_Hours">24H</button>
+                            <button type="button" class="time-range-tab {% if time_range == 'Last_7_Days' %}active{% endif %}" data-range="Last_7_Days">7D</button>
+                            <button type="button" class="time-range-tab {% if time_range == 'Last_30_Days' %}active{% endif %}" data-range="Last_30_Days">30D</button>
+                        </div>
+                        <input type="hidden" name="time_range" id="timeRangeInput" value="{{ time_range }}">
+                    </div>
+                </div>
+
+                <!-- URL Addresses -->
+                <div class="filter-section">
+                    <div class="filter-section-header collapsible-header" data-target="urlContent">
+                        <i class="fas fa-plus filter-icon"></i>
+                        <span>URL Addresses</span>
+                    </div>
+                    <div class="filter-section-content" id="urlContent" style="display: none;">
+                        <div class="filter-group">
+                            <label>URL</label>
+                            <input type="text" class="filter-input" name="url" placeholder="e.g. example.com" value="{{ url_filter }}">
+                        </div>
+                        <div class="filter-group">
+                            <label>DOMAIN</label>
+                            <input type="text" class="filter-input" name="domain" placeholder="e.g. domain.com" value="{{ domain_filter }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Categories -->
+                <div class="filter-section">
+                    <div class="filter-section-header collapsible-header" data-target="categoryContent">
+                        <i class="fas fa-plus filter-icon"></i>
+                        <span>Categories</span>
+                    </div>
+                    <div class="filter-section-content" id="categoryContent" style="display: none;">
+                        <div class="filter-group">
+                            <label>CATEGORY</label>
+                            <select class="filter-input" name="category">
+                                <option value="">All Categories</option>
+                                {% for category in available_categories %}
+                                    <option value="{{ category }}" {% if category == category_filter %}selected{% endif %}>{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>ACTION</label>
+                            <select class="filter-input" name="action">
+                                <option value="">All Actions</option>
+                                {% for action in available_actions %}
+                                    <option value="{{ action }}" {% if action == action_filter %}selected{% endif %}>{{ action }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="apply-filters-container">
+                    <button type="submit" class="apply-filters-btn">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                    <button type="button" class="reset-filters-btn" onclick="clearAllFilters()">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Layout fixes */
+.logs-main-content.sidebar-hidden {
+    width: 100% !important;
+}
+
+.logs-filter-sidebar.hidden {
+    display: none !important;
+}
+
+/* Filter toggle button */
+.filter-toggle-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.filter-toggle-btn:hover {
+    background: #5a6fd8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.logs-controls-filter {
+    display: flex;
+    align-items: center;
+}
+
+/* Quick filter items */
+.quick-filter-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 12px;
+}
+
+.quick-filter-item:hover {
+    background: #f8f9fa;
+}
+
+.quick-filter-icon {
+    font-size: 14px;
+}
+
+/* Apply filters container */
+.apply-filters-container {
+    padding: 16px;
+    display: flex;
+    gap: 8px;
+}
+
+.reset-filters-btn {
+    flex: 1;
+    padding: 8px 12px;
+    background: transparent;
+    color: #6c757d;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.reset-filters-btn:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+/* URL-specific styling */
+.url-category-badge {
+    padding: 0.25em 0.6em;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 0.75em;
+    text-transform: capitalize;
+    display: inline-block;
+}
+.category-search-engines { background: #e3f2fd; color: #1565c0; }
+.category-social-networking { background: #fce4ec; color: #c2185b; }
+.category-computer-and-internet-info { background: #f3e5f5; color: #7b1fa2; }
+.category-business-and-economy { background: #e8f5e8; color: #2e7d32; }
+.category-entertainment { background: #fff3e0; color: #f57c00; }
+.category-news { background: #e8f5e8; color: #2e7d32; }
+.category-uncategorized { background: #f5f5f5; color: #666; }
+
+.action-badge {
+    padding: 0.25em 0.6em;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.8em;
+    text-transform: uppercase;
+}
+.action-allow { background: #d4edda; color: #155724; }
+.action-block { background: #f8d7da; color: #721c24; }
+.action-alert { background: #fff3cd; color: #856404; }
+
+.method-badge {
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.7em;
+    font-family: monospace;
+}
+.method-get { background: #e8f5e8; color: #2e7d32; }
+.method-post { background: #e3f2fd; color: #1565c0; }
+.method-put { background: #fff3e0; color: #f57c00; }
+.method-delete { background: #ffebee; color: #d32f2f; }
+
+.response-code {
+    font-family: monospace;
+    font-weight: 600;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-size: 0.75em;
+}
+.code-2xx { background: #d4edda; color: #155724; }
+.code-3xx { background: #d1ecf1; color: #0c5460; }
+.code-4xx { background: #fff3cd; color: #856404; }
+.code-5xx { background: #f8d7da; color: #721c24; }
+
+.url-text {
+    font-family: monospace;
+    font-size: 0.85em;
+    word-break: break-all;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.apply-filters-btn {
+    flex: 2;
+    padding: 8px 12px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.apply-filters-btn:hover {
+    background: #5a6fd8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Time range tabs */
+.time-range-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.time-range-tab {
+    flex: 1;
+    padding: 6px 8px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #495057;
+    text-align: center;
+}
+
+.time-range-tab:hover {
+    background: #e9ecef;
+}
+
+.time-range-tab.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+/* Pagination styles */
+.pagination {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.page-link {
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    color: #667eea;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.page-link:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.page-link.current {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    font-weight: 600;
+}
+</style>
+
+<script>
+// Global search functionality
+document.getElementById('globalSearch').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        const form = document.getElementById('filterForm');
+        const searchInput = document.createElement('input');
+        searchInput.type = 'hidden';
+        searchInput.name = 'search';
+        searchInput.value = this.value;
+        form.appendChild(searchInput);
+        form.submit();
+    }
+});
+
+// Time range tab functionality
+document.querySelectorAll('.time-range-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        // Remove active class from all tabs
+        document.querySelectorAll('.time-range-tab').forEach(t => t.classList.remove('active'));
+        // Add active class to clicked tab
+        this.classList.add('active');
+        // Update hidden input
+        document.getElementById('timeRangeInput').value = this.dataset.range;
+    });
+});
+
+// Toggle filters sidebar
+function toggleFilters() {
+    const sidebar = document.getElementById('filterSidebar');
+    const mainContent = document.querySelector('.logs-main-content');
+    
+    sidebar.classList.toggle('hidden');
+    mainContent.classList.toggle('sidebar-hidden');
+}
+
+// Clear all filters
+function clearAllFilters() {
+    const form = document.getElementById('filterForm');
+    const inputs = form.querySelectorAll('input[type="text"], input[type="number"], select');
+    inputs.forEach(input => {
+        if (input.name !== 'time_range') {
+            input.value = '';
+        }
+    });
+    // Reset time range to default
+    document.getElementById('timeRangeInput').value = 'Last_Hour';
+    document.querySelectorAll('.time-range-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelector('.time-range-tab[data-range="Last_Hour"]').classList.add('active');
+}
+
+// Refresh logs
+function refreshLogs() {
+    window.location.reload();
+}
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    const refreshBtn = document.querySelector('.fa-sync-alt');
+    if (refreshBtn) {
+        refreshBtn.style.animation = 'spin 1s linear';
+        setTimeout(() => refreshBtn.style.animation = '', 1000);
+    }
+}, 30000);
+
+// Animations
+const style = document.createElement('style');
+style.textContent = `
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
