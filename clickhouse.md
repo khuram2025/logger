@@ -1,12 +1,134 @@
 
-network_logs.threat_logs
+-- Available tables in network_logs database:
+-- 1. network_logs.fortigate_traffic - FortiGate firewall traffic logs
+-- 2. network_logs.threat_logs - Threat/security event logs
+-- 3. network_logs.pa_traffic - Palo Alto firewall traffic logs
 
 describe network_logs.threat_logs
+describe network_logs.pa_traffic
 USE network_logs
 
 
 SELECT * FROM fortigate_traffic ORDER BY timestamp DESC LIMIT 10;
 SELECT * FROM threat_logs ORDER BY timestamp DESC LIMIT 10;
+SELECT * FROM pa_traffic ORDER BY timestamp DESC LIMIT 10;
+
+-- Palo Alto Traffic Logs Table (pa_traffic)
+CREATE TABLE network_logs.pa_traffic
+(
+    -- Timestamp and metadata
+    timestamp DateTime,
+    raw_message String,
+    
+    -- Device information
+    device_name String,
+    serial String,
+    
+    -- Log type information
+    log_type String,
+    log_subtype String,
+    
+    -- Time information
+    generated_time DateTime,
+    received_time DateTime,
+    
+    -- Session information
+    session_id UInt64,
+    repeat_count UInt32,
+    
+    -- Source information
+    src_ip IPv4,
+    src_port UInt16,
+    src_zone String,
+    src_interface String,
+    src_user String,
+    src_mac String,
+    
+    -- Destination information
+    dst_ip IPv4,
+    dst_port UInt16,
+    dst_zone String,
+    dst_interface String,
+    dst_user String,
+    dst_mac String,
+    
+    -- NAT information
+    nat_src_ip IPv4,
+    nat_src_port UInt16,
+    nat_dst_ip IPv4,
+    nat_dst_port UInt16,
+    
+    -- Rule/Policy information
+    rule_name String,
+    rule_uuid String,
+    
+    -- Application information
+    application String,
+    app_category String,
+    app_subcategory String,
+    app_technology String,
+    app_risk UInt8,
+    
+    -- Protocol and service
+    protocol UInt8,
+    ip_protocol String,
+    
+    -- Action and result
+    action String,
+    
+    -- Traffic statistics
+    bytes_sent UInt64,
+    bytes_received UInt64,
+    packets_sent UInt64,
+    packets_received UInt64,
+    
+    -- Session details
+    session_start_time DateTime,
+    elapsed_time UInt32,
+    
+    -- Location information
+    src_country String,
+    dst_country String,
+    src_location String,
+    dst_location String,
+    
+    -- URL and content
+    url_category String,
+    url_filename String,
+    
+    -- Security information
+    threat_id String,
+    threat_category String,
+    severity String,
+    direction String,
+    
+    -- Device group hierarchy
+    device_group_hierarchy1 String,
+    device_group_hierarchy2 String,
+    device_group_hierarchy3 String,
+    device_group_hierarchy4 String,
+    
+    -- Virtual system
+    vsys String,
+    vsys_name String,
+    
+    -- Additional fields
+    sequence_number UInt64,
+    action_flags String,
+    tunnel_type String,
+    tunnel_id UInt32,
+    parent_session_id UInt64,
+    parent_start_time DateTime,
+    
+    -- Indexes for performance
+    log_date Date DEFAULT toDate(timestamp),
+    log_hour DateTime DEFAULT toStartOfHour(timestamp)
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(timestamp)
+ORDER BY (timestamp, src_ip, dst_ip)
+TTL timestamp + INTERVAL 90 DAY
+SETTINGS index_granularity = 8192;
 
 CREATE TABLE threat_logs
 (

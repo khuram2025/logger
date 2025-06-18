@@ -361,6 +361,19 @@ def clickhouse_logs_view(request):
         password=CH_PASSWORD,
         database=CH_DB
     )
+    
+    # Check which tables exist
+    try:
+        tables_result = client.execute("SHOW TABLES FROM network_logs")
+        available_tables = [row[0] for row in tables_result]
+        has_pa_traffic = 'pa_traffic' in available_tables
+        has_threat_logs = 'threat_logs' in available_tables
+        has_fortigate_traffic = 'fortigate_traffic' in available_tables
+    except Exception:
+        has_pa_traffic = False
+        has_threat_logs = False
+        has_fortigate_traffic = True  # Fallback to original table
+    
 
     # Get client's real IP (for display or other purposes)
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -416,6 +429,11 @@ def clickhouse_logs_view(request):
     hostname_filter = request.GET.get('hostname', '').strip()
     username_filter = request.GET.get('username', '').strip()
     dstcountry_filter = request.GET.get('dstcountry', '').strip()
+    log_source_filter = request.GET.get('log_source', '').strip()
+    
+    # By default, exclude threat_logs unless specifically requested
+    if not log_source_filter or log_source_filter not in ['threat_logs']:
+        has_threat_logs = False
     
     # New filter parameters
     protocol_filter = request.GET.get('protocol', '').strip()
@@ -542,8 +560,21 @@ def clickhouse_logs_view(request):
     # --- Pagination ---
     page = int(request.GET.get('page', 1))
     
-    # Update count query with filters
-    count_query = f"SELECT count() FROM fortigate_traffic WHERE {where_clause}"
+    # Update count query to include all tables
+    count_queries = []
+    if has_fortigate_traffic:
+        count_queries.append(f"SELECT count() FROM fortigate_traffic WHERE {where_clause}")
+    if has_pa_traffic:
+        pa_where_clause = where_clause.replace('srcip', 'src_ip').replace('dstip', 'dst_ip').replace('srcport', 'src_port').replace('dstport', 'dst_port').replace('devname', 'device_name').replace('appcategory', 'app_category').replace('hostname', 'application').replace('username', 'src_user').replace('dstcountry', 'dst_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
+        count_queries.append(f"SELECT count() FROM pa_traffic WHERE {pa_where_clause}")
+    if has_threat_logs:
+        threat_where_clause = where_clause.replace('srcip', 'source_address').replace('dstip', 'destination_address').replace('srcport', 'source_port').replace('dstport', 'destination_port').replace('devname', 'device_name').replace('appcategory', 'application_category').replace('hostname', 'application').replace('username', 'source_user').replace('dstcountry', 'destination_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
+        count_queries.append(f"SELECT count() FROM threat_logs WHERE {threat_where_clause}")
+    
+    if count_queries:
+        count_query = f"SELECT {' + '.join([f'({q})' for q in count_queries])}"
+    else:
+        count_query = "SELECT 0"
     
     try:
         total_logs_count_result = client.execute(count_query)
@@ -571,16 +602,162 @@ def clickhouse_logs_view(request):
     except Exception as e:
         total_grouped_logs_count = 0 # Fallback on error
 
-    # --- Fetch current page of logs from ClickHouse with filters ---
-    query = f"""
-        SELECT
-            timestamp, raw_message, srcip, srcport, dstip, dstport, action, proto,
-            rcvdbyte, sentbyte, sentpkt, rcvdpkt, duration, srcintf, dstintf, policyname, username, srccountry, dstcountry
-        FROM fortigate_traffic
-        WHERE {where_clause}
-        ORDER BY timestamp DESC
-        LIMIT {SUBNET_GROUP_PAGE_SIZE} OFFSET {offset}
-    """
+    # --- Build union query to fetch logs from multiple tables ---
+    union_queries = []
+    
+    # Apply log source filter - skip tables not matching the filter
+    if log_source_filter:
+        if log_source_filter == 'fortigate_traffic':
+            has_pa_traffic = False
+            has_threat_logs = False
+        elif log_source_filter == 'pa_traffic':
+            has_fortigate_traffic = False
+            has_threat_logs = False
+        elif log_source_filter == 'threat_logs':
+            has_fortigate_traffic = False
+            has_pa_traffic = False
+    
+    # FortiGate traffic logs
+    if has_fortigate_traffic:
+        fortigate_query = f"""
+            SELECT
+                timestamp,
+                raw_message,
+                toString(srcip) as src_ip,
+                srcport as src_port,
+                toString(dstip) as dst_ip,
+                dstport as dst_port,
+                action,
+                proto as protocol,
+                rcvdbyte as bytes_received,
+                sentbyte as bytes_sent,
+                sentpkt as packets_sent,
+                rcvdpkt as packets_received,
+                duration as elapsed_time,
+                srcintf as src_interface,
+                dstintf as dst_interface,
+                policyname as rule_name,
+                username as src_user,
+                srccountry as src_country,
+                dstcountry as dst_country,
+                'fortigate_traffic' as log_source,
+                devname as device_name,
+                '' as application,
+                '' as threat_id,
+                '' as severity
+            FROM fortigate_traffic
+            WHERE {where_clause}
+        """
+        union_queries.append(fortigate_query)
+    
+    # PaloAlto traffic logs
+    if has_pa_traffic:
+        # Adjust where clause for pa_traffic table field names
+        pa_where_clause = where_clause
+        pa_where_clause = pa_where_clause.replace('srcip', 'src_ip')
+        pa_where_clause = pa_where_clause.replace('dstip', 'dst_ip')
+        pa_where_clause = pa_where_clause.replace('srcport', 'src_port')
+        pa_where_clause = pa_where_clause.replace('dstport', 'dst_port')
+        pa_where_clause = pa_where_clause.replace('devname', 'device_name')
+        pa_where_clause = pa_where_clause.replace('appcategory', 'app_category')
+        pa_where_clause = pa_where_clause.replace('hostname', 'application')
+        pa_where_clause = pa_where_clause.replace('username', 'src_user')
+        pa_where_clause = pa_where_clause.replace('dstcountry', 'dst_country')
+        pa_where_clause = pa_where_clause.replace('proto', 'protocol')
+        pa_where_clause = pa_where_clause.replace('sentbyte', 'bytes_sent')
+        pa_where_clause = pa_where_clause.replace('rcvdbyte', 'bytes_received')
+        
+        paloalto_query = f"""
+            SELECT
+                timestamp,
+                raw_message,
+                toString(src_ip) as src_ip,
+                src_port,
+                toString(dst_ip) as dst_ip,
+                dst_port,
+                action,
+                protocol,
+                bytes_received,
+                bytes_sent,
+                packets_sent,
+                packets_received,
+                elapsed_time,
+                src_interface,
+                dst_interface,
+                rule_name,
+                src_user,
+                src_country,
+                dst_country,
+                'pa_traffic' as log_source,
+                device_name,
+                application,
+                '' as threat_id,
+                '' as severity
+            FROM pa_traffic
+            WHERE {pa_where_clause}
+        """
+        union_queries.append(paloalto_query)
+    
+    # Threat logs
+    if has_threat_logs:
+        # Adjust where clause for threat_logs table field names
+        threat_where_clause = where_clause
+        threat_where_clause = threat_where_clause.replace('srcip', 'source_address')
+        threat_where_clause = threat_where_clause.replace('dstip', 'destination_address')
+        threat_where_clause = threat_where_clause.replace('srcport', 'source_port')
+        threat_where_clause = threat_where_clause.replace('dstport', 'destination_port')
+        threat_where_clause = threat_where_clause.replace('devname', 'device_name')
+        threat_where_clause = threat_where_clause.replace('appcategory', 'application_category')
+        threat_where_clause = threat_where_clause.replace('hostname', 'application')
+        threat_where_clause = threat_where_clause.replace('username', 'source_user')
+        threat_where_clause = threat_where_clause.replace('dstcountry', 'destination_country')
+        threat_where_clause = threat_where_clause.replace('proto', 'protocol')
+        threat_where_clause = threat_where_clause.replace('sentbyte', 'bytes_sent')
+        threat_where_clause = threat_where_clause.replace('rcvdbyte', 'bytes_received')
+        
+        threat_query = f"""
+            SELECT
+                timestamp,
+                raw_message,
+                source_address as src_ip,
+                source_port as src_port,
+                destination_address as dst_ip,
+                destination_port as dst_port,
+                action,
+                protocol,
+                bytes_received,
+                bytes_sent,
+                packets_sent,
+                packets_received,
+                elapsed_time,
+                inbound_interface as src_interface,
+                outbound_interface as dst_interface,
+                rule_name,
+                source_user as src_user,
+                source_country as src_country,
+                destination_country as dst_country,
+                'threat_logs' as log_source,
+                device_name,
+                application,
+                type as threat_id,
+                log_action as severity
+            FROM threat_logs
+            WHERE {threat_where_clause}
+        """
+        union_queries.append(threat_query)
+    
+    # Combine all queries with UNION ALL
+    if union_queries:
+        query = f"""
+            SELECT * FROM (
+                {' UNION ALL '.join(union_queries)}
+            ) AS combined_logs
+            ORDER BY timestamp DESC
+            LIMIT {SUBNET_GROUP_PAGE_SIZE} OFFSET {offset}
+        """
+    else:
+        # Fallback to empty result if no tables available
+        query = "SELECT timestamp, '', '', 0, '', 0, '', 0, 0, 0, 0, 0, 0, '', '', '', '', '', '', '', '', '', '', '' LIMIT 0"
     
     try:
         db_rows = client.execute(query)
@@ -589,19 +766,19 @@ def clickhouse_logs_view(request):
 
     processed_logs_for_template = []
     for db_row in db_rows:
-        # Unpack basic fields (adjust indices based on your SELECT statement)
+        # Unpack fields from unified query result
         ts_obj = db_row[0]
         raw_message_val = db_row[1]
         srcip_val = db_row[2]
-        srcport_val = db_row[3] # Added srcport
+        srcport_val = db_row[3]
         dstip_val = db_row[4]
         dstport_val = db_row[5]
         action_val = db_row[6]
         proto_num = db_row[7]
         rcvdbyte_val = db_row[8]
         sentbyte_val = db_row[9]
-        sentpkt_val = db_row[10] # Added sentpkt
-        rcvdpkt_val = db_row[11] # Added rcvdpkt
+        sentpkt_val = db_row[10]
+        rcvdpkt_val = db_row[11]
         duration_val = db_row[12] if db_row[12] is not None else 0
         srcintf_val = db_row[13]
         dstintf_val = db_row[14]
@@ -609,6 +786,11 @@ def clickhouse_logs_view(request):
         username_val = db_row[16] if len(db_row) > 16 and db_row[16] is not None else 'N/A'
         srccountry_val = db_row[17] if len(db_row) > 17 and db_row[17] is not None else 'N/A'
         dstcountry_val = db_row[18] if len(db_row) > 18 and db_row[18] is not None else 'N/A'
+        log_source_val = db_row[19] if len(db_row) > 19 and db_row[19] is not None else 'unknown'
+        device_name_val = db_row[20] if len(db_row) > 20 and db_row[20] is not None else 'N/A'
+        application_val = db_row[21] if len(db_row) > 21 and db_row[21] is not None else 'N/A'
+        threat_id_val = db_row[22] if len(db_row) > 22 and db_row[22] is not None else ''
+        severity_val = db_row[23] if len(db_row) > 23 and db_row[23] is not None else ''
 
         # DEBUG: Print the raw_message value for each row
 
@@ -646,6 +828,11 @@ def clickhouse_logs_view(request):
             'rcvdpkt': rcvdpkt_val,
             'srccountry': srccountry_val,
             'dstcountry': dstcountry_val,
+            'log_source': log_source_val,      # New field to identify source table
+            'device_name': device_name_val,    # Device name from all tables
+            'application': application_val,    # Application info
+            'threat_id': threat_id_val,        # Threat ID for threat logs
+            'severity': severity_val,          # Severity for threat logs
 
             # Detailed fields for JavaScript expansion (Populate these from your data)
             'clientRTT': "N/A",                 # TODO: Fetch or derive
@@ -728,6 +915,7 @@ def clickhouse_logs_view(request):
         'time_range': time_range,
         'time_from': request.GET.get('time_from', ''),
         'time_to': request.GET.get('time_to', ''),
+        'log_source_filter': log_source_filter,
     }
     return render(request, 'dashboard/logs2.html', context)
 

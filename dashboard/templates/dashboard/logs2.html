@@ -59,6 +59,30 @@
                     color: black;
                 }
 
+                .source-badge {
+                    padding: 0.2em 0.6em;
+                    border-radius: 0.25em;
+                    font-weight: bold;
+                    font-size: 0.8em;
+                    text-transform: capitalize;
+                }
+                .source-fortigate_traffic {
+                    background-color: #17a2b8; /* Info blue */
+                    color: white;
+                }
+                .source-pa_traffic {
+                    background-color: #fd7e14; /* Orange */
+                    color: white;
+                }
+                .source-threat_logs {
+                    background-color: #dc3545; /* Red */
+                    color: white;
+                }
+                .source-unknown {
+                    background-color: #6c757d; /* Secondary gray */
+                    color: white;
+                }
+
                 .logs-controls-row {
                     display: flex;
                     align-items: center;
@@ -583,10 +607,10 @@
                             <th>Destination IP</th>
                             <th>Destination Port</th>
                             <th>Protocol</th>
+                            <th>Source</th>
                             <th>Received Bytes</th>
                             <th>Transmitted Bytes</th>
-                            <th>Duration</th> <!-- Corresponds to log_item.duration_display -->
-                            <th>Details</th>  <!-- Corresponds to the div with bar and text -->
+                            <th>Duration</th>
                             <th></th> <!-- For the expand button -->
                         </tr>
                     </thead>
@@ -606,21 +630,22 @@
                             <td>{{ log_item.dstip }}</td>
                             <td>{{ log_item.dstport_val }}</td>
                             <td>{{ log_item.proto_str }}</td>
+                            <td>
+                                <span class="source-badge source-{{ log_item.log_source|default:'unknown' }}">
+                                    {% if log_item.log_source == 'fortigate_traffic' %}FortiGate
+                                    {% elif log_item.log_source == 'pa_traffic' %}PaloAlto
+                                    {% elif log_item.log_source == 'threat_logs' %}Threat
+                                    {% else %}{{ log_item.log_source|default:'Unknown' }}{% endif %}
+                                </span>
+                            </td>
                             <td>{{ log_item.rcvdbyte_display }}</td>
                             <td>{{ log_item.sentbyte_display }}</td>
-                            <td>{{ log_item.duration_display }}</td> {# For the "Duration" column header #}
-                            <td> {# For the "Details" column header #}
-                                <div class="duration-cell">
-                                    <span>{{ log_item.duration_display }}</span>
-                                    {# Placeholder width. For dynamic width based on max_duration on page, calculate in view or update with JS #}
-                                    <div class="duration-bar" style="width: {{ log_item.duration_ms | default:0 }}%;"></div>
-                                </div>
-                            </td>
+                            <td>{{ log_item.duration_display }}</td>
                             <td><button class="expand-log-button" data-log-index="{{ forloop.counter0 }}"><i class="fas fa-plus"></i></button></td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="11" style="text-align: center; padding: 20px;">No logs found.</td>
+                            <td colspan="9" style="text-align: center; padding: 20px;">No logs found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -798,6 +823,22 @@
                             <option value="deny" {% if action_filter == 'deny' %}selected{% endif %}>Deny</option>
                             <option value="block" {% if action_filter == 'block' %}selected{% endif %}>Block</option>
                             <option value="drop" {% if action_filter == 'drop' %}selected{% endif %}>Drop</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Log Source Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-database"></i>
+                        <span>Log Source</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <select class="filter-input" name="log_source" id="logSourceFilter">
+                            <option value="">All Sources</option>
+                            <option value="fortigate_traffic" {% if log_source_filter == 'fortigate_traffic' %}selected{% endif %}>FortiGate Traffic</option>
+                            <option value="pa_traffic" {% if log_source_filter == 'pa_traffic' %}selected{% endif %}>PaloAlto Traffic</option>
+                            <option value="threat_logs" {% if log_source_filter == 'threat_logs' %}selected{% endif %}>Threat Logs</option>
                         </select>
                     </div>
                 </div>
@@ -1467,9 +1508,17 @@ document.addEventListener('DOMContentLoaded', function () {
                                         <p><strong>Username:</strong> ${log.username || 'N/A'}</p>
                                         <p><strong>Source Port:</strong> ${log.srcport || 'N/A'}</p> 
                                         <p><strong>Source Interface:</strong> ${log.srcintf || 'N/A'}</p>
-                                        <p><strong>Device:</strong> ${log.devicename || 'N/A'}</p>
+                                        <p><strong>Device:</strong> ${log.device_name || 'N/A'}</p>
                                         <p><strong>Start time:</strong> ${log.ts_display || 'N/A'}</p>
                                         <p><strong>Source Country:</strong> ${log.srccountry || 'N/A'}</p>
+                                        <p><strong>Log Source:</strong> 
+                                            <span class="source-badge source-${log.log_source || 'unknown'}">
+                                                ${log.log_source === 'fortigate_traffic' ? 'FortiGate' : 
+                                                  log.log_source === 'pa_traffic' ? 'PaloAlto' : 
+                                                  log.log_source === 'threat_logs' ? 'Threat' : 
+                                                  (log.log_source || 'Unknown')}
+                                            </span>
+                                        </p>
                                     </div>
                                     <div class="info-column">
                                         <p><strong>Destination IP:</strong> ${log.dstip || 'N/A'}</p>
@@ -1478,6 +1527,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                         <p><strong>Response Length:</strong> ${log.rcvdbyte_display || 'N/A'}</p>
                                         <p><strong>Persistence Session ID:</strong> ${log.sessionid || 'N/A'}</p>
                                         <p><strong>Destination Country:</strong> ${log.dstcountry || 'N/A'}</p>
+                                        ${log.application && log.application !== 'N/A' ? `<p><strong>Application:</strong> ${log.application}</p>` : ''}
+                                        ${log.threat_id && log.threat_id !== '' ? `<p><strong>Threat ID:</strong> ${log.threat_id}</p>` : ''}
+                                        ${log.severity && log.severity !== '' ? `<p><strong>Severity:</strong> ${log.severity}</p>` : ''}
                                     </div>
                                     <div class="info-column server-ip-column">
                                         <p><strong>Policy Name:</strong> ${log.policyname || 'N/A'}</p> 

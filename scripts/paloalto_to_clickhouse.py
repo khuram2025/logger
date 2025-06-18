@@ -3,7 +3,7 @@
 paloalto_to_clickhouse.py
 
 Continuously tails /var/log/paloalto-1004.log and inserts each entry into
-the ClickHouse table `network_logs.fortigate_traffic`.
+the ClickHouse table `network_logs.pa_traffic`.
 
 Requirements:
     pip3 install clickhouse-driver watchdog
@@ -55,11 +55,14 @@ CLIENT = Client(
 
 # ── Parsing Logic ─────────────────────────────────────────────────────────────
 NUMERIC_FIELDS = {
-    'srcport', 'dstport', 'proto', 'sentbyte', 'rcvdbyte', 'sentpkt', 'rcvdpkt'
+    'src_port', 'dst_port', 'nat_src_port', 'nat_dst_port', 'protocol', 'app_risk',
+    'bytes_sent', 'bytes_received', 'packets_sent', 'packets_received',
+    'session_id', 'repeat_count', 'elapsed_time', 'sequence_number', 'tunnel_id',
+    'parent_session_id'
 }
 
 IP_FIELDS = {
-    'srcip', 'dstip'
+    'src_ip', 'dst_ip', 'nat_src_ip', 'nat_dst_ip'
 }
 
 # Protocol mapping (name -> number)
@@ -77,13 +80,88 @@ PROTO_MAP = {
     'igmp': 2
 }
 
-# Define fields for PaloAlto logs
+# Define fields for PaloAlto traffic logs based on standard field positions
 ALL_FIELDS = [
-    'timestamp', 'raw_message', 'devname', 'srcip', 'srcport',
-    'srcintf', 'dstip', 'dstport', 'dstintf', 'action',
-    'policyname', 'proto', 'appcat', 'dstcountry',
-    'sentbyte', 'rcvdbyte', 'sentpkt', 'rcvdpkt', 'username'
+    'timestamp', 'raw_message', 'device_name', 'serial', 'log_type', 'log_subtype',
+    'generated_time', 'received_time', 'session_id', 'repeat_count',
+    'src_ip', 'src_port', 'src_zone', 'src_interface', 'src_user', 'src_mac',
+    'dst_ip', 'dst_port', 'dst_zone', 'dst_interface', 'dst_user', 'dst_mac',
+    'nat_src_ip', 'nat_src_port', 'nat_dst_ip', 'nat_dst_port',
+    'rule_name', 'rule_uuid', 'application', 'app_category', 'app_subcategory',
+    'app_technology', 'app_risk', 'protocol', 'ip_protocol', 'action',
+    'bytes_sent', 'bytes_received', 'packets_sent', 'packets_received',
+    'session_start_time', 'elapsed_time', 'src_country', 'dst_country',
+    'src_location', 'dst_location', 'url_category', 'url_filename',
+    'threat_id', 'threat_category', 'severity', 'direction',
+    'device_group_hierarchy1', 'device_group_hierarchy2', 'device_group_hierarchy3', 'device_group_hierarchy4',
+    'vsys', 'vsys_name', 'sequence_number', 'action_flags', 'tunnel_type', 'tunnel_id',
+    'parent_session_id', 'parent_start_time'
 ]
+
+# PaloAlto traffic log field positions (0-based index after splitting by comma)
+FIELD_MAP = {
+    # Field index: field_name
+    1: 'generated_time',      # Time log was generated
+    2: 'serial',              # Serial number
+    3: 'log_type',            # Type (TRAFFIC)
+    4: 'log_subtype',         # Subtype (start, end, drop, deny)
+    6: 'received_time',       # Time log was received
+    7: 'src_ip',              # Source IP
+    8: 'dst_ip',              # Destination IP
+    9: 'nat_src_ip',          # NAT source IP
+    10: 'nat_dst_ip',         # NAT destination IP
+    11: 'rule_name',          # Security rule name
+    12: 'src_user',           # Source user
+    13: 'dst_user',           # Destination user
+    14: 'application',        # Application
+    15: 'vsys',               # Virtual system
+    16: 'src_zone',           # Source zone
+    17: 'dst_zone',           # Destination zone
+    18: 'src_interface',      # Ingress interface
+    19: 'dst_interface',      # Egress interface
+    20: 'log_forwarding_profile',  # Log forwarding profile
+    22: 'session_id',         # Session ID
+    23: 'repeat_count',       # Repeat count
+    24: 'src_port',           # Source port
+    25: 'dst_port',           # Destination port
+    26: 'nat_src_port',       # NAT source port
+    27: 'nat_dst_port',       # NAT destination port
+    28: 'action_flags',       # Action flags
+    29: 'ip_protocol',        # IP protocol (tcp, udp, icmp)
+    30: 'action',             # Action (allow, deny, drop)
+    31: 'bytes_sent',         # Bytes sent (src to dst)
+    32: 'bytes_received',     # Bytes received (dst to src)
+    33: 'packets_sent',       # Packets sent
+    34: 'packets_received',   # Packets received
+    35: 'session_start_time', # Session start time
+    36: 'elapsed_time',       # Elapsed time (seconds)
+    37: 'app_category',       # Application category
+    38: 'app_subcategory',    # Application subcategory
+    39: 'app_technology',     # Application technology
+    40: 'app_risk',           # Application risk (1-5)
+    41: 'url_category',       # URL category
+    42: 'src_country',        # Source country
+    43: 'dst_country',        # Destination country
+    44: 'packets_sent',       # Packets sent (duplicate field in some versions)
+    45: 'packets_received',   # Packets received (duplicate field in some versions)
+    47: 'device_group_hierarchy1',  # Device group hierarchy level 1
+    48: 'device_group_hierarchy2',  # Device group hierarchy level 2
+    49: 'device_group_hierarchy3',  # Device group hierarchy level 3
+    50: 'device_group_hierarchy4',  # Device group hierarchy level 4
+    51: 'vsys_name',          # Virtual system name
+    52: 'device_name',        # Device name
+    55: 'src_mac',            # Source MAC address
+    56: 'dst_mac',            # Destination MAC address
+    58: 'tunnel_type',        # Tunnel type
+    59: 'tunnel_id',          # Tunnel ID/PCAP ID
+    61: 'parent_session_id',  # Parent session ID
+    62: 'parent_start_time',  # Parent session start time
+    63: 'tunnel_type',        # Tunnel type (for some versions)
+    70: 'sequence_number',    # Sequence number
+    77: 'src_location',       # Source location
+    78: 'dst_location',       # Destination location
+    80: 'rule_uuid'           # Rule UUID
+}
 
 def parse_line(line: str) -> dict:
     """
@@ -100,6 +178,8 @@ def parse_line(line: str) -> dict:
                 data[field] = 0
             elif field in IP_FIELDS:
                 data[field] = '0.0.0.0'
+            elif field in ['timestamp', 'generated_time', 'received_time', 'session_start_time', 'parent_start_time']:
+                data[field] = datetime.now()
             else:
                 data[field] = ''
         
@@ -107,12 +187,19 @@ def parse_line(line: str) -> dict:
         data['raw_message'] = line.rstrip('\n')
         
         # Example format:
-        # May 27 13:33:23 SMO-RUH-MU04-F09R14-INT-FW01.smo.sa 1,2025/05/27 13:33:23,024301003410,TRAFFIC,...
+        # May 27 13:33:23 hostname 1,2025/05/27 13:33:23,024301003410,TRAFFIC,...
         
         # First split by the first space after the hostname
         parts = line.split(' ', 4)
         if len(parts) >= 4:  # We have at least month, day, time, hostname
-            data['devname'] = parts[3]
+            # Use the syslog timestamp as our timestamp
+            month, day, time_str = parts[0], parts[1], parts[2]
+            year = datetime.now().year
+            syslog_timestamp = f"{year} {month} {day} {time_str}"
+            try:
+                data['timestamp'] = datetime.strptime(syslog_timestamp, "%Y %b %d %H:%M:%S")
+            except:
+                data['timestamp'] = datetime.now()
             
             # If there's a 5th part, it contains the actual log data
             if len(parts) >= 5:
@@ -124,129 +211,72 @@ def parse_line(line: str) -> dict:
                 if len(fields) > 3 and fields[3] != 'TRAFFIC':
                     return None  # Skip non-TRAFFIC logs
                 
-                # Extract timestamp (field 1)
-                if len(fields) > 1:
-                    timestamp_str = fields[1]
-                    try:
-                        # Parse timestamp and ensure it's timezone-naive for ClickHouse
-                        parsed_dt = datetime.strptime(timestamp_str, "%Y/%m/%d %H:%M:%S")
-                        # Ensure it's a naive datetime (no timezone info)
-                        if hasattr(parsed_dt, 'tzinfo') and parsed_dt.tzinfo is not None:
-                            data['timestamp'] = parsed_dt.replace(tzinfo=None)
+                # Parse fields based on FIELD_MAP
+                for field_idx, field_name in FIELD_MAP.items():
+                    if field_idx < len(fields) and fields[field_idx]:
+                        value = fields[field_idx].strip()
+                        
+                        # Handle different field types
+                        if field_name in NUMERIC_FIELDS:
+                            try:
+                                data[field_name] = int(value) if value else 0
+                            except (ValueError, TypeError):
+                                data[field_name] = 0
+                        
+                        elif field_name in IP_FIELDS:
+                            # Validate and set IP address
+                            if value and value != '0.0.0.0':
+                                try:
+                                    # Simple IP validation
+                                    parts = value.split('.')
+                                    if len(parts) == 4 and all(0 <= int(p) <= 255 for p in parts):
+                                        data[field_name] = value
+                                    else:
+                                        data[field_name] = '0.0.0.0'
+                                except:
+                                    data[field_name] = '0.0.0.0'
+                            else:
+                                data[field_name] = '0.0.0.0'
+                        
+                        elif field_name in ['generated_time', 'received_time', 'session_start_time', 'parent_start_time']:
+                            # Parse datetime fields
+                            try:
+                                if '/' in value and ':' in value:
+                                    data[field_name] = datetime.strptime(value, "%Y/%m/%d %H:%M:%S")
+                                else:
+                                    data[field_name] = data['timestamp']
+                            except:
+                                data[field_name] = data['timestamp']
+                        
+                        elif field_name == 'protocol':
+                            # Convert protocol name to number
+                            proto_str = value.lower()
+                            if proto_str in PROTO_MAP:
+                                data[field_name] = PROTO_MAP[proto_str]
+                            elif proto_str.isdigit():
+                                data[field_name] = int(proto_str)
+                            else:
+                                data[field_name] = 0
+                        
                         else:
-                            data['timestamp'] = parsed_dt
-                    except (ValueError, TypeError, AttributeError):
-                        data['timestamp'] = datetime.now()
+                            # String fields
+                            data[field_name] = value
                 
-                # Process fields based on traffic log format
-                # The field positions are based on the Palo Alto traffic log format
-                if len(fields) > 6:
-                    # Source IP is at field index 7
-                    data['srcip'] = fields[7] if fields[7] else '0.0.0.0'
-                
-                if len(fields) > 8:
-                    # Destination IP is at field index 8
-                    data['dstip'] = fields[8] if fields[8] else '0.0.0.0'
-                
-                # Extract port information
-                if len(fields) > 25:
-                    # Source port is at field index 24
-                    try:
-                        data['srcport'] = int(fields[24]) if fields[24] else 0
-                    except (ValueError, TypeError):
-                        data['srcport'] = 0
-                
-                if len(fields) > 26:
-                    # Destination port is at field index 25
-                    try:
-                        data['dstport'] = int(fields[25]) if fields[25] else 0
-                    except (ValueError, TypeError):
-                        data['dstport'] = 0
-                
-                # Extract interfaces
-                if len(fields) > 14:
-                    # Source interface is at field index 13
-                    data['srcintf'] = fields[18] if fields[18] else ''
-                
-                if len(fields) > 15:
-                    # Destination interface is at field index 14
-                    data['dstintf'] = fields[19] if fields[19] else ''
-                
-                # Extract action
-                if len(fields) > 31:
-                    # Action is at field index 30
-                    data['action'] = fields[30].lower() if fields[30] else ''
-                    
-                # Extract additional fields based on the indices provided
-                # Policy name (field 11)
-                if len(fields) > 11:
-                    data['policyname'] = fields[11] if fields[11] else ''
-                
-                # Username (field 12)
-                if len(fields) > 12:
-                    data['username'] = fields[12] if fields[12] else ''
-                    
-                # Protocol (field 29)
-                if len(fields) > 29:
-                    proto_str = fields[29].lower() if fields[29] else ''
-                    # Convert protocol name to number
-                    if proto_str in PROTO_MAP:
-                        data['proto'] = PROTO_MAP[proto_str]
-                    elif proto_str.isdigit():
-                        data['proto'] = int(proto_str)
-                    else:
-                        data['proto'] = 0  # Default for unknown protocols
-                    
-                # Application category (field 37)
-                if len(fields) > 37:
-                    data['appcat'] = fields[37] if fields[37] else ''
-                    
-                # Destination country (field 42)
-                if len(fields) > 42:
-                    data['dstcountry'] = fields[42] if fields[42] else ''
-                    
-                # Extract byte and packet counts
-                # Sent bytes (field 32)
-                if len(fields) > 32:
-                    try:
-                        data['sentbyte'] = int(fields[32]) if fields[32] else 0
-                    except (ValueError, TypeError):
-                        data['sentbyte'] = 0
-                        
-                # Received bytes (field 33)
-                if len(fields) > 33:
-                    try:
-                        data['rcvdbyte'] = int(fields[33]) if fields[33] else 0
-                    except (ValueError, TypeError):
-                        data['rcvdbyte'] = 0
-                        
-                # Sent packets (field 44)
-                if len(fields) > 44:
-                    try:
-                        data['sentpkt'] = int(fields[44]) if fields[44] else 0
-                    except (ValueError, TypeError):
-                        data['sentpkt'] = 0
-                        
-                # Received packets (field 45)
-                if len(fields) > 45:
-                    try:
-                        data['rcvdpkt'] = int(fields[45]) if fields[45] else 0
-                    except (ValueError, TypeError):
-                        data['rcvdpkt'] = 0
-        
-        # Ensure timestamp is always populated
-        if data.get('timestamp') is None:
-            data['timestamp'] = datetime.now()
+                # Extract device name from hostname (field 52 if available)
+                if 52 < len(fields) and fields[52]:
+                    data['device_name'] = fields[52]
+                elif len(parts) >= 4:
+                    data['device_name'] = parts[3]
         
     except Exception as e:
         logging.error(f"Error parsing line: {e}\nLine: {line}")
-        # Provide fallback values for critical fields
-        if 'timestamp' not in data:
+        # Ensure critical fields have valid values
+        if 'timestamp' not in data or data['timestamp'] is None:
             data['timestamp'] = datetime.now()
         if 'raw_message' not in data:
             data['raw_message'] = line.rstrip('\n')
-        for field in ['srcip', 'dstip']:
-            if field not in data:
+        for field in IP_FIELDS:
+            if field not in data or not data[field]:
                 data[field] = '0.0.0.0'
         for field in NUMERIC_FIELDS:
             if field not in data:
@@ -333,7 +363,7 @@ class LogHandler(FileSystemEventHandler):
 # ── Main Ingestion Loop ──────────────────────────────────────────────────────
 def main():
     insert_query = f"""
-        INSERT INTO {CH_DB}.fortigate_traffic ({', '.join(ALL_FIELDS)}) VALUES
+        INSERT INTO {CH_DB}.pa_traffic ({', '.join(ALL_FIELDS)}) VALUES
     """
     logging.info("Starting PaloAlto → ClickHouse ingestion with batch size %d", BATCH_SIZE)
 
@@ -364,8 +394,8 @@ def main():
             for i, row in enumerate(rows):
                 try:
                     # Validate critical fields
-                    srcip_idx = ALL_FIELDS.index('srcip')
-                    dstip_idx = ALL_FIELDS.index('dstip')
+                    srcip_idx = ALL_FIELDS.index('src_ip')
+                    dstip_idx = ALL_FIELDS.index('dst_ip')
                     
                     srcip = row[srcip_idx]
                     dstip = row[dstip_idx]
