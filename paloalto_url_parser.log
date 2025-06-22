@@ -1224,3 +1224,95 @@
 2025-06-18 14:58:07,759 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 1001
 2025-06-18 14:58:15,533 [INFO] shutdown_handler:1190 - 🛑 Shutdown signal received
 2025-06-18 14:58:15,533 [INFO] process_batch:1144 - 🔄 Starting batch processing...
+2025-06-19 06:15:44,726 [INFO] shutdown_handler:1266 - 🛑 Shutdown signal received
+2025-06-19 06:15:44,726 [INFO] process_batch:1220 - 🔄 Starting batch processing...
+2025-06-19 06:17:15,042 [INFO] main:1110 - 🚀 Starting PaloAlto URL Filtering Log Parser
+2025-06-19 06:17:15,042 [INFO] main:1111 - 📁 Monitoring: /var/log/paloalto-1004.log
+2025-06-19 06:17:15,042 [INFO] main:1112 - 🔗 ClickHouse: localhost:9000/network_logs
+2025-06-19 06:17:15,042 [INFO] main:1113 - 📊 Batch Size: 1000, Flush Interval: 2s
+2025-06-19 06:17:15,052 [INFO] main:1118 - ✅ ClickHouse connection successful
+2025-06-19 06:17:15,055 [INFO] main:1126 - ✅ Table pa_urls_optimized found
+2025-06-19 06:17:15,056 [INFO] _open_file:988 - Opened log file: /var/log/paloalto-1004.log (starting from end)
+2025-06-19 06:17:15,058 [INFO] main:1186 - 👀 Monitoring started for: /var/log/paloalto-1004.log
+2025-06-19 06:17:15,263 [INFO] _is_url_filtering_log:593 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-19 06:17:15,263 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:15,396 [INFO] _is_url_filtering_log:593 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-19 06:17:15,396 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:15,668 [INFO] _is_url_filtering_log:593 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-19 06:17:15,669 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:16,486 [INFO] _is_url_filtering_log:593 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-19 06:17:16,486 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:16,668 [INFO] on_modified:1057 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:16,764 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 1
+2025-06-19 06:17:16,764 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 2
+2025-06-19 06:17:16,765 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 3
+2025-06-19 06:17:16,765 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 4
+2025-06-19 06:17:16,765 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 5
+2025-06-19 06:17:16,766 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 6
+2025-06-19 06:17:16,767 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 7
+2025-06-19 06:17:16,768 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 8
+2025-06-19 06:17:16,769 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 9
+2025-06-19 06:17:16,770 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 10
+2025-06-19 06:17:16,771 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 11
+2025-06-19 06:17:16,772 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 12
+2025-06-19 06:17:16,772 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 13
+2025-06-19 06:17:16,772 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 14
+2025-06-19 06:17:16,773 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 15
+2025-06-19 06:17:16,773 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 16
+2025-06-19 06:17:16,773 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 17
+2025-06-19 06:17:16,773 [INFO] on_modified:1057 - Processed 17 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:17,059 [INFO] process_batch:1144 - 🔄 Starting batch processing...
+2025-06-19 06:17:17,350 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:17,439 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:18,395 [INFO] on_modified:1057 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:18,667 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:20,394 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:20,440 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:20,669 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-19 06:17:20,830 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 18
+2025-06-21 06:58:45,934 [INFO] shutdown_handler:1190 - 🛑 Shutdown signal received
+2025-06-21 06:58:45,935 [INFO] process_batch:1144 - 🔄 Starting batch processing...
+2025-06-21 07:00:16,303 [INFO] main:1110 - 🚀 Starting PaloAlto URL Filtering Log Parser
+2025-06-21 07:00:16,303 [INFO] main:1111 - 📁 Monitoring: /var/log/paloalto-1004.log
+2025-06-21 07:00:16,303 [INFO] main:1112 - 🔗 ClickHouse: localhost:9000/network_logs
+2025-06-21 07:00:16,303 [INFO] main:1113 - 📊 Batch Size: 1000, Flush Interval: 2s
+2025-06-21 07:00:16,313 [INFO] main:1118 - ✅ ClickHouse connection successful
+2025-06-21 07:00:16,315 [INFO] main:1126 - ✅ Table pa_urls_optimized found
+2025-06-21 07:00:16,316 [INFO] _open_file:988 - Opened log file: /var/log/paloalto-1004.log (starting from end)
+2025-06-21 07:00:16,317 [INFO] main:1186 - 👀 Monitoring started for: /var/log/paloalto-1004.log
+2025-06-21 07:00:16,570 [INFO] _is_url_filtering_log:593 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-21 07:00:16,571 [INFO] _is_url_filtering_log:593 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-21 07:00:16,571 [INFO] on_modified:1057 - Processed 2 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:16,619 [INFO] _is_url_filtering_log:593 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-21 07:00:16,619 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:16,792 [INFO] _is_url_filtering_log:593 - Log type: 'TRAFFIC', subtype: 'end', is_url_log: False
+2025-06-21 07:00:16,793 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:16,931 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:17,016 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 1
+2025-06-21 07:00:17,017 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 2
+2025-06-21 07:00:17,018 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 3
+2025-06-21 07:00:17,018 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 4
+2025-06-21 07:00:17,019 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 5
+2025-06-21 07:00:17,019 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 6
+2025-06-21 07:00:17,019 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 7
+2025-06-21 07:00:17,019 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 8
+2025-06-21 07:00:17,020 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 9
+2025-06-21 07:00:17,020 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 10
+2025-06-21 07:00:17,020 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 11
+2025-06-21 07:00:17,021 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 12
+2025-06-21 07:00:17,021 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 13
+2025-06-21 07:00:17,021 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 14
+2025-06-21 07:00:17,021 [INFO] on_modified:1057 - Processed 14 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:17,566 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:18,317 [INFO] process_batch:1144 - 🔄 Starting batch processing...
+2025-06-21 07:00:18,611 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:18,836 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:19,839 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:19,929 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:20,698 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:20,880 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:21,561 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:21,722 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:21,928 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:21,974 [INFO] on_modified:1057 - Processed 1 new lines from /var/log/paloalto-1004.log
+2025-06-21 07:00:22,012 [INFO] on_modified:1044 - ✅ Successfully parsed URL log, buffer size: 15

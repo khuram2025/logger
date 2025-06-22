@@ -28,15 +28,9 @@
                     </div>
                     <div class="action-buttons">
                         <button class="icon-text-button" onclick="refreshLogs()"><i class="fas fa-sync-alt"></i></button>
-                        <button class="icon-text-button" onclick="toggleFilters()"><i class="fas fa-filter"></i></button>
+                        <button class="icon-text-button" onclick="toggleFilters()"><i class="fas fa-filter"></i> Filters</button>
                         <button class="icon-text-button"><i class="fas fa-download"></i> Export</button>
                     </div>
-                </div>
-                <div class="logs-controls-filter">
-                    <button class="filter-toggle-btn" onclick="toggleFilters()">
-                        <i class="fas fa-filter"></i> Filters
-                    </button>
-                </div>
                 </div>
             </div>
         </div>
@@ -247,41 +241,293 @@
 </div>
 
 <style>
-/* Layout fixes */
+/* Main Page Layout */
+.logs-page-container {
+    display: flex;
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    min-height: calc(100vh - 200px);
+    background: #f8f9fa;
+}
+
+.logs-main-content {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    margin: 20px;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: margin-right 0.3s ease;
+}
+
 .logs-main-content.sidebar-hidden {
-    width: 100% !important;
+    margin-right: 20px;
+}
+
+.logs-filter-sidebar {
+    width: 280px;
+    background: white;
+    border-left: 1px solid #e9ecef;
+    height: calc(100vh - 120px);
+    position: fixed;
+    right: 0;
+    top: 120px;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+    z-index: 100;
 }
 
 .logs-filter-sidebar.hidden {
-    display: none !important;
+    transform: translateX(100%);
 }
 
-/* Filter toggle button */
-.filter-toggle-btn {
-    background: #667eea;
-    color: white;
-    border: none;
-    padding: 8px 16px;
+/* Content Header Styling */
+.logs-content-header {
+    background: white;
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.logs-controls-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.logs-controls-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.search-container {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-container input {
+    width: 100%;
+    padding: 10px 12px 10px 38px;
+    border: 1px solid #ced4da;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    background: #f8f9fa;
+}
+
+.search-container input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-container .fa-search {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.log-summary {
+    font-size: 14px;
+    color: #6c757d;
+    white-space: nowrap;
+    padding: 8px 16px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.log-summary #total-logs {
+    font-weight: 600;
+    color: #495057;
+}
+
+.date-range-display {
+    font-size: 14px;
+    color: #495057;
     font-weight: 500;
+    padding: 8px 16px;
+    background: #e9ecef;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-text-button {
+    background: white;
+    border: 1px solid #ced4da;
+    padding: 8px 12px;
+    border-radius: 6px;
     cursor: pointer;
+    font-size: 14px;
+    color: #495057;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     gap: 6px;
-    transition: all 0.2s ease;
-    margin-left: auto;
 }
 
-.filter-toggle-btn:hover {
-    background: #5a6fd8;
+.icon-text-button:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
+.icon-text-button i {
+    font-size: 14px;
+}
+
+/* Filter toggle button - moved to action-buttons group */
 .logs-controls-filter {
+    display: none; /* Remove redundant filter button */
+}
+
+/* Table Container */
+.logs-table-container {
+    width: 100%;
+    overflow-x: auto;
+    padding: 0 20px 20px;
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0;
+}
+
+.logs-table th,
+.logs-table td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.logs-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.logs-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Filter Sidebar Styling */
+.filter-sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filter-sidebar-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #495057;
     display: flex;
     align-items: center;
+    gap: 8px;
+}
+
+.clear-all-filters {
+    background: transparent;
+    border: 1px solid #ced4da;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.clear-all-filters:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.filter-sections {
+    padding: 0;
+}
+
+.filter-section {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.filter-section-header {
+    padding: 16px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    color: #495057;
+    transition: background 0.2s ease;
+}
+
+.filter-section-header:hover {
+    background: #f8f9fa;
+}
+
+.filter-icon {
+    color: #6c757d;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.filter-section-content {
+    padding: 0 20px 16px;
+}
+
+.filter-group {
+    margin-bottom: 16px;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
 /* Quick filter items */
@@ -289,37 +535,65 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 8px;
-    margin-bottom: 4px;
-    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.2s ease;
-    font-size: 12px;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    background: #f8f9fa;
+    border: 1px solid transparent;
 }
 
 .quick-filter-item:hover {
-    background: #f8f9fa;
+    background: #e9ecef;
+    border-color: #ced4da;
 }
 
 .quick-filter-icon {
-    font-size: 14px;
+    font-size: 16px;
 }
 
 /* Apply filters container */
 .apply-filters-container {
-    padding: 16px;
+    padding: 20px;
     display: flex;
     gap: 8px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.apply-filters-btn {
+    flex: 2;
+    padding: 10px 16px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.apply-filters-btn:hover {
+    background: #5a6fd8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .reset-filters-btn {
     flex: 1;
-    padding: 8px 12px;
-    background: transparent;
+    padding: 10px 16px;
+    background: white;
     color: #6c757d;
     border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 11px;
+    border-radius: 6px;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -332,6 +606,7 @@
 .reset-filters-btn:hover {
     background: #f8f9fa;
     color: #495057;
+    border-color: #adb5bd;
 }
 
 /* URL-specific styling */
@@ -510,14 +785,6 @@ document.querySelectorAll('.time-range-tab').forEach(tab => {
     });
 });
 
-// Toggle filters sidebar
-function toggleFilters() {
-    const sidebar = document.getElementById('filterSidebar');
-    const mainContent = document.querySelector('.logs-main-content');
-    
-    sidebar.classList.toggle('hidden');
-    mainContent.classList.toggle('sidebar-hidden');
-}
 
 // Clear all filters
 function clearAllFilters() {
@@ -557,5 +824,38 @@ style.textContent = `
 }
 `;
 document.head.appendChild(style);
+
+// Collapsible filter sections
+document.querySelectorAll('.collapsible-header').forEach(header => {
+    header.addEventListener('click', function() {
+        const targetId = this.dataset.target;
+        const content = document.getElementById(targetId);
+        const icon = this.querySelector('.filter-icon');
+        
+        if (content.style.display === 'none' || !content.style.display) {
+            content.style.display = 'block';
+            icon.classList.remove('fa-plus');
+            icon.classList.add('fa-minus');
+        } else {
+            content.style.display = 'none';
+            icon.classList.remove('fa-minus');
+            icon.classList.add('fa-plus');
+        }
+    });
+});
+
+// When sidebar is shown, adjust main content margin
+function toggleFilters() {
+    const sidebar = document.getElementById('filterSidebar');
+    const mainContent = document.querySelector('.logs-main-content');
+    
+    sidebar.classList.toggle('hidden');
+    
+    if (sidebar.classList.contains('hidden')) {
+        mainContent.style.marginRight = '20px';
+    } else {
+        mainContent.style.marginRight = '300px';
+    }
+}
 </script>
 {% endblock %}
