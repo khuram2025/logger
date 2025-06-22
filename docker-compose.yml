@@ -1,0 +1,192 @@
+version: '3.8'
+
+services:
+  # ClickHouse Database
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: log-analyzer-clickhouse
+    ports:
+      - "8123:8123"  # HTTP interface
+      - "9000:9000"  # Native interface
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./clickhouse/config.xml:/etc/clickhouse-server/config.xml:ro
+      - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml:ro
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      CLICKHOUSE_DB: network_logs
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: Read@123
+    networks:
+      - log-network
+    restart: unless-stopped
+
+  # rsyslog Server
+  rsyslog:
+    build:
+      context: .
+      dockerfile: docker/rsyslog/Dockerfile
+    container_name: log-analyzer-rsyslog
+    ports:
+      - "514:514/udp"    # Syslog UDP
+      - "514:514/tcp"    # Syslog TCP
+      - "6514:6514/tcp"  # Syslog TLS
+    volumes:
+      - rsyslog-logs:/var/log
+      - ./rsyslog/rsyslog.conf:/etc/rsyslog.conf:ro
+      - ./rsyslog/conf.d:/etc/rsyslog.d:ro
+    depends_on:
+      - clickhouse
+    networks:
+      - log-network
+    restart: unless-stopped
+
+  # Log Processor Services
+  log-processor:
+    build:
+      context: .
+      dockerfile: docker/processor/Dockerfile
+    container_name: log-analyzer-processor
+    volumes:
+      - rsyslog-logs:/var/log:ro
+      - ./scripts:/app/scripts
+      - processor-state:/app/state
+    environment:
+      CH_HOST: clickhouse
+      CH_PORT: 9000
+      CH_USER: default
+      CH_PASSWORD: Read@123
+      CH_DB: network_logs
+      PYTHONUNBUFFERED: 1
+    depends_on:
+      - clickhouse
+      - rsyslog
+    networks:
+      - log-network
+    restart: unless-stopped
+    command: python /app/scripts/log_manager_optimized.py
+
+  # Django Application
+  django:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    container_name: log-analyzer-django
+    volumes:
+      - ./dashboard:/app/dashboard
+      - ./analyzer:/app/analyzer
+      - static-files:/app/static
+      - media-files:/app/media
+    environment:
+      DJANGO_SETTINGS_MODULE: analyzer.settings
+      CH_HOST: clickhouse
+      CH_PORT: 9000
+      CH_USER: default
+      CH_PASSWORD: Read@123
+      CH_DB: network_logs
+      PYTHONUNBUFFERED: 1
+    depends_on:
+      - clickhouse
+    networks:
+      - log-network
+    restart: unless-stopped
+    command: gunicorn analyzer.wsgi:application --bind 0.0.0.0:8000 --workers 4
+
+  # Nginx Web Server
+  nginx:
+    image: nginx:alpine
+    container_name: log-analyzer-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - static-files:/app/static:ro
+      - media-files:/app/media:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - django
+    networks:
+      - log-network
+    restart: unless-stopped
+
+  # Celery Worker (for async tasks)
+  celery:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    container_name: log-analyzer-celery
+    volumes:
+      - ./dashboard:/app/dashboard
+      - ./analyzer:/app/analyzer
+    environment:
+      DJANGO_SETTINGS_MODULE: analyzer.settings
+      CH_HOST: clickhouse
+      CH_PORT: 9000
+      CH_USER: default
+      CH_PASSWORD: Read@123
+      CH_DB: network_logs
+      PYTHONUNBUFFERED: 1
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+      - clickhouse
+    networks:
+      - log-network
+    restart: unless-stopped
+    command: celery -A analyzer worker -l info
+
+  # Redis (for Celery)
+  redis:
+    image: redis:alpine
+    container_name: log-analyzer-redis
+    networks:
+      - log-network
+    restart: unless-stopped
+
+  # Management Commands Runner
+  management:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    container_name: log-analyzer-management
+    volumes:
+      - ./dashboard:/app/dashboard
+      - ./analyzer:/app/analyzer
+    environment:
+      DJANGO_SETTINGS_MODULE: analyzer.settings
+      CH_HOST: clickhouse
+      CH_PORT: 9000
+      CH_USER: default
+      CH_PASSWORD: Read@123
+      CH_DB: network_logs
+      PYTHONUNBUFFERED: 1
+    depends_on:
+      - clickhouse
+      - django
+    networks:
+      - log-network
+    restart: unless-stopped
+    command: |
+      sh -c "
+        while true; do
+          python manage.py update_real_stats
+          sleep 300
+        done
+      "
+
+volumes:
+  clickhouse-data:
+  rsyslog-logs:
+  processor-state:
+  static-files:
+  media-files:
+  nginx-logs:
+
+networks:
+  log-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
