@@ -1,0 +1,168 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Page Not Found{% endblock %}
+
+{% block content %}
+<style>
+    .error-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        text-align: center;
+        padding: 40px 20px;
+    }
+    
+    .error-icon {
+        font-size: 120px;
+        color: #6c757d;
+        margin-bottom: 30px;
+    }
+    
+    .error-title {
+        font-size: 48px;
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 15px;
+    }
+    
+    .error-subtitle {
+        font-size: 24px;
+        color: #6c757d;
+        margin-bottom: 20px;
+        font-weight: 500;
+    }
+    
+    .error-message {
+        font-size: 16px;
+        color: #6c757d;
+        margin-bottom: 40px;
+        max-width: 600px;
+        line-height: 1.6;
+    }
+    
+    .error-actions {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        text-decoration: none;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #fff;
+        color: #495057;
+        border: 1px solid #dee2e6;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-secondary:hover {
+        background: #f8f9fa;
+        border-color: #ced4da;
+        color: #495057;
+        text-decoration: none;
+    }
+    
+    @media (max-width: 768px) {
+        .error-title {
+            font-size: 36px;
+        }
+        
+        .error-subtitle {
+            font-size: 20px;
+        }
+        
+        .error-icon {
+            font-size: 80px;
+        }
+        
+        .error-actions {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .btn-primary,
+        .btn-secondary {
+            width: 200px;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    
+    <h1 class="error-title">404</h1>
+    <h2 class="error-subtitle">Page Not Found</h2>
+    
+    <p class="error-message">
+        {% if exception_value %}
+            {{ exception_value }}
+        {% else %}
+            The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+        {% endif %}
+    </p>
+    
+    <div class="error-actions">
+        <a href="{% url 'dashboard' %}" class="btn-primary">
+            <i class="fas fa-home"></i>
+            Go to Dashboard
+        </a>
+        
+        <a href="{% url 'log_sources' %}" class="btn-secondary">
+            <i class="fas fa-list"></i>
+            View Log Sources
+        </a>
+        
+        <button onclick="history.back()" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Go Back
+        </button>
+    </div>
+</div>
+
+<script>
+// Auto-redirect after 10 seconds (optional)
+setTimeout(function() {
+    const redirect = confirm('Would you like to be redirected to the dashboard?');
+    if (redirect) {
+        window.location.href = "{% url 'dashboard' %}";
+    }
+}, 10000);
+</script>
+{% endblock %}

@@ -22,4 +22,5 @@ urlpatterns = [
     path('logs-sources/configure/<int:source_id>/save/', views.save_log_source_config_view, name='save_log_source_config'),
     # Log Management
     path('log-management/', views.log_management_status_view, name='log_management'),
+    path('log-management/service-control/', views.service_control_view, name='service_control'),
 ]

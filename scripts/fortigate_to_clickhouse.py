@@ -199,11 +199,29 @@ class LogHandler(FileSystemEventHandler):
     def _check_file_rotation(self):
         """Check if the file has been rotated and reopen if needed"""
         try:
-            # Check if file exists and has been rotated
-            if not os.path.exists(self.filepath) or os.stat(self.filepath).st_ino != os.fstat(self._fp.fileno()).st_ino:
-                logging.info("Log rotation detected. Reopening log file.")
+            # Check if file exists
+            if not os.path.exists(self.filepath):
+                logging.info("Log file disappeared, waiting for recreation.")
                 self._open_file()
                 return True
+            
+            # Get current file stats
+            file_stat = os.stat(self.filepath)
+            fp_stat = os.fstat(self._fp.fileno())
+            current_pos = self._fp.tell()
+            
+            # Check for inode change (file was moved/replaced)
+            if file_stat.st_ino != fp_stat.st_ino:
+                logging.info("Log rotation detected (inode changed). Reopening log file.")
+                self._open_file()
+                return True
+            
+            # Check for truncation (copytruncate rotation)
+            if file_stat.st_size < current_pos:
+                logging.info(f"Log truncation detected (file size {file_stat.st_size} < position {current_pos}). Reopening log file.")
+                self._open_file()
+                return True
+                
         except Exception as e:
             logging.error(f"Error checking file rotation: {e}")
             self._open_file()

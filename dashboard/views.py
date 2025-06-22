@@ -1,8 +1,10 @@
 from django.shortcuts import render
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.utils.html import escape
 from django.db.models import Sum, Count
+from django.views.decorators.http import require_http_methods
+from .models import LogSource, LogSourceEvent, ParserTemplate
 
 import re
 import math
@@ -10,6 +12,7 @@ import logging
 from clickhouse_driver import Client
 import os
 import json
+import subprocess
 from datetime import datetime, timedelta, timezone
 import os
 from collections import defaultdict
@@ -559,13 +562,12 @@ def clickhouse_logs_view(request):
     except Exception as e:
         available_actions = ['allow', 'deny', 'drop', 'accept']  # Default fallback
 
-    # --- Fetch available device names for dropdown from all tables ---
+    # --- Fetch available device names for dropdown from all tables (without filtering) ---
     device_queries = []
     if has_fortigate_traffic:
-        device_queries.append(f"SELECT DISTINCT devname as device_name FROM fortigate_traffic WHERE {where_clause}")
+        device_queries.append("SELECT DISTINCT devname as device_name FROM fortigate_traffic WHERE devname IS NOT NULL AND devname <> '' AND length(devname) >= 3 AND devname NOT LIKE '%:%' AND devname NOT LIKE '%=' AND (devname NOT LIKE '%.%' OR devname LIKE '%.%.%.%') AND devname NOT LIKE 'FGT-' AND devname NOT LIKE 'FGT-F' AND devname NOT LIKE 'FGT-FW' AND devname NOT LIKE 'FGT-FW0'")
     if has_pa_traffic:
-        pa_where_clause = where_clause.replace('srcip', 'src_ip').replace('dstip', 'dst_ip').replace('srcport', 'src_port').replace('dstport', 'dst_port').replace('devname', 'device_name').replace('appcategory', 'app_category').replace('hostname', 'application').replace('username', 'src_user').replace('dstcountry', 'dst_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
-        device_queries.append(f"SELECT DISTINCT device_name FROM pa_traffic WHERE {pa_where_clause}")
+        device_queries.append("SELECT DISTINCT device_name FROM pa_traffic WHERE device_name IS NOT NULL AND device_name <> '' AND length(device_name) > 8 AND NOT match(device_name, '^[0-9]+$') AND (device_name LIKE '%FW%' OR device_name LIKE '%PA%' OR device_name LIKE '%PALO%')")
     
     if device_queries:
         device_query = f"SELECT DISTINCT device_name FROM ({' UNION ALL '.join(device_queries)}) AS combined_devices ORDER BY device_name"
@@ -1717,76 +1719,62 @@ def logs_config_test_view(request):
 def log_sources_view(request):
     """Main log sources management view"""
     from datetime import datetime, timedelta
+    from dashboard.models import LogSource
     
-    # Mock data for demonstration - in production this would come from a database
-    mock_log_sources = [
-        {
-            'id': 1,
-            'name': 'FortiGate Firewall',
-            'description': 'Primary FortiGate firewall appliance',
-            'ip_address': '192.168.100.221',
-            'port': 514,
-            'status': 'active',
-            'save_logs': True,
-            'logs_today': 15420,
-            'logs_last_hour': 892,
-            'total_logs': 2456781,
-            'device_type': 'fortigate'
-        },
-        {
-            'id': 2,
-            'name': 'PaloAlto Firewall',
-            'description': 'Secondary PaloAlto firewall appliance',
-            'ip_address': '10.12.50.61',
-            'port': 1004,
-            'status': 'active',
-            'save_logs': True,
-            'logs_today': 8756,
-            'logs_last_hour': 432,
-            'total_logs': 1234567,
-            'device_type': 'paloalto'
-        },
-        {
-            'id': 3,
-            'name': 'Unknown Device',
-            'description': 'Unidentified device sending logs',
-            'ip_address': '192.168.1.100',
-            'port': 514,
-            'status': 'pending',
-            'save_logs': False,
-            'logs_today': 245,
-            'logs_last_hour': 12,
-            'total_logs': 5642,
-            'device_type': 'unknown'
-        },
-        {
-            'id': 4,
-            'name': 'Test Firewall',
-            'description': 'Test environment firewall',
-            'ip_address': '10.10.10.50',
-            'port': 514,
-            'status': 'inactive',
-            'save_logs': False,
-            'logs_today': 0,
-            'logs_last_hour': 0,
-            'total_logs': 123456,
-            'device_type': 'fortigate'
-        }
-    ]
+    # Get all log sources from database
+    log_sources = LogSource.objects.all().order_by('-last_seen')
+    
+    # Convert to dict format for template compatibility
+    log_sources_data = []
+    for source in log_sources:
+        log_sources_data.append({
+            'id': source.id,
+            'name': source.name,
+            'description': source.description,
+            'ip_address': source.ip_address,
+            'hostname': source.hostname,
+            'port': source.port,
+            'status': source.status,
+            'device_type': source.device_type,
+            'device_model': source.device_model,
+            'save_logs': source.save_logs,
+            'logs_today': source.logs_today,
+            'logs_last_hour': source.logs_last_hour,
+            'total_logs': source.total_logs,
+            'log_file_path': source.log_file_path,
+            'log_template': source.log_template,
+            'parse_to_database': source.parse_to_database,
+            'first_seen': source.first_seen,
+            'last_seen': source.last_seen,
+            'approved_by': source.approved_by,
+            'approved_at': source.approved_at,
+            'rejected_reason': source.rejected_reason
+        })
     
     # Calculate overview statistics
-    total_sources = len(mock_log_sources)
-    active_sources = len([s for s in mock_log_sources if s['status'] == 'active'])
-    inactive_sources = len([s for s in mock_log_sources if s['status'] == 'inactive'])
-    pending_sources = len([s for s in mock_log_sources if s['status'] == 'pending'])
+    total_sources = log_sources.count()
+    active_sources = log_sources.filter(status='active').count()
+    inactive_sources = log_sources.filter(status='inactive').count()
+    pending_sources = log_sources.filter(status='pending').count()
+    approved_sources = log_sources.filter(status='approved').count()
+    rejected_sources = log_sources.filter(status='rejected').count()
+    
+    # Get recent events for activity feed
+    from dashboard.models import LogSourceEvent
+    recent_events = LogSourceEvent.objects.select_related('log_source').order_by('-timestamp')[:10]
     
     context = {
-        'log_sources': mock_log_sources,
+        'log_sources': log_sources_data,
         'total_sources': total_sources,
         'active_sources': active_sources,
         'inactive_sources': inactive_sources,
         'pending_sources': pending_sources,
+        'approved_sources': approved_sources,
+        'rejected_sources': rejected_sources,
+        'recent_events': recent_events,
         'last_updated': datetime.now(),
+        'device_type_choices': LogSource.DEVICE_TYPE_CHOICES,
+        'template_choices': LogSource.TEMPLATE_CHOICES,
     }
     
     return render(request, 'dashboard/log_sources.html', context)
@@ -1826,44 +1814,103 @@ def log_source_action_view(request):
     try:
         import json
         import subprocess
+        from dashboard.models import LogSource, LogSourceEvent
+        
         data = json.loads(request.body)
         source_id = data.get('source_id')
         action = data.get('action')
+        reason = data.get('reason', '')
+        device_type = data.get('device_type', '')
+        template = data.get('template', '')
         
-        if action not in ['approve', 'reject', 'enable', 'disable']:
+        if action not in ['approve', 'reject', 'enable', 'disable', 'activate', 'deactivate']:
             return JsonResponse({'success': False, 'error': 'Invalid action'})
         
-        # In production, update the database and rsyslog configuration
-        # For demonstration, we'll simulate the actions
-        
-        if action == 'approve':
-            # Add source to allowed list and configure rsyslog
-            message = f'Source {source_id} approved and configured'
-        elif action == 'reject':
-            # Block source and remove from configuration
-            message = f'Source {source_id} rejected and blocked'
-        elif action == 'enable':
-            # Enable log processing for source
-            message = f'Source {source_id} enabled'
-        elif action == 'disable':
-            # Disable log processing for source
-            message = f'Source {source_id} disabled'
-        
-        # Restart rsyslog to apply changes
         try:
-            subprocess.run(['sudo', 'systemctl', 'reload', 'rsyslog'], 
-                         capture_output=True, text=True, check=True)
-        except subprocess.CalledProcessError as e:
-            return JsonResponse({
-                'success': False, 
-                'error': f'Failed to reload rsyslog: {e.stderr}'
-            })
+            source = LogSource.objects.get(id=source_id)
+        except LogSource.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Log source not found'})
+        
+        # Perform the requested action
+        if action == 'approve':
+            # Update device type if provided
+            if device_type:
+                source.device_type = device_type
+                source.save()
+            
+            # Update template if provided
+            if template:
+                source.log_template = template
+                source.save()
+            
+            # Approve the source
+            success = source.approve(approved_by_user='admin')
+            if success:
+                # Generate rsyslog configuration
+                rsyslog_config = source.get_rsyslog_config()
+                
+                # Write rsyslog configuration file
+                config_file_path = f"/etc/rsyslog.d/{source.name.lower().replace(' ', '-')}-{source.ip_address.replace('.', '-')}.conf"
+                try:
+                    with open(config_file_path, 'w') as f:
+                        f.write(rsyslog_config)
+                    
+                    # Reload rsyslog
+                    subprocess.run(['sudo', '-S', 'systemctl', 'reload', 'rsyslog'], 
+                                 input='Read@123\n', text=True, capture_output=True, check=True)
+                    
+                    # Activate the source
+                    source.activate()
+                    
+                    message = f'Source {source.name} approved, configured, and activated'
+                    
+                except Exception as e:
+                    message = f'Source approved but configuration failed: {str(e)}'
+            else:
+                message = f'Failed to approve source {source.name}'
+                
+        elif action == 'reject':
+            success = source.reject(reason=reason)
+            if success:
+                message = f'Source {source.name} rejected'
+                if reason:
+                    message += f': {reason}'
+            else:
+                message = f'Failed to reject source {source.name}'
+                
+        elif action == 'enable' or action == 'activate':
+            success = source.activate()
+            if success:
+                message = f'Source {source.name} activated'
+            else:
+                message = f'Failed to activate source {source.name}'
+                
+        elif action == 'disable' or action == 'deactivate':
+            success = source.deactivate()
+            if success:
+                message = f'Source {source.name} deactivated'
+            else:
+                message = f'Failed to deactivate source {source.name}'
+        
+        # Create event log
+        LogSourceEvent.objects.create(
+            log_source=source,
+            event_type=action,
+            description=message,
+            user='admin',
+            metadata={
+                'reason': reason,
+                'device_type': device_type,
+                'template': template
+            }
+        )
         
         return JsonResponse({'success': True, 'message': message})
         
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
     except Exception as e:
+        logging.error(f"Error in log_source_action_view: {e}")
         return JsonResponse({'success': False, 'error': f'Error: {str(e)}'})
 
 def test_log_source_view(request):
@@ -1999,87 +2046,10 @@ def add_log_source_view(request):
 
 def configure_log_source_view(request, source_id):
     """Configure a specific log source"""
-    from datetime import datetime
-    
-    # Mock data for demonstration - in production this would query the database
-    mock_log_sources = {
-        1: {
-            'id': 1,
-            'name': 'FortiGate Firewall',
-            'description': 'Primary FortiGate firewall appliance',
-            'ip_address': '192.168.100.221',
-            'port': 514,
-            'status': 'active',
-            'save_logs': True,
-            'logs_today': 15420,
-            'logs_last_hour': 892,
-            'total_logs': 2456781,
-            'device_type': 'fortigate',
-            'log_file_path': '/var/log/fortigate.log',
-            'protocol': 'udp',
-            'log_template': 'raw',
-            'custom_template': '%rawmsg-after-pri%\\n',
-            'parse_to_database': True
-        },
-        2: {
-            'id': 2,
-            'name': 'PaloAlto Firewall',
-            'description': 'Secondary PaloAlto firewall appliance',
-            'ip_address': '10.12.50.61',
-            'port': 1004,
-            'status': 'active',
-            'save_logs': True,
-            'logs_today': 8756,
-            'logs_last_hour': 432,
-            'total_logs': 1234567,
-            'device_type': 'paloalto',
-            'log_file_path': '/var/log/paloalto-1004.log',
-            'protocol': 'udp',
-            'log_template': 'detailed',
-            'custom_template': '%timegenerated% %hostname% %rawmsg-after-pri%\\n',
-            'parse_to_database': True
-        },
-        3: {
-            'id': 3,
-            'name': 'Unknown Device',
-            'description': 'Unidentified device sending logs',
-            'ip_address': '192.168.1.100',
-            'port': 514,
-            'status': 'pending',
-            'save_logs': False,
-            'logs_today': 245,
-            'logs_last_hour': 12,
-            'total_logs': 5642,
-            'device_type': 'unknown',
-            'log_file_path': '/var/log/unknown.log',
-            'protocol': 'udp',
-            'log_template': 'timestamp',
-            'custom_template': '%timegenerated% %rawmsg-after-pri%\\n',
-            'parse_to_database': False
-        },
-        4: {
-            'id': 4,
-            'name': 'Test Firewall',
-            'description': 'Test environment firewall',
-            'ip_address': '10.10.10.50',
-            'port': 514,
-            'status': 'inactive',
-            'save_logs': False,
-            'logs_today': 0,
-            'logs_last_hour': 0,
-            'total_logs': 123456,
-            'device_type': 'fortigate',
-            'log_file_path': '/var/log/test-firewall.log',
-            'protocol': 'udp',
-            'log_template': 'raw',
-            'custom_template': '%rawmsg-after-pri%\\n',
-            'parse_to_database': False
-        }
-    }
-    
-    source = mock_log_sources.get(int(source_id))
-    if not source:
-        return render(request, '404.html', {'message': 'Log source not found'}, status=404)
+    try:
+        source = LogSource.objects.get(id=source_id)
+    except LogSource.DoesNotExist:
+        raise Http404("Log source not found")
     
     context = {
         'source': source,
@@ -2093,9 +2063,12 @@ def save_log_source_config_view(request, source_id):
         return JsonResponse({'success': False, 'error': 'Method not allowed'})
     
     try:
-        import json
-        import subprocess
-        import os
+        # Get the log source from database
+        try:
+            source = LogSource.objects.get(id=source_id)
+        except LogSource.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Log source not found'})
+        
         data = json.loads(request.body)
         
         # Validate required fields
@@ -2105,7 +2078,6 @@ def save_log_source_config_view(request, source_id):
                 return JsonResponse({'success': False, 'error': f'Missing required field: {field}'})
         
         # Validate IP address format
-        import ipaddress
         try:
             ipaddress.ip_address(data['ip_address'])
         except ValueError:
@@ -2115,6 +2087,30 @@ def save_log_source_config_view(request, source_id):
         port = data.get('port')
         if not isinstance(port, int) or port < 1 or port > 65535:
             return JsonResponse({'success': False, 'error': 'Port must be between 1 and 65535'})
+        
+        # Update the log source in database
+        source.name = data['name']
+        source.description = data.get('description', source.description)
+        source.ip_address = data['ip_address']
+        source.port = port
+        source.device_type = data['device_type']
+        source.save_logs = data.get('save_logs', False)
+        source.log_file_path = data.get('log_file_path', f'/var/log/{data["device_type"]}.log') if source.save_logs else None
+        source.parse_to_database = data.get('parse_to_database', False)
+        source.save()
+        
+        # Create event for configuration update
+        LogSourceEvent.objects.create(
+            log_source=source,
+            event_type='configured',
+            description=f'Configuration updated for {source.name}',
+            user=request.user.username if request.user.is_authenticated else 'system',
+            metadata={
+                'updated_fields': list(data.keys()),
+                'save_logs_enabled': source.save_logs,
+                'parse_to_database': source.parse_to_database
+            }
+        )
         
         # Generate rsyslog configuration
         device_type = data['device_type']
@@ -2164,33 +2160,27 @@ if ($fromhost-ip == '{ip_address}') then {{
 
 #### end {device_type}.conf ####"""
         
-        # In production, you would:
-        # 1. Update the database with the new configuration
-        # 2. Write the rsyslog configuration file
-        # 3. Reload rsyslog service
-        # 4. Update any related services
-        
-        # For demonstration, we'll simulate writing the config file
-        config_filename = f"/tmp/{device_type}-{ip_address.replace('.', '-')}.conf"
+        # Write configuration file to /etc/rsyslog.d/
+        config_filename = f"/etc/rsyslog.d/{device_type}-{ip_address.replace('.', '-')}.conf"
         
         try:
             with open(config_filename, 'w') as f:
                 f.write(config_content)
             
-            # Simulate rsyslog reload
-            # In production: subprocess.run(['sudo', 'systemctl', 'reload', 'rsyslog'])
+            # Reload rsyslog service
+            subprocess.run(['sudo', 'systemctl', 'reload', 'rsyslog'], check=True)
             
             return JsonResponse({
                 'success': True,
-                'message': f'Configuration saved successfully for {data["name"]}',
+                'message': f'Configuration saved successfully for {source.name}',
                 'config_file': config_filename,
                 'config_content': config_content
             })
             
-        except IOError as e:
+        except (IOError, subprocess.CalledProcessError) as e:
             return JsonResponse({
                 'success': False,
-                'error': f'Failed to write configuration file: {str(e)}'
+                'error': f'Failed to write configuration file or reload rsyslog: {str(e)}'
             })
         
     except json.JSONDecodeError:
@@ -2348,3 +2338,85 @@ def log_management_status_view(request):
             },
             'refresh_interval': 30
         })
+
+
+@require_http_methods(["POST"])
+def service_control_view(request):
+    """Handle service control actions (start, stop, restart)"""
+    import json
+    import subprocess
+    from django.http import JsonResponse
+    from django.views.decorators.csrf import csrf_exempt
+    
+    try:
+        # Parse JSON request body
+        data = json.loads(request.body)
+        service_name = data.get('service')
+        action = data.get('action')
+        
+        # Validate inputs
+        allowed_services = [
+            'log-manager.service',
+            'fortigate_to_clickhouse.service', 
+            'paloalto_to_clickhouse.service',
+            'paloalto-url-loader.service'
+        ]
+        
+        allowed_actions = ['start', 'stop', 'restart']
+        
+        if service_name not in allowed_services:
+            return JsonResponse({
+                'success': False,
+                'message': f'Service "{service_name}" is not allowed to be controlled'
+            }, status=400)
+            
+        if action not in allowed_actions:
+            return JsonResponse({
+                'success': False,
+                'message': f'Action "{action}" is not allowed'
+            }, status=400)
+        
+        # Execute systemctl command with sudo
+        try:
+            cmd = ['sudo', '-S', 'systemctl', action, service_name]
+            result = subprocess.run(
+                cmd,
+                input='Read@123\n',
+                text=True,
+                capture_output=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Successfully {action}ed {service_name}'
+                })
+            else:
+                error_msg = result.stderr.strip() if result.stderr else 'Unknown error'
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Failed to {action} {service_name}: {error_msg}'
+                }, status=500)
+                
+        except subprocess.TimeoutExpired:
+            return JsonResponse({
+                'success': False,
+                'message': f'Timeout while trying to {action} {service_name}'
+            }, status=500)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error executing {action} on {service_name}: {str(e)}'
+            }, status=500)
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid JSON in request body'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Unexpected error: {str(e)}'
+        }, status=500)

@@ -1,0 +1,23 @@
+[Unit]
+Description=Log Manager Service - Automatic log rotation and management
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/home/net/analyzer
+Environment="PATH=/home/net/analyzer/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONPATH=/home/net/analyzer"
+ExecStart=/home/net/analyzer/env/bin/python /home/net/analyzer/scripts/log_manager_optimized.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

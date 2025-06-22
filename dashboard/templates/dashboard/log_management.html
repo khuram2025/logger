@@ -206,6 +206,20 @@
                         </div>
                         {% endif %}
                     </div>
+                    
+                    <div class="service-controls">
+                        <button class="control-btn start-btn" onclick="controlService('{{ service_name }}', 'start')" 
+                                {% if service_info.active %}disabled{% endif %}>
+                            <i class="fas fa-play"></i> Start
+                        </button>
+                        <button class="control-btn stop-btn" onclick="controlService('{{ service_name }}', 'stop')" 
+                                {% if not service_info.active %}disabled{% endif %}>
+                            <i class="fas fa-stop"></i> Stop
+                        </button>
+                        <button class="control-btn restart-btn" onclick="controlService('{{ service_name }}', 'restart')">
+                            <i class="fas fa-redo"></i> Restart
+                        </button>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -624,6 +638,88 @@
 .refresh-indicator.show {
     opacity: 1;
 }
+
+/* Service Control Buttons */
+.service-controls {
+    padding: 1rem;
+    border-top: 1px solid #e1e5e9;
+    background: #f8f9fa;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.control-btn {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid;
+    background: white;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-weight: 500;
+}
+
+.control-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #f8f9fa;
+}
+
+.start-btn {
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.start-btn:hover:not(:disabled) {
+    background: #28a745;
+    color: white;
+}
+
+.stop-btn {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.stop-btn:hover:not(:disabled) {
+    background: #dc3545;
+    color: white;
+}
+
+.restart-btn {
+    border-color: #ffc107;
+    color: #856404;
+}
+
+.restart-btn:hover:not(:disabled) {
+    background: #ffc107;
+    color: #212529;
+}
+
+.control-btn.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.control-btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
 </style>
 
 <!-- Auto-refresh script -->
@@ -662,5 +758,106 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Service control function
+function controlService(serviceName, action) {
+    const button = event.target.closest('.control-btn');
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.classList.add('loading');
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + action.charAt(0).toUpperCase() + action.slice(1) + 'ing...';
+    
+    // Send AJAX request
+    fetch('{% url "service_control" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify({
+            service: serviceName,
+            action: action
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove loading state
+        button.classList.remove('loading');
+        button.disabled = false;
+        button.innerHTML = originalText;
+        
+        if (data.success) {
+            // Show success message
+            showNotification('success', data.message || `Service ${action} completed successfully`);
+            
+            // Refresh the page after a short delay to show updated status
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            // Show error message
+            showNotification('error', data.message || `Failed to ${action} service`);
+        }
+    })
+    .catch(error => {
+        // Remove loading state
+        button.classList.remove('loading');
+        button.disabled = false;
+        button.innerHTML = originalText;
+        
+        console.error('Error:', error);
+        showNotification('error', `Failed to ${action} service: ${error.message}`);
+    });
+}
+
+// Notification function
+function showNotification(type, message) {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Add notification styles
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#d4edda' : '#f8d7da'};
+        color: ${type === 'success' ? '#155724' : '#721c24'};
+        border: 1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'};
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        max-width: 400px;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 5000);
+}
 </script>
 {% endblock %}
