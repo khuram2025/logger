@@ -23,4 +23,6 @@ urlpatterns = [
     # Log Management
     path('log-management/', views.log_management_status_view, name='log_management'),
     path('log-management/service-control/', views.service_control_view, name='service_control'),
+    path('log-management/storage/', views.clickhouse_storage_view, name='clickhouse_storage'),
+    path('log-management/storage/allocation/', views.storage_allocation_view, name='storage_allocation'),
 ]

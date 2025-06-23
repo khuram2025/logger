@@ -253,6 +253,91 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- ClickHouse Storage Usage -->
+        <div class="storage-section">
+            <div class="storage-header">
+                <h3><i class="fas fa-database"></i> ClickHouse Storage Usage</h3>
+                <button class="btn-configure" onclick="showStorageConfig()">
+                    <i class="fas fa-cog"></i> Configure
+                </button>
+            </div>
+            <div class="storage-content" id="storageContent">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading storage information...
+                </div>
+            </div>
+        </div>
+
+        <!-- Storage Configuration Modal -->
+        <div id="storageConfigModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-cog"></i> Storage Configuration</h3>
+                    <span class="close" onclick="closeStorageConfig()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="storageConfigForm">
+                        <div class="form-group">
+                            <label for="allocatedSpace">Allocated Storage Space (GB)</label>
+                            <input type="number" id="allocatedSpace" name="allocated_space_gb" min="5" max="1000" step="1" required>
+                            <small id="allocationHelp">Minimum: 5 GB</small>
+                            <div id="filesystemInfo" class="filesystem-info" style="margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px; font-size: 0.85rem;">
+                                <strong>Filesystem Information:</strong><br>
+                                <span id="fsDetails">Loading...</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="storagePath">Storage Path</label>
+                            <input type="text" id="storagePath" name="storage_path" readonly>
+                            <small id="actualStoragePath"></small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="warningThreshold">Warning Threshold (%)</label>
+                            <input type="number" id="warningThreshold" name="warning_threshold_percentage" min="50" max="95" step="5" required>
+                            <small>Alert when usage reaches this percentage (50-95%)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="criticalThreshold">Critical Threshold (%)</label>
+                            <input type="number" id="criticalThreshold" name="critical_threshold_percentage" min="60" max="99" step="5" required>
+                            <small>Critical alert when usage reaches this percentage (60-99%)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="dataRetentionDays">Data Retention (Days)</label>
+                            <input type="number" id="dataRetentionDays" name="data_retention_days" min="30" max="365" step="1" value="90">
+                            <small>Automatically delete data older than this many days (30-365 days)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="enableAutoCleanup">Auto Cleanup</label>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" id="enableAutoCleanup" name="enable_auto_cleanup" checked>
+                                <span>Enable automatic cleanup of old data</span>
+                            </div>
+                            <small>When enabled, data older than retention period will be automatically deleted</small>
+                        </div>
+                        
+                        <div class="form-info">
+                            <p><strong>Last Updated:</strong> <span id="lastUpdated">Never</span></p>
+                            <p><strong>Updated By:</strong> <span id="updatedBy">-</span></p>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save"></i> Save Configuration
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="closeStorageConfig()">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -639,6 +724,318 @@
     opacity: 1;
 }
 
+/* Storage Section */
+.storage-section {
+    margin-top: 2rem;
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+}
+
+.storage-section h3 {
+    margin-bottom: 1.5rem;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.storage-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.storage-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    border: 1px solid #e1e5e9;
+}
+
+.storage-card h4 {
+    margin: 0 0 1rem 0;
+    color: #495057;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.storage-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.storage-metric-label {
+    color: #6c757d;
+    font-size: 0.85rem;
+}
+
+.storage-metric-value {
+    font-weight: 600;
+    color: #495057;
+}
+
+.storage-progress {
+    margin-top: 1rem;
+}
+
+.storage-progress-bar {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0.5rem 0;
+}
+
+.storage-progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.3s ease;
+}
+
+.storage-progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.storage-tables {
+    margin-top: 2rem;
+}
+
+.storage-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.storage-table th {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    text-align: left;
+    color: #495057;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.storage-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.storage-table tr:hover {
+    background: #f8f9fa;
+}
+
+.table-size {
+    font-weight: 600;
+    color: #495057;
+}
+
+.table-rows {
+    color: #6c757d;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+/* Storage Header */
+.storage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.btn-configure {
+    padding: 0.5rem 1rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-configure:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.form-info {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+}
+
+.form-info p {
+    margin: 0.25rem 0;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #495057;
+}
+
+.btn-secondary:hover {
+    background: #cbd5e0;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 /* Service Control Buttons */
 .service-controls {
     padding: 1rem;
@@ -724,6 +1121,343 @@
 
 <!-- Auto-refresh script -->
 <script>
+// Load ClickHouse storage information
+function loadStorageInfo() {
+    fetch('{% url "clickhouse_storage" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayStorageInfo(data);
+            } else {
+                document.getElementById('storageContent').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Failed to load storage information: ${data.error || 'Unknown error'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading storage info:', error);
+            document.getElementById('storageContent').innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Failed to load storage information
+                </div>
+            `;
+        });
+}
+
+// Display storage information
+function displayStorageInfo(data) {
+    const summary = data.summary;
+    const databases = data.databases || [];
+    const tables = data.tables || [];
+    const disks = data.disks || [];
+    
+    // Determine status color
+    let statusColor = '#28a745';  // green
+    let statusText = 'Normal';
+    if (summary.status === 'warning') {
+        statusColor = '#ffc107';  // yellow
+        statusText = 'Warning';
+    } else if (summary.status === 'critical') {
+        statusColor = '#dc3545';  // red
+        statusText = 'Critical';
+    }
+    
+    let html = `
+        <div class="storage-overview">
+            <div class="storage-card">
+                <h4><i class="fas fa-chart-pie"></i> Storage Summary</h4>
+                <div class="storage-metric">
+                    <span class="storage-metric-label">Actual Disk Usage:</span>
+                    <span class="storage-metric-value" style="font-weight: bold;">${summary.actual_disk_usage}</span>
+                </div>
+                <div class="storage-metric">
+                    <span class="storage-metric-label">ClickHouse Reported:</span>
+                    <span class="storage-metric-value">${summary.clickhouse_reported}</span>
+                </div>
+                <div class="storage-metric">
+                    <span class="storage-metric-label">Allocated Space:</span>
+                    <span class="storage-metric-value">${summary.allocated_space}</span>
+                </div>
+                <div class="storage-metric">
+                    <span class="storage-metric-label">Remaining:</span>
+                    <span class="storage-metric-value">${summary.remaining_space}</span>
+                </div>
+                <div class="storage-metric">
+                    <span class="storage-metric-label">Status:</span>
+                    <span class="storage-metric-value" style="color: ${statusColor}; font-weight: bold;">
+                        ${statusText}
+                    </span>
+                </div>
+                <div class="storage-metric">
+                    <span class="storage-metric-label">Storage Path:</span>
+                    <span class="storage-metric-value" style="font-size: 0.85rem;">
+                        ${summary.storage_path}
+                    </span>
+                </div>
+                <div class="storage-progress">
+                    <div class="storage-progress-bar">
+                        <div class="storage-progress-fill" style="width: ${summary.usage_percentage}%; background: ${statusColor};"></div>
+                    </div>
+                    <div class="storage-progress-text">
+                        <span>${summary.usage_percentage}% Used</span>
+                        <span>${100 - summary.usage_percentage}% Free</span>
+                    </div>
+                </div>
+                <div class="storage-info">
+                    <div class="storage-thresholds" style="margin-top: 0.5rem; font-size: 0.8rem; color: #6c757d;">
+                        Warning: ${summary.warning_threshold}% | Critical: ${summary.critical_threshold}%
+                    </div>
+                    <div class="usage-source" style="margin-top: 0.25rem; font-size: 0.75rem; color: #868e96; font-style: italic;">
+                        Calculation based on: ${summary.usage_source === 'filesystem' ? 'Actual filesystem usage' : 'ClickHouse reported data'}
+                    </div>
+                </div>
+            </div>
+    `;
+    
+    // Add disk information
+    if (disks.length > 0) {
+        disks.forEach(disk => {
+            html += `
+                <div class="storage-card">
+                    <h4><i class="fas fa-hdd"></i> Disk: ${disk.name}</h4>
+                    <div class="storage-metric">
+                        <span class="storage-metric-label">Total Space:</span>
+                        <span class="storage-metric-value">${disk.total_space}</span>
+                    </div>
+                    <div class="storage-metric">
+                        <span class="storage-metric-label">Used Space:</span>
+                        <span class="storage-metric-value">${disk.used_space}</span>
+                    </div>
+                    <div class="storage-metric">
+                        <span class="storage-metric-label">Free Space:</span>
+                        <span class="storage-metric-value">${disk.free_space}</span>
+                    </div>
+                    <div class="storage-progress">
+                        <div class="storage-progress-bar">
+                            <div class="storage-progress-fill" style="width: ${disk.used_percentage}%"></div>
+                        </div>
+                        <div class="storage-progress-text">
+                            <span>${disk.used_percentage}% Used</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    html += '</div>';
+    
+    // Add filesystem information if available
+    if (data.filesystem) {
+        const fs = data.filesystem;
+        html += `
+            <div class="storage-overview" style="margin-top: 1rem;">
+                <div class="storage-card">
+                    <h4><i class="fas fa-hdd"></i> Filesystem Information</h4>
+                    <div class="storage-metric">
+                        <span class="storage-metric-label">Total Filesystem:</span>
+                        <span class="storage-metric-value">${fs.total_formatted}</span>
+                    </div>
+                    <div class="storage-metric">
+                        <span class="storage-metric-label">Used by System:</span>
+                        <span class="storage-metric-value">${fs.used_formatted} (${fs.used_percentage}%)</span>
+                    </div>
+                    <div class="storage-metric">
+                        <span class="storage-metric-label">Available Space:</span>
+                        <span class="storage-metric-value">${fs.free_formatted}</span>
+                    </div>
+                    <div class="storage-progress">
+                        <div class="storage-progress-bar">
+                            <div class="storage-progress-fill" style="width: ${fs.used_percentage}%; background: #6c757d;"></div>
+                        </div>
+                        <div class="storage-progress-text">
+                            <span>${fs.used_percentage}% System Used</span>
+                            <span>${100 - fs.used_percentage}% Available</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #6c757d;">
+                        Based on: ${summary.storage_path}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Add tables information
+    if (tables.length > 0) {
+        html += `
+            <div class="storage-tables">
+                <h4><i class="fas fa-table"></i> Table Storage Details</h4>
+                <table class="storage-table">
+                    <thead>
+                        <tr>
+                            <th>Table Name</th>
+                            <th>Size on Disk</th>
+                            <th>Compressed</th>
+                            <th>Uncompressed</th>
+                            <th>Row Count</th>
+                            <th>Parts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        tables.forEach(table => {
+            html += `
+                <tr>
+                    <td><strong>${table.name}</strong></td>
+                    <td class="table-size">${table.size}</td>
+                    <td>${table.compressed_size}</td>
+                    <td>${table.uncompressed_size}</td>
+                    <td class="table-rows">${table.rows.toLocaleString()}</td>
+                    <td>${table.parts}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    document.getElementById('storageContent').innerHTML = html;
+}
+
+// Load storage info on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadStorageInfo();
+    
+    // Setup storage config form
+    document.getElementById('storageConfigForm').addEventListener('submit', saveStorageConfig);
+});
+
+// Show storage configuration modal
+function showStorageConfig() {
+    // Load current configuration
+    fetch('{% url "storage_allocation" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const settings = data.settings;
+                document.getElementById('allocatedSpace').value = settings.allocated_space_gb;
+                document.getElementById('storagePath').value = settings.storage_path;
+                document.getElementById('warningThreshold').value = settings.warning_threshold_percentage;
+                document.getElementById('criticalThreshold').value = settings.critical_threshold_percentage;
+                document.getElementById('dataRetentionDays').value = settings.data_retention_days || 90;
+                document.getElementById('enableAutoCleanup').checked = settings.enable_auto_cleanup !== false;
+                
+                if (settings.actual_storage_path) {
+                    document.getElementById('actualStoragePath').textContent = 
+                        `Actual ClickHouse path: ${settings.actual_storage_path}`;
+                }
+                
+                // Update filesystem information
+                if (settings.filesystem) {
+                    const fs = settings.filesystem;
+                    document.getElementById('fsDetails').innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <div>Total: ${fs.total_space}</div>
+                            <div>Used: ${fs.used_space} (${fs.used_percentage}%)</div>
+                            <div>Available: ${fs.free_space}</div>
+                            <div>Max Allocation: ${fs.max_allocation_gb} GB</div>
+                        </div>
+                    `;
+                    
+                    // Update input validation
+                    const allocInput = document.getElementById('allocatedSpace');
+                    allocInput.max = fs.max_allocation_gb;
+                    
+                    // Update help text
+                    document.getElementById('allocationHelp').textContent = 
+                        `Minimum: 5 GB, Maximum: ${fs.max_allocation_gb} GB (available space), Recommended: ${fs.recommended_max_gb} GB`;
+                } else {
+                    document.getElementById('fsDetails').textContent = 'Filesystem information unavailable';
+                }
+                
+                if (settings.last_updated) {
+                    const date = new Date(settings.last_updated);
+                    document.getElementById('lastUpdated').textContent = date.toLocaleString();
+                } else {
+                    document.getElementById('lastUpdated').textContent = 'Never';
+                }
+                
+                document.getElementById('updatedBy').textContent = settings.updated_by || '-';
+                
+                // Show modal
+                document.getElementById('storageConfigModal').style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading storage config:', error);
+            showNotification('error', 'Failed to load storage configuration');
+        });
+}
+
+// Close storage configuration modal
+function closeStorageConfig() {
+    document.getElementById('storageConfigModal').style.display = 'none';
+}
+
+// Save storage configuration
+function saveStorageConfig(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const data = {};
+    formData.forEach((value, key) => {
+        data[key] = value;
+    });
+    
+    // Show loading state
+    const submitBtn = event.target.querySelector('.btn-primary');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    fetch('{% url "storage_allocation" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('success', 'Storage configuration saved successfully');
+            closeStorageConfig();
+            // Reload storage info to reflect new allocation
+            loadStorageInfo();
+        } else {
+            showNotification('error', data.error || 'Failed to save configuration');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving storage config:', error);
+        showNotification('error', 'Failed to save storage configuration');
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('storageConfigModal');
+    if (event.target == modal) {
+        closeStorageConfig();
+    }
+}
+
 // Auto-refresh the page every {{ refresh_interval }} seconds
 {% if refresh_interval %}
 setTimeout(function() {

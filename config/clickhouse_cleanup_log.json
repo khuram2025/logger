@@ -1,0 +1,23 @@
+{
+  "cleanup_runs": [
+    {
+      "timestamp": "2025-06-23T10:36:09.427743",
+      "records_deleted": 0,
+      "retention_days": 90,
+      "status": "completed"
+    },
+    {
+      "timestamp": "2025-06-23T10:36:25.470672",
+      "records_deleted": 0,
+      "retention_days": 90,
+      "status": "completed"
+    }
+  ],
+  "last_run": {
+    "timestamp": "2025-06-23T10:36:25.470672",
+    "records_deleted": 0,
+    "retention_days": 90,
+    "status": "completed"
+  },
+  "total_runs": 2
+}

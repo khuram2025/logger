@@ -1,0 +1,8 @@
+{
+  "path": "/var/lib/clickhouse/",
+  "usage_bytes": 30064771072,
+  "usage_formatted": "28.0 GB",
+  "timestamp": "2025-06-23T09:30:00.000000",
+  "status": "success",
+  "note": "Manually set based on sudo du -h /var/lib/clickhouse/ showing 28G"
+}
