@@ -2821,3 +2821,187 @@ def service_control_view(request):
             'success': False,
             'message': f'Unexpected error: {str(e)}'
         }, status=500)
+
+def pa_url_logs_view(request):
+    """Palo Alto URL filtering logs view"""
+    client = Client(
+        host=CH_HOST,
+        port=CH_PORT,
+        user=CH_USER,
+        password=CH_PASSWORD,
+        database=CH_DB
+    )
+    
+    # Time filter
+    time_range = request.GET.get('time_range', 'last_hour')
+    now = datetime.utcnow()
+    
+    if time_range == 'last_6_hours':
+        since = now - timedelta(hours=6)
+    elif time_range == 'last_24_hours':
+        since = now - timedelta(hours=24)
+    elif time_range == 'last_7_days':
+        since = now - timedelta(days=7)
+    elif time_range == 'custom':
+        time_from = request.GET.get('time_from', '')
+        time_to = request.GET.get('time_to', '')
+        
+        if time_from:
+            try:
+                since = datetime.strptime(time_from, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                since = now - timedelta(hours=1)
+        else:
+            since = now - timedelta(hours=1)
+    else:  # default to last_hour
+        since = now - timedelta(hours=1)
+    
+    since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Create user-friendly time range display
+    time_range_display = {
+        'last_hour': 'Last Hour',
+        'last_6_hours': 'Last 6 Hours', 
+        'last_24_hours': 'Last 24 Hours',
+        'last_7_days': 'Last 7 Days',
+        'custom': 'Custom Range'
+    }.get(time_range, 'Last Hour')
+    
+    # Get filter values
+    url_filter = request.GET.get('url', '').strip()
+    src_ip_filter = request.GET.get('src_ip', '').strip()
+    dst_ip_filter = request.GET.get('dst_ip', '').strip()
+    category_filter = request.GET.get('category', '').strip()
+    action_filter = request.GET.get('action', '').strip()
+    severity_filter = request.GET.get('severity', '').strip()
+    device_filter = request.GET.get('device', '').strip()
+    
+    # Build WHERE clause
+    where_conditions = [f"timestamp >= '{since_str}'"]
+    
+    if url_filter:
+        where_conditions.append(f"url ILIKE '%{url_filter}%'")
+    if src_ip_filter:
+        where_conditions.append(f"source_address ILIKE '%{src_ip_filter}%'")
+    if dst_ip_filter:
+        where_conditions.append(f"destination_address ILIKE '%{dst_ip_filter}%'")
+    if category_filter:
+        where_conditions.append(f"url_category ILIKE '%{category_filter}%'")
+    if action_filter:
+        where_conditions.append(f"action ILIKE '%{action_filter}%'")
+    if severity_filter:
+        where_conditions.append(f"action = '{severity_filter}'")  # Using action field since no severity in this table
+    if device_filter:
+        where_conditions.append(f"device_name ILIKE '%{device_filter}%'")
+    
+    where_clause = " AND ".join(where_conditions)
+    
+    # Pagination
+    page = request.GET.get('page', '1')
+    try:
+        page = int(page)
+    except ValueError:
+        page = 1
+    
+    page_size = 50
+    offset = (page - 1) * page_size
+    
+    # Main query
+    query = f"""
+        SELECT 
+            timestamp,
+            device_name,
+            source_address,
+            destination_address,
+            url,
+            url_category,
+            action,
+            source_user,
+            application,
+            rule_name,
+            http_method,
+            response_code,
+            user_agent
+        FROM pa_urls 
+        WHERE {where_clause}
+        ORDER BY timestamp DESC 
+        LIMIT {page_size} OFFSET {offset}
+    """
+    
+    # Count query
+    count_query = f"""
+        SELECT COUNT(*) FROM pa_urls WHERE {where_clause}
+    """
+    
+    try:
+        logs = client.execute(query)
+        total_count = client.execute(count_query)[0][0]
+        
+        # Format logs for template
+        formatted_logs = []
+        for log in logs:
+            formatted_logs.append({
+                'generated_time': log[0],  # timestamp
+                'device_name': log[1],     # device_name
+                'src_ip': log[2],          # source_address
+                'dst_ip': log[3],          # destination_address
+                'url': log[4],             # url
+                'category': log[5],        # url_category
+                'action': log[6],          # action
+                'src_user': log[7],        # source_user
+                'application': log[8],     # application
+                'rule_name': log[9],       # rule_name
+                'http_method': log[10],    # http_method
+                'response_code': log[11],  # response_code
+                'user_agent': log[12],     # user_agent
+                'src_port': '',            # No port data in this table
+                'dst_port': '',            # No port data in this table
+                'severity': log[6]         # Using action as severity
+            })
+        
+        # Pagination info
+        total_pages = math.ceil(total_count / page_size)
+        has_next = page < total_pages
+        has_prev = page > 1
+        
+        # Get unique values for filters
+        categories = client.execute("SELECT DISTINCT url_category FROM pa_urls WHERE url_category != '' ORDER BY url_category")
+        actions = client.execute("SELECT DISTINCT action FROM pa_urls WHERE action != '' ORDER BY action")
+        severities = client.execute("SELECT DISTINCT action FROM pa_urls WHERE action != '' ORDER BY action")  # Using action as severity
+        devices = client.execute("SELECT DISTINCT device_name FROM pa_urls WHERE device_name != '' ORDER BY device_name")
+        
+    except Exception as e:
+        formatted_logs = []
+        total_count = 0
+        total_pages = 0
+        has_next = False
+        has_prev = False
+        categories = []
+        actions = []
+        severities = []
+        devices = []
+        print(f"Database error: {e}")
+    
+    context = {
+        'logs': formatted_logs,
+        'total_count': total_count,
+        'page': page,
+        'total_pages': total_pages,
+        'has_next': has_next,
+        'has_prev': has_prev,
+        'time_range': time_range,
+        'time_range_display': time_range_display,
+        'url_filter': url_filter,
+        'src_ip_filter': src_ip_filter,
+        'dst_ip_filter': dst_ip_filter,
+        'category_filter': category_filter,
+        'action_filter': action_filter,
+        'severity_filter': severity_filter,
+        'device_filter': device_filter,
+        'categories': [row[0] for row in categories],
+        'actions': [row[0] for row in actions],
+        'severities': [row[0] for row in severities],
+        'devices': [row[0] for row in devices],
+    }
+    
+    return render(request, 'dashboard/pa_url_logs.html', context)

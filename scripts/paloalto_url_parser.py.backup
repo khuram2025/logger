@@ -1,0 +1,264 @@
+#!/usr/bin/env python3
+"""
+paloalto_url_parser.py
+
+Simple Palo Alto URL filtering log parser that processes THREAT,url logs
+and inserts them into ClickHouse network_logs.pa_urls table.
+"""
+
+import os
+import time
+import logging
+from datetime import datetime
+from clickhouse_driver import Client
+# Removed watchdog - using simple file polling instead
+import threading
+import signal
+import sys
+
+# ── Configuration ─────────────────────────────────────────────────────────────
+CH_HOST     = os.getenv('CH_HOST',     'localhost')
+CH_PORT     = int(os.getenv('CH_PORT',     '9000'))
+CH_USER     = os.getenv('CH_USER',     'default')
+CH_PASSWORD = os.getenv('CH_PASSWORD', 'Read@123')
+CH_DB       = os.getenv('CH_DB',       'network_logs')
+
+LOG_FILE    = '/var/log/paloalto-1004.log'
+
+# ── Logging Setup ─────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,  # Back to INFO level
+    format='%(asctime)s %(levelname)s [PaloAlto-URL] %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('/var/log/paloalto-url-processor.log')
+    ]
+)
+
+# ── ClickHouse Client ─────────────────────────────────────────────────────────
+CLIENT = Client(
+    host=CH_HOST,
+    port=CH_PORT,
+    user=CH_USER,
+    password=CH_PASSWORD,
+    database=CH_DB
+)
+
+def parse_url_log(line: str) -> dict:
+    """Parse a Palo Alto URL filtering log line"""
+    try:
+        # Parse syslog format: timestamp hostname device_name message
+        parts = line.split(' ', 4)
+        if len(parts) < 5:
+            return None
+            
+        # Extract device name
+        device_name = parts[3]
+        
+        # Parse CSV fields
+        csv_data = parts[4]
+        fields = csv_data.split(',')
+        
+        # Check if this is a THREAT,url log
+        if len(fields) < 5 or fields[3] != 'THREAT' or fields[4] != 'url':
+            return None
+        
+        # Extract key fields matching the table schema
+        data = {}
+        
+        # Parse timestamp (field 6: generated_time)
+        if len(fields) > 6:
+            try:
+                timestamp_str = fields[6]
+                data['timestamp'] = datetime.strptime(timestamp_str, "%Y/%m/%d %H:%M:%S")
+            except ValueError:
+                data['timestamp'] = datetime.now()
+        else:
+            data['timestamp'] = datetime.now()
+        
+        # Extract URL (field 31)
+        data['url'] = fields[31].strip('"') if len(fields) > 31 else ''
+        
+        # Extract URL domain
+        if data['url']:
+            if data['url'].startswith('http'):
+                # Full URL
+                try:
+                    domain = data['url'].split('//')[1].split('/')[0]
+                except:
+                    domain = data['url']
+            else:
+                # Just domain/path
+                domain = data['url'].split('/')[0]
+            data['url_domain'] = domain
+        else:
+            data['url_domain'] = ''
+        
+        # Extract other fields
+        data['url_category'] = fields[33] if len(fields) > 33 else ''
+        data['action'] = fields[30] if len(fields) > 30 else ''
+        data['source_address'] = fields[7] if len(fields) > 7 else ''
+        data['destination_address'] = fields[8] if len(fields) > 8 else ''
+        data['device_name'] = device_name
+        data['http_method'] = 'GET'  # Default since not in this log format
+        data['response_code'] = 0
+        data['user_agent'] = fields[45].strip('"') if len(fields) > 45 else ''
+        data['source_user'] = fields[12] if len(fields) > 12 else ''
+        data['rule_name'] = fields[11] if len(fields) > 11 else ''
+        data['application'] = fields[14] if len(fields) > 14 else ''
+        data['bytes_sent'] = 0
+        data['bytes_received'] = 0
+        data['raw_message'] = line.rstrip('\n')
+        
+        # Validate required fields
+        if not data.get('url') or not data.get('source_address') or not data.get('destination_address'):
+            return None
+            
+        return data
+        
+    except Exception as e:
+        logging.error(f"Error parsing URL log line: {e}")
+        return None
+
+# ── Log Handler ─────────────────────────────────────────────────────
+BATCH_SIZE = 50  # Reasonable batch size for production
+BATCH_FLUSH_INTERVAL = 5
+
+class URLLogHandler:
+    def __init__(self, filepath, buffer, buffer_lock, process_batch_func):
+        self.filepath = filepath
+        self.buffer = buffer
+        self.buffer_lock = buffer_lock
+        self.process_batch_func = process_batch_func
+        
+        self.total_lines_processed = 0
+        self.total_urls_processed = 0
+        self.last_position = 0
+        
+        # Get initial file size
+        try:
+            self.last_position = os.path.getsize(self.filepath)
+            logging.info(f"Starting from position {self.last_position} in {self.filepath}")
+        except Exception as e:
+            logging.error(f"Error getting file size: {e}")
+            self.last_position = 0
+    
+    def check_for_new_lines(self):
+        """Check for new lines in the log file"""
+        try:
+            current_size = os.path.getsize(self.filepath)
+            
+            if current_size > self.last_position:
+                # File has grown, read new lines
+                with open(self.filepath, 'r') as f:
+                    f.seek(self.last_position)
+                    
+                    lines_read = 0
+                    urls_found = 0
+                    
+                    for line in f:
+                        lines_read += 1
+                        self.total_lines_processed += 1
+                        
+                        # Only process THREAT,url logs
+                        if 'THREAT,url,' in line:
+                            parsed_data = parse_url_log(line)
+                            if parsed_data:
+                                urls_found += 1
+                                self.total_urls_processed += 1
+                                
+                                with self.buffer_lock:
+                                    self.buffer.append(parsed_data)
+                                    if len(self.buffer) >= BATCH_SIZE:
+                                        logging.info(f"Buffer full ({len(self.buffer)}), processing batch")
+                                        self.process_batch_func()
+                    
+                    self.last_position = current_size
+                    
+                    if lines_read > 0:
+                        logging.info(f"Processed {lines_read} lines, found {urls_found} URL logs (total URLs: {self.total_urls_processed})")
+                        
+            elif current_size < self.last_position:
+                # File was rotated or truncated
+                logging.info("Log file appears to have been rotated, resetting position")
+                self.last_position = 0
+                        
+        except Exception as e:
+            logging.error(f"Error checking for new lines: {e}")
+
+# ── Main Processing Function ─────────────────────────────────────────────────
+def main():
+    """Main function for URL log processing"""
+    
+    # Table fields matching the actual schema
+    table_fields = [
+        'timestamp', 'url', 'url_domain', 'url_category', 'action', 
+        'source_address', 'destination_address', 'device_name', 'http_method', 
+        'response_code', 'user_agent', 'source_user', 'rule_name', 
+        'application', 'bytes_sent', 'bytes_received', 'raw_message'
+    ]
+    
+    insert_query = f"""
+        INSERT INTO {CH_DB}.pa_urls ({', '.join(table_fields)}) VALUES
+    """
+    
+    logging.info("Starting Simple Palo Alto URL filtering log processor")
+    logging.info(f"Monitoring: {LOG_FILE}")
+    logging.info(f"ClickHouse: {CH_HOST}:{CH_PORT}/{CH_DB}")
+
+    buffer = []
+    buffer_lock = threading.Lock()
+
+    def process_batch():
+        with buffer_lock:
+            if not buffer:
+                return
+            batch = buffer[:]
+            buffer.clear()
+            logging.info(f"Processing batch of {len(batch)} records")
+            
+        if not batch:
+            return
+            
+        # Prepare rows for insertion
+        rows = []
+        for record in batch:
+            try:
+                row = []
+                for field in table_fields:
+                    row.append(record.get(field, ''))
+                rows.append(row)
+            except Exception as e:
+                logging.error(f"Error preparing row: {e}")
+                
+        if rows:
+            try:
+                CLIENT.execute(insert_query, rows)
+                logging.info(f"✅ Inserted {len(rows)} URL log records to ClickHouse")
+            except Exception as e:
+                logging.error(f"❌ Batch insert error: {e}")
+
+    # Create file handler
+    handler = URLLogHandler(LOG_FILE, buffer, buffer_lock, process_batch)
+    
+    logging.info(f"👀 Monitoring started for URL logs in: {LOG_FILE}")
+
+    def flush_and_exit(signum, frame):
+        logging.info("🛑 Shutting down URL processor...")
+        process_batch()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, flush_and_exit)
+    signal.signal(signal.SIGTERM, flush_and_exit)
+
+    try:
+        while True:
+            handler.check_for_new_lines()
+            process_batch()
+            time.sleep(BATCH_FLUSH_INTERVAL)
+            
+    except KeyboardInterrupt:
+        flush_and_exit(None, None)
+
+if __name__ == '__main__':
+    main()

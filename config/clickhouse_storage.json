@@ -1,8 +1,10 @@
 {
-    "allocated_space_gb": 20,
+    "allocated_space_gb": 100,
     "storage_path": "/var/lib/clickhouse",
     "warning_threshold_percentage": 80,
     "critical_threshold_percentage": 90,
-    "last_updated": "2025-06-23T10:34:01.835187",
-    "updated_by": "anonymous"
+    "last_updated": "2025-06-23T12:09:53.194233",
+    "updated_by": "anonymous",
+    "data_retention_days": 90,
+    "enable_auto_cleanup": true
 }

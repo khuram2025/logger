@@ -25,4 +25,6 @@ urlpatterns = [
     path('log-management/service-control/', views.service_control_view, name='service_control'),
     path('log-management/storage/', views.clickhouse_storage_view, name='clickhouse_storage'),
     path('log-management/storage/allocation/', views.storage_allocation_view, name='storage_allocation'),
+    # Palo Alto URL Logs
+    path('pa-url-logs/', views.pa_url_logs_view, name='pa_url_logs'),
 ]

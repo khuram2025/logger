@@ -1,0 +1,572 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}PA URL Logs{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='pa_url_logs' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+<div class="logs-page-container">
+    <div class="logs-main-content">
+        <div class="logs-content-header">
+            <div class="controls-bar logs-controls-row">
+                <div class="logs-controls-group">
+                    <div class="search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search URL logs..." id="globalSearch" />
+                    </div>
+                    <div class="log-summary">
+                        Total: <span id="total-logs">{{ total_count|default:"0" }}</span> URL Logs 
+                        {% if total_count|default:0 > 1000 %}(Log Throttling may be ON){% endif %}
+                    </div>
+                    <div class="date-range-display">
+                        {{ time_range_display|default:"Last Hour" }}
+                    </div>
+                    <div class="action-buttons">
+                        <button class="icon-text-button" onclick="refreshLogs()"><i class="fas fa-sync-alt"></i></button>
+                        <button class="icon-text-button" onclick="toggleFilters()"><i class="fas fa-filter"></i></button>
+                        <button class="icon-text-button"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+        .status-label {
+            padding: 0.2em 0.6em;
+            border-radius: 0.25em;
+            font-weight: bold;
+            font-size: 0.85em;
+            text-transform: capitalize;
+        }
+        .status-deny {
+            background-color: #dc3545; /* Red */
+            color: white;
+        }
+        .status-accept {
+            background-color: #28a745; /* Green */
+            color: white;
+        }
+        .status-alert {
+            background-color: #ffc107; /* Yellow */
+            color: black;
+        }
+        .status-other {
+            background-color: #6c757d; /* Gray */
+            color: white;
+        }
+
+        .severity-badge {
+            padding: 0.2em 0.6em;
+            border-radius: 0.25em;
+            font-weight: bold;
+            font-size: 0.8em;
+            text-transform: capitalize;
+        }
+        .severity-high {
+            background-color: #dc3545; /* Red */
+            color: white;
+        }
+        .severity-medium {
+            background-color: #fd7e14; /* Orange */
+            color: white;
+        }
+        .severity-low {
+            background-color: #28a745; /* Green */
+            color: white;
+        }
+        .severity-informational {
+            background-color: #17a2b8; /* Info blue */
+            color: white;
+        }
+        .severity-unknown {
+            background-color: #6c757d; /* Secondary gray */
+            color: white;
+        }
+
+        .category-badge {
+            padding: 0.2em 0.6em;
+            border-radius: 0.25em;
+            font-weight: bold;
+            font-size: 0.8em;
+            background-color: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+
+        .logs-controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .logs-controls-group {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+        }
+        .logs-controls-filter {
+            min-width: 260px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        @media (max-width: 900px) {
+            .logs-controls-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.8rem;
+            }
+            .logs-controls-group {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.7rem;
+            }
+            .logs-controls-filter {
+                justify-content: flex-start;
+            }
+        }
+
+        /* Professional Filter Sidebar Styles */
+        .logs-page-container {
+            display: flex;
+            gap: 20px;
+            max-width: 100%;
+            overflow: visible;
+            width: 100%;
+        }
+
+        .logs-main-content {
+            flex: 1;
+            min-width: 0;
+            width: calc(100% - 300px);
+            overflow-x: auto;
+        }
+
+        .logs-filter-sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e1e5e9;
+            height: fit-content;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            display: block;
+            visibility: visible;
+        }
+
+        .logs-filter-sidebar.hidden {
+            display: none;
+        }
+
+        .logs-main-content.sidebar-hidden {
+            width: 100%;
+        }
+
+        .logs-table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .filter-sidebar-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 12px 16px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .filter-sidebar-header h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-sidebar-header h3 i {
+            color: #667eea;
+            font-size: 12px;
+        }
+
+        .clear-all-filters {
+            background: none;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .time-tab {
+            padding: 6px 10px;
+            border: 1px solid #dee2e6;
+            background: #fff;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .time-tab:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .time-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+        }
+
+        .filter-section {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #f1f3f4;
+            padding: 12px 16px;
+        }
+
+        .filter-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            color: #495057;
+        }
+
+        .filter-section-header i {
+            color: #667eea;
+            font-size: 11px;
+        }
+
+        .filter-section-content {
+            margin-top: 8px;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 11px;
+            transition: border-color 0.2s ease;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .logs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .logs-table th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .logs-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f3f4;
+            font-size: 11px;
+            vertical-align: middle;
+        }
+
+        .logs-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .url-link {
+            color: #0066cc;
+            text-decoration: none;
+            max-width: 200px;
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .url-link:hover {
+            text-decoration: underline;
+        }
+        </style>
+
+        <div class="logs-table-container">
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Action</th>
+                        <th>Source IP</th>
+                        <th>Destination IP</th>
+                        <th>URL</th>
+                        <th>Category</th>
+                        <th>Severity</th>
+                        <th>User</th>
+                        <th>Application</th>
+                        <th>Rule</th>
+                    </tr>
+                </thead>
+                <tbody id="logsTableBody">
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.generated_time|date:"M d, H:i:s" }}</td>
+                        <td>
+                            <span class="status-label 
+                                {% if log.action|lower == 'deny' %}status-deny
+                                {% elif log.action|lower == 'accept' or log.action|lower == 'allow' %}status-accept
+                                {% elif log.action|lower == 'alert' %}status-alert
+                                {% else %}status-other{% endif %}">
+                                {{ log.action|default:"N/A" }}
+                            </span>
+                        </td>
+                        <td>{{ log.src_ip }}{% if log.src_port %}:{{ log.src_port }}{% endif %}</td>
+                        <td>{{ log.dst_ip }}{% if log.dst_port %}:{{ log.dst_port }}{% endif %}</td>
+                        <td>
+                            {% if log.url %}
+                                <a href="{{ log.url }}" target="_blank" class="url-link" title="{{ log.url }}">
+                                    {{ log.url }}
+                                </a>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="category-badge">{{ log.category|default:"N/A" }}</span>
+                        </td>
+                        <td>
+                            <span class="severity-badge severity-{{ log.severity|default:'unknown' }}">
+                                {{ log.severity|default:"N/A" }}
+                            </span>
+                        </td>
+                        <td>{{ log.src_user|default:"N/A" }}</td>
+                        <td>{{ log.application|default:"N/A" }}</td>
+                        <td title="{{ log.rule_name }}">{{ log.rule_name|default:"N/A"|truncatechars:20 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 20px;">No URL logs found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination Bar -->
+            {% if total_pages > 1 %}
+            <div class="pagination-bar" style="display: flex; justify-content: center; align-items: center; margin: 24px 0;">
+                <nav aria-label="URL Logs pagination">
+                    <ul class="pagination" style="display: flex; gap: 4px; list-style: none; padding: 0;">
+                        {% if has_prev %}
+                        <li><a class="pagination-link" href="?page={{ page|add:'-1' }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">« Previous</a></li>
+                        {% else %}
+                        <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">« Previous</span></li>
+                        {% endif %}
+                        
+                        {% for page_num in "12345"|make_list %}
+                            {% if page_num|add:"0" <= total_pages %}
+                                {% if page == page_num|add:"0" %}
+                                    <li><span class="pagination-link active" style="padding: 6px 12px; border: 1px solid #007bff; background: #007bff; color: #fff; border-radius: 4px;">{{ page_num }}</span></li>
+                                {% else %}
+                                    <li><a class="pagination-link" href="?page={{ page_num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a></li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if has_next %}
+                        <li><a class="pagination-link" href="?page={{ page|add:'1' }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">Next »</a></li>
+                        {% else %}
+                        <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">Next »</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Professional Filter Sidebar -->
+    <div class="logs-filter-sidebar" id="filterSidebar">
+        <div class="filter-sidebar-header">
+            <h3><i class="fas fa-filter"></i> URL Filters</h3>
+            <button class="clear-all-filters" onclick="clearAllFilters()">
+                <i class="fas fa-times"></i> Clear All
+            </button>
+        </div>
+        
+        <div class="filter-sections">
+            <!-- Time Range Filter -->
+            <div class="filter-section">
+                <div class="filter-section-header">
+                    <i class="fas fa-clock"></i>
+                    <span>Time Range</span>
+                </div>
+                <div class="filter-section-content">
+                    <form method="get" id="filterForm">
+                        <div class="time-range-tabs" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-bottom: 12px;">
+                            <button type="submit" name="time_range" value="last_hour" class="time-tab {% if time_range == 'last_hour' %}active{% endif %}">1H</button>
+                            <button type="submit" name="time_range" value="last_6_hours" class="time-tab {% if time_range == 'last_6_hours' %}active{% endif %}">6H</button>
+                            <button type="submit" name="time_range" value="last_24_hours" class="time-tab {% if time_range == 'last_24_hours' %}active{% endif %}">24H</button>
+                            <button type="submit" name="time_range" value="last_7_days" class="time-tab {% if time_range == 'last_7_days' %}active{% endif %}">7D</button>
+                        </div>
+                </div>
+            </div>
+
+            <!-- URL Filter -->
+            <div class="filter-section">
+                <div class="filter-section-header">
+                    <i class="fas fa-link"></i>
+                    <span>URL</span>
+                </div>
+                <div class="filter-section-content">
+                    <input type="text" name="url" class="filter-input" placeholder="Search URL..." value="{{ url_filter }}">
+                </div>
+            </div>
+
+            <!-- IP Filters -->
+            <div class="filter-section">
+                <div class="filter-section-header">
+                    <i class="fas fa-network-wired"></i>
+                    <span>IP Addresses</span>
+                </div>
+                <div class="filter-section-content" style="display: grid; gap: 8px;">
+                    <input type="text" name="src_ip" class="filter-input" placeholder="Source IP..." value="{{ src_ip_filter }}">
+                    <input type="text" name="dst_ip" class="filter-input" placeholder="Destination IP..." value="{{ dst_ip_filter }}">
+                </div>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="filter-section">
+                <div class="filter-section-header">
+                    <i class="fas fa-tags"></i>
+                    <span>Category</span>
+                </div>
+                <div class="filter-section-content">
+                    <select name="category" class="filter-input">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if category_filter == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Action Filter -->
+            <div class="filter-section">
+                <div class="filter-section-header">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Action</span>
+                </div>
+                <div class="filter-section-content">
+                    <select name="action" class="filter-input">
+                        <option value="">All Actions</option>
+                        {% for act in actions %}
+                            <option value="{{ act }}" {% if action_filter == act %}selected{% endif %}>{{ act }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Severity Filter -->
+            <div class="filter-section">
+                <div class="filter-section-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Severity</span>
+                </div>
+                <div class="filter-section-content">
+                    <select name="severity" class="filter-input">
+                        <option value="">All Severities</option>
+                        {% for sev in severities %}
+                            <option value="{{ sev }}" {% if severity_filter == sev %}selected{% endif %}>{{ sev }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Device Filter -->
+            <div class="filter-section">
+                <div class="filter-section-header">
+                    <i class="fas fa-server"></i>
+                    <span>Device</span>
+                </div>
+                <div class="filter-section-content">
+                    <select name="device" class="filter-input">
+                        <option value="">All Devices</option>
+                        {% for dev in devices %}
+                            <option value="{{ dev }}" {% if device_filter == dev %}selected{% endif %}>{{ dev }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="padding: 12px; border-top: 1px solid #e9ecef; background: #f8f9fa;">
+                <button type="submit" class="btn btn-primary btn-sm" style="width: 100%; padding: 8px; background: #667eea; border: none; border-radius: 4px; color: white; font-size: 11px; cursor: pointer;">
+                    <i class="fas fa-search"></i> Apply Filters
+                </button>
+            </div>
+                    </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshLogs() {
+    window.location.reload();
+}
+
+function toggleFilters() {
+    const sidebar = document.getElementById('filterSidebar');
+    const mainContent = document.querySelector('.logs-main-content');
+    
+    if (sidebar.classList.contains('hidden')) {
+        sidebar.classList.remove('hidden');
+        mainContent.classList.remove('sidebar-hidden');
+    } else {
+        sidebar.classList.add('hidden');
+        mainContent.classList.add('sidebar-hidden');
+    }
+}
+
+function clearAllFilters() {
+    window.location.href = '{% url "pa_url_logs" %}';
+}
+</script>
+{% endblock %}
