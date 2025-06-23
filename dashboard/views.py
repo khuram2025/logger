@@ -2922,7 +2922,7 @@ def pa_url_logs_view(request):
             http_method,
             response_code,
             user_agent
-        FROM pa_urls 
+        FROM pa_urls_optimized 
         WHERE {where_clause}
         ORDER BY timestamp DESC 
         LIMIT {page_size} OFFSET {offset}
@@ -2930,7 +2930,7 @@ def pa_url_logs_view(request):
     
     # Count query
     count_query = f"""
-        SELECT COUNT(*) FROM pa_urls WHERE {where_clause}
+        SELECT COUNT(*) FROM pa_urls_optimized WHERE {where_clause}
     """
     
     try:
@@ -2965,10 +2965,10 @@ def pa_url_logs_view(request):
         has_prev = page > 1
         
         # Get unique values for filters
-        categories = client.execute("SELECT DISTINCT url_category FROM pa_urls WHERE url_category != '' ORDER BY url_category")
-        actions = client.execute("SELECT DISTINCT action FROM pa_urls WHERE action != '' ORDER BY action")
-        severities = client.execute("SELECT DISTINCT action FROM pa_urls WHERE action != '' ORDER BY action")  # Using action as severity
-        devices = client.execute("SELECT DISTINCT device_name FROM pa_urls WHERE device_name != '' ORDER BY device_name")
+        categories = client.execute("SELECT DISTINCT url_category FROM pa_urls_optimized WHERE url_category != '' ORDER BY url_category")
+        actions = client.execute("SELECT DISTINCT action FROM pa_urls_optimized WHERE action != '' ORDER BY action")
+        severities = client.execute("SELECT DISTINCT severity FROM pa_urls_optimized WHERE severity != '' ORDER BY severity")
+        devices = client.execute("SELECT DISTINCT device_name FROM pa_urls_optimized WHERE device_name != '' ORDER BY device_name")
         
     except Exception as e:
         formatted_logs = []
