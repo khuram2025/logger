@@ -245,12 +245,23 @@ def parse_url_log(fields, data, device_name):
         data['source_user'] = fields[12] if len(fields) > 12 else ''
         data['application'] = fields[14] if len(fields) > 14 else ''
         data['action'] = fields[30] if len(fields) > 30 else ''
+        # For URL logs: field 32 is threat/content type (like 9999), field 34 is severity
         data['severity'] = fields[34] if len(fields) > 34 else ''
         data['direction'] = fields[35] if len(fields) > 35 else ''
         data['virtual_system'] = fields[16] if len(fields) > 16 else ''
         
         # Extract URL (field 31) - remove quotes
         data['url'] = fields[31].strip('"') if len(fields) > 31 else ''
+        
+        # Extract threat/content type (field 32) - often contains threat ID like (9999)
+        threat_type_field = fields[32] if len(fields) > 32 else ''
+        if threat_type_field:
+            # Remove parentheses if present
+            threat_type_clean = threat_type_field.strip('()')
+            if threat_type_clean.isdigit():
+                data['threat_id'] = threat_type_clean
+            else:
+                data['threat_category'] = threat_type_clean
         
         # Extract URL domain and path
         if data['url']:

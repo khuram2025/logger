@@ -2922,7 +2922,8 @@ def pa_url_logs_view(request):
             http_method,
             response_code,
             user_agent,
-            raw_message
+            raw_message,
+            severity
         FROM pa_urls_optimized 
         WHERE {where_clause}
         ORDER BY timestamp DESC 
@@ -2961,7 +2962,7 @@ def pa_url_logs_view(request):
                 'raw_message': str(log[13]) if log[13] else '',   # raw_message
                 'src_port': '',            # No port data in this table
                 'dst_port': '',            # No port data in this table
-                'severity': str(log[6]) if log[6] else ''         # Using action as severity
+                'severity': str(log[14]) if log[14] else ''       # severity field (index 14)
             })
         
         # Pagination info
