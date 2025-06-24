@@ -2921,7 +2921,8 @@ def pa_url_logs_view(request):
             rule_name,
             http_method,
             response_code,
-            user_agent
+            user_agent,
+            raw_message
         FROM pa_urls_optimized 
         WHERE {where_clause}
         ORDER BY timestamp DESC 
@@ -2940,23 +2941,27 @@ def pa_url_logs_view(request):
         # Format logs for template
         formatted_logs = []
         for log in logs:
+            # Pass datetime object directly to Django template for proper date filtering
+            timestamp_obj = log[0] if log[0] else None
+            
             formatted_logs.append({
-                'generated_time': log[0],  # timestamp
-                'device_name': log[1],     # device_name
-                'src_ip': log[2],          # source_address
-                'dst_ip': log[3],          # destination_address
-                'url': log[4],             # url
-                'category': log[5],        # url_category
-                'action': log[6],          # action
-                'src_user': log[7],        # source_user
-                'application': log[8],     # application
-                'rule_name': log[9],       # rule_name
-                'http_method': log[10],    # http_method
-                'response_code': log[11],  # response_code
-                'user_agent': log[12],     # user_agent
+                'generated_time': timestamp_obj,  # Pass datetime object directly
+                'device_name': str(log[1]) if log[1] else '',     # device_name
+                'src_ip': str(log[2]) if log[2] else '',          # source_address
+                'dst_ip': str(log[3]) if log[3] else '',          # destination_address
+                'url': str(log[4]) if log[4] else '',             # url
+                'category': str(log[5]) if log[5] else '',        # url_category
+                'action': str(log[6]) if log[6] else '',          # action
+                'src_user': str(log[7]) if log[7] else '',        # source_user
+                'application': str(log[8]) if log[8] else '',     # application
+                'rule_name': str(log[9]) if log[9] else '',       # rule_name
+                'http_method': str(log[10]) if log[10] else '',   # http_method
+                'response_code': int(log[11]) if log[11] else 0,  # response_code
+                'user_agent': str(log[12]) if log[12] else '',    # user_agent
+                'raw_message': str(log[13]) if log[13] else '',   # raw_message
                 'src_port': '',            # No port data in this table
                 'dst_port': '',            # No port data in this table
-                'severity': log[6]         # Using action as severity
+                'severity': str(log[6]) if log[6] else ''         # Using action as severity
             })
         
         # Pagination info
@@ -2982,8 +2987,18 @@ def pa_url_logs_view(request):
         devices = []
         print(f"Database error: {e}")
     
+    # Create JSON-safe version of logs for JavaScript
+    logs_json_safe = []
+    for log in formatted_logs:
+        log_copy = log.copy()
+        # Convert datetime to string for JSON
+        if log_copy.get('generated_time') and hasattr(log_copy['generated_time'], 'strftime'):
+            log_copy['generated_time'] = log_copy['generated_time'].strftime('%Y-%m-%d %H:%M:%S')
+        logs_json_safe.append(log_copy)
+    
     context = {
         'logs': formatted_logs,
+        'logs_json': json.dumps(logs_json_safe),
         'total_count': total_count,
         'page': page,
         'total_pages': total_pages,

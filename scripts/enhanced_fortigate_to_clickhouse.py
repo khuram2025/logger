@@ -50,7 +50,7 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s [FortiGate] %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('/var/log/fortigate-processor.log')
+        logging.FileHandler('/tmp/fortigate-processor.log')
     ]
 )
 

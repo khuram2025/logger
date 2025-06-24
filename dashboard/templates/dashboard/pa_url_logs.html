@@ -690,8 +690,8 @@ function clearAllFilters() {
     window.location.href = '{% url "pa_url_logs" %}';
 }
 
-// Initialize log data for expansion - we'll extract data from the table rows directly
-const logData = [];
+// Initialize log data for expansion from Django context
+const logData = {{ logs_json|safe }};
 
 // Add event listener for expand buttons
 document.addEventListener('DOMContentLoaded', function() {
@@ -733,10 +733,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const cell = document.createElement('td');
                     cell.colSpan = currentRow.cells.length;
                     
-                    // Get log data - if not available in logData array, use basic info from the row
+                    // Get log data from Django context
                     const log = logData[logIndex] || {};
                     
-                    // Extract data from the current row if not in logData
+                    // Fallback to extracting data from table row if logData not available
                     const rowCells = currentRow.cells;
                     const rowData = {
                         timestamp: rowCells[0]?.textContent || 'N/A',
@@ -772,8 +772,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <p><strong>Severity:</strong> ${log.severity || rowData.severity}</p>
                                     <p><strong>Rule:</strong> ${log.rule_name || rowData.rule}</p>
                                     <p><strong>Device Name:</strong> ${log.device_name || 'N/A'}</p>
-                                    <p><strong>Session ID:</strong> ${log.session_id || 'N/A'}</p>
-                                    <p><strong>Threat ID:</strong> ${log.threat_id || 'N/A'}</p>
+                                    <p><strong>HTTP Method:</strong> ${log.http_method || 'N/A'}</p>
+                                    <p><strong>Response Code:</strong> ${log.response_code || 'N/A'}</p>
                                 </div>
                             </div>
                             ${log.raw_message ? `
