@@ -192,7 +192,8 @@ def parse_traffic_log(fields, data, device_name):
 def parse_url_log(fields, data, device_name):
     """Parse THREAT,url log format"""
     try:
-        # Set default values for URL fields
+        # Preserve raw_message if already set, then set default values for URL fields
+        raw_message = data.get('raw_message', '')
         for field in ALL_URL_FIELDS:
             if field in ['sequence_number', 'session_id', 'source_port', 'destination_port', 
                         'ip_protocol', 'response_code', 'response_size']:
@@ -201,6 +202,10 @@ def parse_url_log(fields, data, device_name):
                 data[field] = datetime.now()
             else:
                 data[field] = ''
+        
+        # Restore raw_message
+        if raw_message:
+            data['raw_message'] = raw_message
         
         data['device_name'] = device_name
         data['log_type'] = 'THREAT'
