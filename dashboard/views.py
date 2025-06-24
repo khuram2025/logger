@@ -3020,3 +3020,326 @@ def pa_url_logs_view(request):
     }
     
     return render(request, 'dashboard/pa_url_logs.html', context)
+
+
+def url_summary_view(request):
+    """URL Analytics Summary Dashboard - Similar to top_summary_view but for URL logs"""
+    client = Client(
+        host=CH_HOST,
+        port=CH_PORT,
+        user=CH_USER,
+        password=CH_PASSWORD,
+        database=CH_DB
+    )
+    
+    # Get time_range from GET params (same pattern as top_summary_view)
+    time_range = request.GET.get('time_range', '1h')
+    selected_time_range = time_range
+    
+    # Define time filter conditions using ClickHouse native time functions
+    # This avoids timezone issues between Python and ClickHouse
+    # Note: Data timestamps are in UTC+3, so we add 3 hours to ClickHouse now() to match data timezone
+    if time_range == '1h':
+        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 1 HOUR AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        selected_time_range = '1h'
+    elif time_range == '6h':
+        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 6 HOUR AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        selected_time_range = '6h'
+    elif time_range == '1d':
+        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 1 DAY AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        selected_time_range = '1d'
+    elif time_range == '7d':
+        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 7 DAY AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        selected_time_range = '7d'
+    elif time_range == '1m':
+        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 30 DAY AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        selected_time_range = '1m'
+    elif time_range == 'custom':
+        # Handle custom date range
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        
+        if start_date_str and end_date_str:
+            try:
+                # Parse datetime-local format (YYYY-MM-DDTHH:MM)
+                since = datetime.fromisoformat(start_date_str.replace('T', ' '))
+                until = datetime.fromisoformat(end_date_str.replace('T', ' '))
+                since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+                until_str = until.strftime('%Y-%m-%d %H:%M:%S')
+                time_condition = f"timestamp >= parseDateTimeBestEffort('{since_str}') AND timestamp <= parseDateTimeBestEffort('{until_str}')"
+                selected_time_range = 'custom'
+            except ValueError:
+                # Fallback to last hour if parsing fails
+                time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 1 HOUR AND timestamp <= (now() + INTERVAL 3 HOUR)"
+                since_str = "N/A"
+                until_str = "N/A"
+                selected_time_range = '1h'
+        else:
+            # Fallback to last hour if dates not provided
+            time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 1 HOUR AND timestamp <= (now() + INTERVAL 3 HOUR)"
+            since_str = "N/A"
+            until_str = "N/A"
+            selected_time_range = '1h'
+    else:
+        # Default to last hour
+        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 1 HOUR AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        since_str = "N/A"
+        until_str = "N/A"
+        selected_time_range = '1h'
+    
+    # For non-custom ranges, set display values for template
+    if time_range != 'custom':
+        # Get current time with timezone offset for display
+        now_display = datetime.now() + timedelta(hours=3)  # Match data timezone
+        if time_range == '1h':
+            since_display = now_display - timedelta(hours=1)
+        elif time_range == '6h':
+            since_display = now_display - timedelta(hours=6)
+        elif time_range == '1d':
+            since_display = now_display - timedelta(days=1)
+        elif time_range == '7d':
+            since_display = now_display - timedelta(days=7)
+        elif time_range == '1m':
+            since_display = now_display - timedelta(days=30)
+        else:
+            since_display = now_display - timedelta(hours=1)
+        
+        since_str = since_display.strftime('%Y-%m-%d %H:%M:%S')
+        until_str = now_display.strftime('%Y-%m-%d %H:%M:%S')
+
+    # Query 1: Top URLs by Request Count
+    top_urls_query = f'''
+        SELECT
+            url_domain,
+            url,
+            count(*) AS request_count,
+            uniq(source_address) AS unique_users,
+            url_category,
+            action
+        FROM pa_urls_optimized
+        WHERE {time_condition}
+          AND url <> ''
+        GROUP BY url_domain, url, url_category, action
+        ORDER BY request_count DESC
+        LIMIT 15
+    '''
+    
+    # Query 2: Top URL Categories
+    categories_query = f'''
+        SELECT
+            url_category,
+            count(*) AS request_count,
+            uniq(source_address) AS unique_users,
+            countIf(action = 'block-url') AS blocked_count,
+            countIf(action = 'alert') AS alert_count
+        FROM pa_urls_optimized
+        WHERE {time_condition}
+          AND url_category <> ''
+        GROUP BY url_category
+        ORDER BY request_count DESC
+        LIMIT 10
+    '''
+    
+    # Query 3: Top Blocked URLs
+    blocked_urls_query = f'''
+        SELECT
+            url_domain,
+            url,
+            count(*) AS block_count,
+            uniq(source_address) AS unique_users,
+            url_category
+        FROM pa_urls_optimized
+        WHERE {time_condition}
+          AND action = 'block-url'
+          AND url <> ''
+        GROUP BY url_domain, url, url_category
+        ORDER BY block_count DESC
+        LIMIT 15
+    '''
+    
+    # Query 4: Top Users by URL Activity
+    top_users_query = f'''
+        SELECT
+            source_user,
+            source_address,
+            count(*) AS request_count,
+            uniq(url_domain) AS unique_domains,
+            countIf(action = 'block-url') AS blocked_requests
+        FROM pa_urls_optimized
+        WHERE {time_condition}
+          AND source_address <> ''
+        GROUP BY source_user, source_address
+        ORDER BY request_count DESC
+        LIMIT 15
+    '''
+    
+    # Query 5: Security Activity (Threats and Blocks)
+    security_activity_query = f'''
+        SELECT
+            action,
+            url_category,
+            count(*) AS count,
+            uniq(source_address) AS unique_sources
+        FROM pa_urls_optimized
+        WHERE {time_condition}
+          AND action IN ('block-url', 'alert')
+        GROUP BY action, url_category
+        ORDER BY count DESC
+        LIMIT 15
+    '''
+    
+    # Query 6: Applications and URL Usage
+    applications_query = f'''
+        SELECT
+            application,
+            count(*) AS request_count,
+            uniq(url_domain) AS unique_domains,
+            uniq(source_address) AS unique_users
+        FROM pa_urls_optimized
+        WHERE {time_condition}
+          AND application <> ''
+        GROUP BY application
+        ORDER BY request_count DESC
+        LIMIT 10
+    '''
+    
+    # Query 7: Summary Statistics
+    summary_stats_query = f'''
+        SELECT
+            count(*) AS total_requests,
+            uniq(url_domain) AS unique_domains,
+            uniq(source_address) AS unique_users,
+            countIf(action = 'block-url') AS blocked_requests,
+            countIf(action = 'alert') AS threat_alerts
+        FROM pa_urls_optimized
+        WHERE {time_condition}
+    '''
+
+    # Execute all queries with error handling
+    try:
+        top_urls_rows = client.execute(top_urls_query)
+    except Exception as e:
+        print(f"Error executing top_urls_query: {e}")
+        top_urls_rows = []
+        
+    try:
+        categories_rows = client.execute(categories_query)
+    except Exception as e:
+        print(f"Error executing categories_query: {e}")
+        categories_rows = []
+        
+    try:
+        blocked_urls_rows = client.execute(blocked_urls_query)
+    except Exception as e:
+        print(f"Error executing blocked_urls_query: {e}")
+        blocked_urls_rows = []
+        
+    try:
+        top_users_rows = client.execute(top_users_query)
+    except Exception as e:
+        print(f"Error executing top_users_query: {e}")
+        top_users_rows = []
+        
+    try:
+        security_activity_rows = client.execute(security_activity_query)
+    except Exception as e:
+        print(f"Error executing security_activity_query: {e}")
+        security_activity_rows = []
+        
+    try:
+        applications_rows = client.execute(applications_query)
+    except Exception as e:
+        print(f"Error executing applications_query: {e}")
+        applications_rows = []
+    
+    try:
+        summary_stats = client.execute(summary_stats_query)
+        if summary_stats:
+            total_requests, unique_domains, unique_users, blocked_requests, threat_alerts = summary_stats[0]
+        else:
+            total_requests = unique_domains = unique_users = blocked_requests = threat_alerts = 0
+    except Exception as e:
+        print(f"Error executing summary_stats_query: {e}")
+        total_requests = unique_domains = unique_users = blocked_requests = threat_alerts = 0
+
+    # Prepare data for template
+    context = {
+        'selected_time_range': selected_time_range,
+        'time_range_start': since_str,
+        'time_range_end': until_str,
+        
+        # Summary statistics
+        'total_requests': total_requests,
+        'unique_domains': unique_domains,
+        'unique_users': unique_users,
+        'blocked_requests': blocked_requests,
+        'threat_alerts': threat_alerts,
+        
+        # Top data sets
+        'top_urls': [
+            {
+                'domain': row[0],
+                'url': row[1],
+                'request_count': row[2],
+                'unique_users': row[3],
+                'category': row[4],
+                'action': row[5]
+            }
+            for row in top_urls_rows
+        ],
+        
+        'categories': [
+            {
+                'category': row[0],
+                'request_count': row[1],
+                'unique_users': row[2],
+                'blocked_count': row[3],
+                'alert_count': row[4]
+            }
+            for row in categories_rows
+        ],
+        
+        'blocked_urls': [
+            {
+                'domain': row[0],
+                'url': row[1],
+                'block_count': row[2],
+                'unique_users': row[3],
+                'category': row[4]
+            }
+            for row in blocked_urls_rows
+        ],
+        
+        'top_users': [
+            {
+                'username': row[0] or 'Unknown',
+                'ip_address': row[1],
+                'request_count': row[2],
+                'unique_domains': row[3],
+                'blocked_requests': row[4]
+            }
+            for row in top_users_rows
+        ],
+        
+        'security_activity': [
+            {
+                'action': row[0],
+                'category': row[1],
+                'count': row[2],
+                'unique_sources': row[3]
+            }
+            for row in security_activity_rows
+        ],
+        
+        'applications': [
+            {
+                'application': row[0],
+                'request_count': row[1],
+                'unique_domains': row[2],
+                'unique_users': row[3]
+            }
+            for row in applications_rows
+        ],
+    }
+    
+    return render(request, 'dashboard/url_summary.html', context)

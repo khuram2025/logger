@@ -1,6 +1,7 @@
 <header class="main-header">
     <div class="main-nav-links">
         <a href="{% url 'top_summary' %}" {% if request.resolver_match.url_name == 'top_summary' %}class="active"{% endif %}>Top Summary</a>
+        <a href="{% url 'url_summary' %}" {% if request.resolver_match.url_name == 'url_summary' %}class="active"{% endif %}>URL Summary</a>
         <a href="{% url 'clickhouse_logs' %}" {% if request.resolver_match.url_name == 'clickhouse_logs' %}class="active"{% endif %}>Logs</a>
         <a href="{% url 'pa_url_logs' %}" {% if request.resolver_match.url_name == 'pa_url_logs' %}class="active"{% endif %}>PA URL Logs</a>
         <a href="{% url 'grouped_logs' %}" {% if request.resolver_match.url_name == 'grouped_logs' %}class="active"{% endif %}>Grouped Logs</a>
