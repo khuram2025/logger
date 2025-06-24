@@ -1,0 +1,1031 @@
+{% extends 'dashboard/base.html' %}
+
+{% load humanize %}
+{% block title %}URL Analytics Summary{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='url_summary' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+<div class="top-summary-container">
+    <div class="top-summary-content">
+        <!-- Header Section -->
+        <div class="page-header">
+            <div class="header-content">
+                <div class="page-title">
+                    <h1><i class="fas fa-globe-americas"></i> URL Analytics Dashboard</h1>
+                    <p class="subtitle">Real-time web access analysis and security insights</p>
+                </div>
+                
+                <div class="header-controls">
+                    <div class="summary-stats">
+                        <div class="stat-card">
+                            <div class="stat-value">{{ total_requests|default:"0"|intcomma }}</div>
+                            <div class="stat-label">Total Requests</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ unique_domains|default:"0"|intcomma }}</div>
+                            <div class="stat-label">Unique Domains</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ unique_users|default:"0"|intcomma }}</div>
+                            <div class="stat-label">Active Users</div>
+                        </div>
+                        <div class="stat-card security-alert">
+                            <div class="stat-value">{{ blocked_requests|default:"0"|intcomma }}</div>
+                            <div class="stat-label">Blocked Requests</div>
+                        </div>
+                    </div>
+                    
+                    <div class="time-filter-section">
+                        <div class="time-range-tabs">
+                            <button type="button" class="time-tab {% if selected_time_range == '1h' %}active{% endif %}" data-range="1h">1H</button>
+                            <button type="button" class="time-tab {% if selected_time_range == '6h' %}active{% endif %}" data-range="6h">6H</button>
+                            <button type="button" class="time-tab {% if selected_time_range == '1d' %}active{% endif %}" data-range="1d">1D</button>
+                            <button type="button" class="time-tab {% if selected_time_range == '7d' %}active{% endif %}" data-range="7d">7D</button>
+                            <button type="button" class="time-tab {% if selected_time_range == '1m' %}active{% endif %}" data-range="1m">1M</button>
+                            <button type="button" class="time-tab {% if selected_time_range == 'custom' %}active{% endif %}" data-range="custom">Custom</button>
+                        </div>
+                        
+                        <div class="header-actions">
+                            <button class="action-btn refresh-btn" onclick="refreshDashboard()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="action-btn export-btn">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Grid -->
+        <div class="analytics-grid">
+            <!-- Top URLs -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-link"></i> Most Requested URLs</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View All URLs">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>Requests</th>
+                                    <th>Users</th>
+                                    <th>Category</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in top_urls %}
+                                <tr>
+                                    <td>
+                                        <a href="/pa-url-logs/?url={{ entry.domain }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="url-domain">{{ entry.domain|truncatechars:40 }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.request_count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.unique_users|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="category-badge {{ entry.category|lower|slugify }}">{{ entry.category|default:"Unknown" }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="action-badge action-{{ entry.action|lower|slugify }}">{{ entry.action|capfirst }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="no-data">No URL data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- URL Categories -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-tags"></i> Top URL Categories</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View All Categories">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Requests</th>
+                                    <th>Users</th>
+                                    <th>Blocked</th>
+                                    <th>Alerts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in categories %}
+                                <tr>
+                                    <td>
+                                        <a href="/pa-url-logs/?category={{ entry.category }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="category-name">{{ entry.category }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.request_count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.unique_users|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value security-red">{{ entry.blocked_count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value security-yellow">{{ entry.alert_count|intcomma }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="no-data">No category data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blocked URLs -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-shield-alt"></i> Top Blocked URLs</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View All Blocked">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>Blocks</th>
+                                    <th>Users</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in blocked_urls %}
+                                <tr>
+                                    <td>
+                                        <a href="/pa-url-logs/?url={{ entry.domain }}&action=block-url&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="url-domain blocked">{{ entry.domain|truncatechars:40 }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value security-red">{{ entry.block_count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.unique_users|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="category-badge {{ entry.category|lower|slugify }}">{{ entry.category|default:"Unknown" }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="no-data">No blocked URLs found</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Users -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-users"></i> Most Active Users</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View All Users">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>IP Address</th>
+                                    <th>Requests</th>
+                                    <th>Domains</th>
+                                    <th>Blocked</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in top_users %}
+                                <tr>
+                                    <td>
+                                        <a href="/pa-url-logs/?src_ip={{ entry.ip_address }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="username">{{ entry.username|truncatechars:20 }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/pa-url-logs/?src_ip={{ entry.ip_address }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="ip-address">{{ entry.ip_address }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.request_count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.unique_domains|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value security-red">{{ entry.blocked_requests|intcomma }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="no-data">No user data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Activity -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Security Activity</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View Security Details">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Category</th>
+                                    <th>Count</th>
+                                    <th>Sources</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in security_activity %}
+                                <tr>
+                                    <td>
+                                        <span class="action-badge action-{{ entry.action|lower|slugify }}">{{ entry.action|capfirst }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="/pa-url-logs/?category={{ entry.category }}&action={{ entry.action }}&time_range={{ selected_time_range }}" class="table-link">
+                                            <span class="category-name">{{ entry.category }}</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value security-red">{{ entry.count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.unique_sources|intcomma }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="no-data">No security activity found</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Applications -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-desktop"></i> Top Applications</h3>
+                    <div class="card-actions">
+                        <button class="card-action-btn" title="View All Applications">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="summary-table-container">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Application</th>
+                                    <th>Requests</th>
+                                    <th>Domains</th>
+                                    <th>Users</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in applications %}
+                                <tr>
+                                    <td>
+                                        <span class="application-name">{{ entry.application }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.request_count|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.unique_domains|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ entry.unique_users|intcomma }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="no-data">No application data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Date Range Modal -->
+    <div id="customDateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>Custom Date Range</h4>
+                <span class="close" onclick="closeCustomDateModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="customDateForm" action="/url-summary/" method="get">
+                    <input type="hidden" name="time_range" value="custom">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="start_date">Start Date & Time:</label>
+                            <input type="datetime-local" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end_date">End Date & Time:</label>
+                            <input type="datetime-local" id="end_date" name="end_date" required>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" onclick="closeCustomDateModal()" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Apply Range</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modern Top Summary Page Styles - Matching Logs Page Design */
+.top-summary-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+}
+
+.top-summary-content {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Header Section */
+.page-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.page-title h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-title h1 i {
+    color: #667eea;
+    font-size: 1.6rem;
+}
+
+.subtitle {
+    margin: 0.5rem 0 0 0;
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+.header-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: flex-end;
+}
+
+/* Summary Stats */
+.summary-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+    text-align: center;
+    min-width: 120px;
+}
+
+.stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #667eea;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.25rem;
+}
+
+/* Time Filter Section */
+.time-filter-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.time-range-tabs {
+    display: flex;
+    gap: 0.5rem;
+    background: white;
+    padding: 0.25rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+}
+
+.time-tab {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.time-tab:hover {
+    background: #f8f9fa;
+    color: #667eea;
+}
+
+.time-tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.action-btn:hover {
+    background: #f8f9fa;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.refresh-btn:hover {
+    transform: rotate(90deg);
+}
+
+/* Analytics Grid */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Summary Cards */
+.summary-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e1e5e9;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.summary-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+.summary-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e1e5e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-header h3 i {
+    color: #667eea;
+    font-size: 1rem;
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.card-action-btn {
+    padding: 0.25rem 0.5rem;
+    background: transparent;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    color: #6c757d;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+}
+
+.card-action-btn:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.card-content {
+    padding: 0;
+}
+
+/* Summary Tables */
+.summary-table-container {
+    overflow-x: auto;
+}
+
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.summary-table thead th {
+    background: #f8f9fa;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #e1e5e9;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-table tbody tr {
+    border-bottom: 1px solid #f1f3f4;
+    transition: all 0.2s ease;
+}
+
+.summary-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.summary-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.summary-table tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+/* Table Elements */
+.table-link {
+    color: #495057;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: block;
+}
+
+.table-link:hover {
+    color: #667eea;
+}
+
+.ip-address {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.port-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.count-badge {
+    background: #f8f9fa;
+    color: #495057;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid #e1e5e9;
+}
+
+.bytes-display {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.bytes-display.total-bytes {
+    color: #667eea;
+    font-weight: 700;
+}
+
+.category-name, .username-display {
+    font-weight: 500;
+}
+
+.url-display {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.8rem;
+}
+
+.country-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.no-data {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 2rem 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .header-controls {
+        align-items: stretch;
+    }
+    
+    .time-filter-section {
+        flex-direction: column;
+    }
+    
+    .summary-stats {
+        justify-content: space-between;
+    }
+    
+    .stat-card {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .time-range-tabs {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .time-tab {
+        flex: 1;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .top-summary-content {
+        padding: 1rem;
+    }
+    
+    .page-header {
+        padding: 1.5rem;
+    }
+    
+    .page-title h1 {
+        font-size: 1.5rem;
+    }
+    
+    .summary-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* URL Analytics specific styles */
+.security-alert .stat-value {
+    color: #e74c3c;
+}
+
+.url-domain {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #2c3e50;
+}
+
+.url-domain.blocked {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+.category-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.category-badge.computer-and-internet-info { background: #e3f2fd; color: #1976d2; }
+.category-badge.search-engines { background: #f3e5f5; color: #7b1fa2; }
+.category-badge.social-networking { background: #e8f5e8; color: #388e3c; }
+.category-badge.internet-portals { background: #fff3e0; color: #f57c00; }
+.category-badge.online-storage-and-backup { background: #fce4ec; color: #c2185b; }
+
+.action-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.action-badge.action-alert {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.action-badge.action-block-url {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.action-badge.action-allow {
+    background: #d4edda;
+    color: #155724;
+}
+
+.security-red {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+.security-yellow {
+    color: #f39c12;
+    font-weight: 600;
+}
+
+.username {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.application-name {
+    font-weight: 500;
+    color: #34495e;
+}
+
+.category-name {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.metric-value {
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Custom date modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 500px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+}
+
+.form-group {
+    flex: 1;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-actions {
+    margin-top: 20px;
+    text-align: right;
+}
+
+.btn-secondary, .btn-primary {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.close {
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #999;
+}
+
+.close:hover {
+    color: #333;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Time range tab functionality
+    const timeTabs = document.querySelectorAll('.time-tab');
+    timeTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const range = this.dataset.range;
+            
+            if (range === 'custom') {
+                openCustomDateModal();
+            } else {
+                // Remove active class from all tabs
+                timeTabs.forEach(t => t.classList.remove('active'));
+                // Add active class to clicked tab
+                this.classList.add('active');
+                
+                // Navigate to new time range
+                const url = new URL(window.location);
+                url.searchParams.set('time_range', range);
+                window.location.href = url.toString();
+            }
+        });
+    });
+});
+
+function openCustomDateModal() {
+    document.getElementById('customDateModal').style.display = 'block';
+    
+    // Set default values to current time range if available
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
+    
+    document.getElementById('start_date').value = oneHourAgo.toISOString().slice(0, 16);
+    document.getElementById('end_date').value = now.toISOString().slice(0, 16);
+}
+
+function closeCustomDateModal() {
+    document.getElementById('customDateModal').style.display = 'none';
+}
+
+function refreshDashboard() {
+    window.location.reload();
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('customDateModal');
+    if (event.target == modal) {
+        closeCustomDateModal();
+    }
+}
+</script>
+{% endblock %}

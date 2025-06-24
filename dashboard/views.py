@@ -3189,13 +3189,20 @@ def url_summary_view(request):
         LIMIT 15
     '''
     
-    # Query 6: Applications and URL Usage
+    # Query 6: Applications and URL Usage with Severity
     applications_query = f'''
         SELECT
             application,
             count(*) AS request_count,
             uniq(url_domain) AS unique_domains,
-            uniq(source_address) AS unique_users
+            uniq(source_address) AS unique_users,
+            countIf(severity = 'informational') AS informational_count,
+            countIf(severity = 'low') AS low_count,
+            countIf(severity = 'medium') AS medium_count,
+            countIf(severity = 'high') AS high_count,
+            countIf(severity = 'critical') AS critical_count,
+            countIf(action = 'block-url') AS blocked_count,
+            countIf(action = 'alert') AS alert_count
         FROM pa_urls_optimized
         WHERE {time_condition}
           AND application <> ''
@@ -3337,10 +3344,127 @@ def url_summary_view(request):
                 'application': row[0],
                 'request_count': row[1],
                 'unique_domains': row[2],
-                'unique_users': row[3]
+                'unique_users': row[3],
+                'informational_count': row[4],
+                'low_count': row[5],
+                'medium_count': row[6],
+                'high_count': row[7],
+                'critical_count': row[8],
+                'blocked_count': row[9],
+                'alert_count': row[10],
+                # Calculate percentages for severity bars
+                'critical_percentage': round((row[8] * 100 / row[1]), 1) if row[1] > 0 else 0,
+                'high_percentage': round((row[7] * 100 / row[1]), 1) if row[1] > 0 else 0,
+                'medium_percentage': round((row[6] * 100 / row[1]), 1) if row[1] > 0 else 0,
+                'low_percentage': round((row[5] * 100 / row[1]), 1) if row[1] > 0 else 0,
+                'informational_percentage': round((row[4] * 100 / row[1]), 1) if row[1] > 0 else 0
             }
             for row in applications_rows
         ],
     }
+    
+    # Add template filter support for mathematical operations
+    context['allowed_requests'] = total_requests - blocked_requests if total_requests > 0 else 0
+    context['allowed_percentage'] = round((total_requests - blocked_requests) * 100 / total_requests, 1) if total_requests > 0 else 0
+    context['blocked_percentage'] = round(blocked_requests * 100 / total_requests, 1) if total_requests > 0 else 0
+    
+    # Query for Security Timeline Chart - Get hourly data for the selected time range
+    try:
+        if time_range == '1h':
+            # For 1 hour, get data every 10 minutes
+            timeline_interval = "10 MINUTE"
+            timeline_query = f'''
+                SELECT 
+                    toStartOfInterval(timestamp, INTERVAL {timeline_interval}) as time_bucket,
+                    countIf(action = 'alert') as alerts,
+                    countIf(action = 'block-url') as blocked,
+                    countIf(action NOT IN ('alert', 'block-url')) as allowed
+                FROM pa_urls_optimized
+                WHERE {time_condition}
+                GROUP BY time_bucket
+                ORDER BY time_bucket
+            '''
+        elif time_range == '6h':
+            # For 6 hours, get data every 30 minutes
+            timeline_interval = "30 MINUTE"
+            timeline_query = f'''
+                SELECT 
+                    toStartOfInterval(timestamp, INTERVAL {timeline_interval}) as time_bucket,
+                    countIf(action = 'alert') as alerts,
+                    countIf(action = 'block-url') as blocked,
+                    countIf(action NOT IN ('alert', 'block-url')) as allowed
+                FROM pa_urls_optimized
+                WHERE {time_condition}
+                GROUP BY time_bucket
+                ORDER BY time_bucket
+            '''
+        elif time_range == '1d':
+            # For 1 day, get data every hour
+            timeline_interval = "1 HOUR"
+            timeline_query = f'''
+                SELECT 
+                    toStartOfInterval(timestamp, INTERVAL {timeline_interval}) as time_bucket,
+                    countIf(action = 'alert') as alerts,
+                    countIf(action = 'block-url') as blocked,
+                    countIf(action NOT IN ('alert', 'block-url')) as allowed
+                FROM pa_urls_optimized
+                WHERE {time_condition}
+                GROUP BY time_bucket
+                ORDER BY time_bucket
+            '''
+        else:
+            # For longer periods, get data every 4 hours
+            timeline_interval = "4 HOUR"
+            timeline_query = f'''
+                SELECT 
+                    toStartOfInterval(timestamp, INTERVAL {timeline_interval}) as time_bucket,
+                    countIf(action = 'alert') as alerts,
+                    countIf(action = 'block-url') as blocked,
+                    countIf(action NOT IN ('alert', 'block-url')) as allowed
+                FROM pa_urls_optimized
+                WHERE {time_condition}
+                GROUP BY time_bucket
+                ORDER BY time_bucket
+            '''
+        
+        timeline_data = client.execute(timeline_query)
+        
+        # Format timeline data for chart
+        timeline_labels = []
+        allowed_data = []
+        blocked_data = []
+        alerts_data = []
+        
+        for row in timeline_data:
+            # Format timestamp for display
+            time_bucket = row[0]
+            if isinstance(time_bucket, datetime):
+                timeline_labels.append(time_bucket.strftime('%H:%M'))
+            else:
+                timeline_labels.append(str(time_bucket))
+            
+            alerts_data.append(row[1])
+            blocked_data.append(row[2]) 
+            allowed_data.append(row[3])
+        
+        # If no data, create dummy data points
+        if not timeline_data:
+            timeline_labels = ['Current']
+            allowed_data = [context['allowed_requests']]
+            blocked_data = [blocked_requests]
+            alerts_data = [threat_alerts]
+        
+        context['timeline_labels'] = timeline_labels
+        context['timeline_allowed'] = allowed_data
+        context['timeline_blocked'] = blocked_data
+        context['timeline_alerts'] = alerts_data
+        
+    except Exception as e:
+        logging.error(f"Error fetching timeline data: {e}")
+        # Fallback to single data point
+        context['timeline_labels'] = ['Current']
+        context['timeline_allowed'] = [context['allowed_requests']]
+        context['timeline_blocked'] = [blocked_requests]
+        context['timeline_alerts'] = [threat_alerts]
     
     return render(request, 'dashboard/url_summary.html', context)

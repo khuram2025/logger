@@ -1,7 +1,13 @@
 {% extends 'dashboard/base.html' %}
 
 {% load humanize %}
-{% block title %}URL Analytics Summary{% endblock %}
+{% block title %}URL Analytics Dashboard - Enhanced{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.css" rel="stylesheet">
+{% endblock %}
 
 {% block subheader %}
     {% with active_tab='url_summary' %}
@@ -10,535 +16,702 @@
 {% endblock %}
 
 {% block content %}
-<div class="top-summary-container">
-    <div class="top-summary-content">
-        <!-- Header Section -->
-        <div class="page-header">
-            <div class="header-content">
-                <div class="page-title">
-                    <h1><i class="fas fa-globe-americas"></i> URL Analytics Dashboard</h1>
-                    <p class="subtitle">Real-time web access analysis and security insights</p>
+<div class="enhanced-dashboard">
+    <!-- Header Section with Live Status -->
+    <div class="dashboard-header">
+        <div class="header-main">
+            <div class="title-section">
+                <h1 class="dashboard-title">
+                    <span class="title-icon"><i class="fas fa-shield-alt"></i></span>
+                    URL Security Analytics
+                </h1>
+                <p class="dashboard-subtitle">Real-time web traffic monitoring and threat detection</p>
+            </div>
+            
+            <div class="live-status">
+                <div class="status-indicator">
+                    <span class="pulse"></span>
+                    <span class="status-text">Live Monitoring</span>
                 </div>
-                
-                <div class="header-controls">
-                    <div class="summary-stats">
-                        <div class="stat-card">
-                            <div class="stat-value">{{ total_requests|default:"0"|intcomma }}</div>
-                            <div class="stat-label">Total Requests</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">{{ unique_domains|default:"0"|intcomma }}</div>
-                            <div class="stat-label">Unique Domains</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">{{ unique_users|default:"0"|intcomma }}</div>
-                            <div class="stat-label">Active Users</div>
-                        </div>
-                        <div class="stat-card security-alert">
-                            <div class="stat-value">{{ blocked_requests|default:"0"|intcomma }}</div>
-                            <div class="stat-label">Blocked Requests</div>
-                        </div>
-                    </div>
-                    
-                    <div class="time-filter-section">
-                        <div class="time-range-tabs">
-                            <button type="button" class="time-tab {% if selected_time_range == '1h' %}active{% endif %}" data-range="1h">1H</button>
-                            <button type="button" class="time-tab {% if selected_time_range == '6h' %}active{% endif %}" data-range="6h">6H</button>
-                            <button type="button" class="time-tab {% if selected_time_range == '1d' %}active{% endif %}" data-range="1d">1D</button>
-                            <button type="button" class="time-tab {% if selected_time_range == '7d' %}active{% endif %}" data-range="7d">7D</button>
-                            <button type="button" class="time-tab {% if selected_time_range == '1m' %}active{% endif %}" data-range="1m">1M</button>
-                            <button type="button" class="time-tab {% if selected_time_range == 'custom' %}active{% endif %}" data-range="custom">Custom</button>
-                        </div>
-                        
-                        <div class="header-actions">
-                            <button class="action-btn refresh-btn" onclick="refreshDashboard()">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <button class="action-btn export-btn">
-                                <i class="fas fa-download"></i> Export
-                            </button>
-                        </div>
-                    </div>
+                <div class="last-update">
+                    <i class="far fa-clock"></i>
+                    <span id="last-update-time">Updated: Just now</span>
                 </div>
             </div>
         </div>
 
-        <!-- Analytics Grid -->
-        <div class="analytics-grid">
-            <!-- Top URLs -->
-            <div class="summary-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-link"></i> Most Requested URLs</h3>
-                    <div class="card-actions">
-                        <button class="card-action-btn" title="View All URLs">
-                            <i class="fas fa-external-link-alt"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-content">
-                    <div class="summary-table-container">
-                        <table class="summary-table">
-                            <thead>
-                                <tr>
-                                    <th>Domain</th>
-                                    <th>Requests</th>
-                                    <th>Users</th>
-                                    <th>Category</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entry in top_urls %}
-                                <tr>
-                                    <td>
-                                        <a href="/pa-url-logs/?url={{ entry.domain }}&time_range={{ selected_time_range }}" class="table-link">
-                                            <span class="url-domain">{{ entry.domain|truncatechars:40 }}</span>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.request_count|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.unique_users|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="category-badge {{ entry.category|lower|slugify }}">{{ entry.category|default:"Unknown" }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="action-badge action-{{ entry.action|lower|slugify }}">{{ entry.action|capfirst }}</span>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="5" class="no-data">No URL data available</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+        <!-- Quick Stats Bar -->
+        <div class="quick-stats-bar">
+            <div class="stat-item primary clickable" onclick="navigateToLogs('')">
+                <div class="stat-icon"><i class="fas fa-globe"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ total_requests|default:"0"|intcomma }}</div>
+                    <div class="stat-title">Total Requests</div>
+                    <div class="stat-trend up">
+                        <i class="fas fa-arrow-up"></i> 12% from last period
                     </div>
                 </div>
             </div>
-
-            <!-- URL Categories -->
-            <div class="summary-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-tags"></i> Top URL Categories</h3>
-                    <div class="card-actions">
-                        <button class="card-action-btn" title="View All Categories">
-                            <i class="fas fa-external-link-alt"></i>
-                        </button>
-                    </div>
+            
+            <div class="stat-item success clickable" onclick="navigateToLogs('action=alert')">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ allowed_requests|default:"0"|intcomma }}</div>
+                    <div class="stat-title">Allowed Requests</div>
+                    <div class="stat-percentage">{{ allowed_percentage }}%</div>
                 </div>
-                <div class="card-content">
-                    <div class="summary-table-container">
-                        <table class="summary-table">
-                            <thead>
-                                <tr>
-                                    <th>Category</th>
-                                    <th>Requests</th>
-                                    <th>Users</th>
-                                    <th>Blocked</th>
-                                    <th>Alerts</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entry in categories %}
-                                <tr>
-                                    <td>
-                                        <a href="/pa-url-logs/?category={{ entry.category }}&time_range={{ selected_time_range }}" class="table-link">
-                                            <span class="category-name">{{ entry.category }}</span>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.request_count|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.unique_users|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value security-red">{{ entry.blocked_count|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value security-yellow">{{ entry.alert_count|intcomma }}</span>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="5" class="no-data">No category data available</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+            </div>
+            
+            <div class="stat-item danger clickable" onclick="navigateToLogs('action=block-url')">
+                <div class="stat-icon"><i class="fas fa-ban"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ blocked_requests|default:"0"|intcomma }}</div>
+                    <div class="stat-title">Blocked Requests</div>
+                    <div class="stat-percentage">{{ blocked_percentage }}%</div>
+                </div>
+            </div>
+            
+            <div class="stat-item warning clickable" onclick="navigateToLogs('action=alert')">
+                <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ threat_alerts|default:"0"|intcomma }}</div>
+                    <div class="stat-title">Security Alerts</div>
+                    <div class="stat-trend down">
+                        <i class="fas fa-arrow-down"></i> 8% from last period
                     </div>
                 </div>
             </div>
-
-            <!-- Blocked URLs -->
-            <div class="summary-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-shield-alt"></i> Top Blocked URLs</h3>
-                    <div class="card-actions">
-                        <button class="card-action-btn" title="View All Blocked">
-                            <i class="fas fa-external-link-alt"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-content">
-                    <div class="summary-table-container">
-                        <table class="summary-table">
-                            <thead>
-                                <tr>
-                                    <th>Domain</th>
-                                    <th>Blocks</th>
-                                    <th>Users</th>
-                                    <th>Category</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entry in blocked_urls %}
-                                <tr>
-                                    <td>
-                                        <a href="/pa-url-logs/?url={{ entry.domain }}&action=block-url&time_range={{ selected_time_range }}" class="table-link">
-                                            <span class="url-domain blocked">{{ entry.domain|truncatechars:40 }}</span>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value security-red">{{ entry.block_count|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.unique_users|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="category-badge {{ entry.category|lower|slugify }}">{{ entry.category|default:"Unknown" }}</span>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="4" class="no-data">No blocked URLs found</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Top Users -->
-            <div class="summary-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-users"></i> Most Active Users</h3>
-                    <div class="card-actions">
-                        <button class="card-action-btn" title="View All Users">
-                            <i class="fas fa-external-link-alt"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-content">
-                    <div class="summary-table-container">
-                        <table class="summary-table">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>IP Address</th>
-                                    <th>Requests</th>
-                                    <th>Domains</th>
-                                    <th>Blocked</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entry in top_users %}
-                                <tr>
-                                    <td>
-                                        <a href="/pa-url-logs/?src_ip={{ entry.ip_address }}&time_range={{ selected_time_range }}" class="table-link">
-                                            <span class="username">{{ entry.username|truncatechars:20 }}</span>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <a href="/pa-url-logs/?src_ip={{ entry.ip_address }}&time_range={{ selected_time_range }}" class="table-link">
-                                            <span class="ip-address">{{ entry.ip_address }}</span>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.request_count|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.unique_domains|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value security-red">{{ entry.blocked_requests|intcomma }}</span>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="5" class="no-data">No user data available</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Security Activity -->
-            <div class="summary-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-exclamation-triangle"></i> Security Activity</h3>
-                    <div class="card-actions">
-                        <button class="card-action-btn" title="View Security Details">
-                            <i class="fas fa-external-link-alt"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-content">
-                    <div class="summary-table-container">
-                        <table class="summary-table">
-                            <thead>
-                                <tr>
-                                    <th>Action</th>
-                                    <th>Category</th>
-                                    <th>Count</th>
-                                    <th>Sources</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entry in security_activity %}
-                                <tr>
-                                    <td>
-                                        <span class="action-badge action-{{ entry.action|lower|slugify }}">{{ entry.action|capfirst }}</span>
-                                    </td>
-                                    <td>
-                                        <a href="/pa-url-logs/?category={{ entry.category }}&action={{ entry.action }}&time_range={{ selected_time_range }}" class="table-link">
-                                            <span class="category-name">{{ entry.category }}</span>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value security-red">{{ entry.count|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.unique_sources|intcomma }}</span>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="4" class="no-data">No security activity found</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Applications -->
-            <div class="summary-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-desktop"></i> Top Applications</h3>
-                    <div class="card-actions">
-                        <button class="card-action-btn" title="View All Applications">
-                            <i class="fas fa-external-link-alt"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-content">
-                    <div class="summary-table-container">
-                        <table class="summary-table">
-                            <thead>
-                                <tr>
-                                    <th>Application</th>
-                                    <th>Requests</th>
-                                    <th>Domains</th>
-                                    <th>Users</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entry in applications %}
-                                <tr>
-                                    <td>
-                                        <span class="application-name">{{ entry.application }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.request_count|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.unique_domains|intcomma }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="metric-value">{{ entry.unique_users|intcomma }}</span>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="4" class="no-data">No application data available</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+            
+            <div class="stat-item info clickable" onclick="navigateToLogs('')">
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ unique_users|default:"0"|intcomma }}</div>
+                    <div class="stat-title">Active Users</div>
+                    <div class="stat-subtitle">{{ unique_domains|default:"0"|intcomma }} domains</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Custom Date Range Modal -->
-    <div id="customDateModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4>Custom Date Range</h4>
-                <span class="close" onclick="closeCustomDateModal()">&times;</span>
+    <!-- Time Range and Controls -->
+    <div class="controls-section">
+        <div class="time-controls">
+            <div class="time-selector">
+                <button class="time-btn {% if selected_time_range == '1h' %}active{% endif %}" data-range="1h">
+                    <i class="far fa-clock"></i> 1 Hour
+                </button>
+                <button class="time-btn {% if selected_time_range == '6h' %}active{% endif %}" data-range="6h">
+                    <i class="far fa-clock"></i> 6 Hours
+                </button>
+                <button class="time-btn {% if selected_time_range == '1d' %}active{% endif %}" data-range="1d">
+                    <i class="fas fa-calendar-day"></i> 24 Hours
+                </button>
+                <button class="time-btn {% if selected_time_range == '7d' %}active{% endif %}" data-range="7d">
+                    <i class="fas fa-calendar-week"></i> 7 Days
+                </button>
+                <button class="time-btn {% if selected_time_range == '1m' %}active{% endif %}" data-range="1m">
+                    <i class="fas fa-calendar-alt"></i> 30 Days
+                </button>
+                <button class="time-btn custom {% if selected_time_range == 'custom' %}active{% endif %}" data-range="custom">
+                    <i class="fas fa-calendar"></i> Custom
+                </button>
             </div>
-            <div class="modal-body">
-                <form id="customDateForm" action="/url-summary/" method="get">
-                    <input type="hidden" name="time_range" value="custom">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="start_date">Start Date & Time:</label>
-                            <input type="datetime-local" id="start_date" name="start_date" required>
+            
+            <div class="action-controls">
+                <button class="control-btn refresh" onclick="refreshDashboard()">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Refresh</span>
+                </button>
+                <button class="control-btn export">
+                    <i class="fas fa-download"></i>
+                    <span>Export Report</span>
+                </button>
+                <button class="control-btn settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="time-display">
+            <i class="far fa-calendar-alt"></i>
+            <span>{{ time_range_start }} - {{ time_range_end }}</span>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-grid">
+        <!-- Security Overview Chart -->
+        <div class="dashboard-card full-width">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-line"></i>
+                    Security Activity Timeline
+                </h3>
+                <div class="card-options">
+                    <select class="chart-type-selector" id="chartTypeSelector">
+                        <option value="area">Area Chart</option>
+                        <option value="line">Line Chart</option>
+                        <option value="bar">Bar Chart</option>
+                    </select>
+                    <button class="control-btn chart-refresh" onclick="refreshChart()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="security-timeline-chart" style="height: 300px;"></div>
+            </div>
+        </div>
+
+        <!-- Top Threats -->
+        <div class="dashboard-card">
+            <div class="card-header danger-header">
+                <h3 class="card-title">
+                    <i class="fas fa-shield-virus"></i>
+                    Top Security Threats
+                </h3>
+                <span class="badge badge-danger">{{ blocked_urls|length }} Active</span>
+            </div>
+            <div class="card-body">
+                <div class="threat-list">
+                    {% for threat in blocked_urls|slice:":8" %}
+                    <div class="threat-item clickable" onclick="navigateToLogs('action=block-url&url={{ threat.domain|urlencode }}')">
+                        <div class="threat-info">
+                            <div class="threat-domain">
+                                <i class="fas fa-times-circle text-danger"></i>
+                                {{ threat.domain|truncatechars:35 }}
+                            </div>
+                            <div class="threat-category">
+                                <span class="category-badge danger clickable" onclick="event.stopPropagation(); navigateToLogs('action=block-url&category={{ threat.category|urlencode }}')">{{ threat.category }}</span>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="end_date">End Date & Time:</label>
-                            <input type="datetime-local" id="end_date" name="end_date" required>
+                        <div class="threat-stats">
+                            <div class="threat-count">{{ threat.block_count|intcomma }}</div>
+                            <div class="threat-users">{{ threat.unique_users }} users</div>
                         </div>
                     </div>
-                    <div class="form-actions">
-                        <button type="button" onclick="closeCustomDateModal()" class="btn-secondary">Cancel</button>
-                        <button type="submit" class="btn-primary">Apply Range</button>
+                    {% endfor %}
+                </div>
+                <a href="/pa-url-logs/?action=block-url" class="view-all-link">
+                    View All Blocked URLs <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Category Distribution -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-tags"></i>
+                    Category Distribution
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="category-donut-chart" style="height: 280px;"></div>
+                <div class="category-legend">
+                    {% for cat in categories|slice:":5" %}
+                    <div class="legend-item clickable" onclick="navigateToLogs('category={{ cat.category|urlencode }}')">
+                        <span class="legend-color" style="background: var(--chart-color-{{ forloop.counter }});"></span>
+                        <span class="legend-label">{{ cat.category|truncatechars:20 }}</span>
+                        <span class="legend-value">{{ cat.request_count|intcomma }}</span>
                     </div>
-                </form>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Users Activity -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-user-shield"></i>
+                    Most Active Users
+                </h3>
+                <div class="card-subtitle">By request volume</div>
+            </div>
+            <div class="card-body">
+                <div class="user-activity-list">
+                    {% for user in top_users|slice:":10" %}
+                    <div class="user-item clickable" onclick="navigateToLogs('src_ip={{ user.ip_address|urlencode }}')">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">{{ user.username }}</div>
+                            <div class="user-ip">{{ user.ip_address }}</div>
+                        </div>
+                        <div class="user-stats">
+                            <div class="user-requests">
+                                <span class="stat-label">Requests</span>
+                                <span class="stat-value">{{ user.request_count|intcomma }}</span>
+                            </div>
+                            {% if user.blocked_requests > 0 %}
+                            <div class="user-blocked">
+                                <span class="badge badge-danger clickable" onclick="event.stopPropagation(); navigateToLogs('src_ip={{ user.ip_address|urlencode }}&action=block-url')">{{ user.blocked_requests }} blocked</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Application Usage -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-th-large"></i>
+                    Application Usage & Security
+                </h3>
+                <div class="card-subtitle">Request volume and threat analysis</div>
+            </div>
+            <div class="card-body">
+                <div class="application-content">
+                    <!-- Chart Section -->
+                    <div class="application-chart-section">
+                        <div id="application-bar-chart" style="height: 250px;"></div>
+                    </div>
+                    
+                    <!-- Severity Analysis Section -->
+                    <div class="application-severity-section">
+                        <h5 class="severity-title">
+                            <i class="fas fa-shield-alt"></i>
+                            Security Analysis by Application
+                        </h5>
+                        <div class="application-severity-list">
+                            {% for app in applications|slice:":6" %}
+                            <div class="application-severity-item clickable" onclick="navigateToLogs('application={{ app.application|urlencode }}')">
+                                <div class="app-info">
+                                    <div class="app-name">{{ app.application|truncatechars:25 }}</div>
+                                    <div class="app-stats">
+                                        <span class="app-requests">{{ app.request_count|intcomma }} requests</span>
+                                        <span class="app-domains">{{ app.unique_domains }} domains</span>
+                                    </div>
+                                </div>
+                                <div class="app-severity">
+                                    <!-- Severity breakdown -->
+                                    <div class="severity-bars">
+                                        {% if app.critical_count > 0 %}
+                                        <div class="severity-bar critical" style="width: {{ app.critical_percentage }}%" 
+                                             title="Critical: {{ app.critical_count|intcomma }} ({{ app.critical_percentage }}%)"
+                                             onclick="event.stopPropagation(); navigateToLogs('application={{ app.application|urlencode }}&severity=critical')">
+                                        </div>
+                                        {% endif %}
+                                        {% if app.high_count > 0 %}
+                                        <div class="severity-bar high" style="width: {{ app.high_percentage }}%" 
+                                             title="High: {{ app.high_count|intcomma }} ({{ app.high_percentage }}%)"
+                                             onclick="event.stopPropagation(); navigateToLogs('application={{ app.application|urlencode }}&severity=high')">
+                                        </div>
+                                        {% endif %}
+                                        {% if app.medium_count > 0 %}
+                                        <div class="severity-bar medium" style="width: {{ app.medium_percentage }}%" 
+                                             title="Medium: {{ app.medium_count|intcomma }} ({{ app.medium_percentage }}%)"
+                                             onclick="event.stopPropagation(); navigateToLogs('application={{ app.application|urlencode }}&severity=medium')">
+                                        </div>
+                                        {% endif %}
+                                        {% if app.low_count > 0 %}
+                                        <div class="severity-bar low" style="width: {{ app.low_percentage }}%" 
+                                             title="Low: {{ app.low_count|intcomma }} ({{ app.low_percentage }}%)"
+                                             onclick="event.stopPropagation(); navigateToLogs('application={{ app.application|urlencode }}&severity=low')">
+                                        </div>
+                                        {% endif %}
+                                        <div class="severity-bar informational" style="width: {{ app.informational_percentage }}%" 
+                                             title="Informational: {{ app.informational_count|intcomma }} ({{ app.informational_percentage }}%)"
+                                             onclick="event.stopPropagation(); navigateToLogs('application={{ app.application|urlencode }}&severity=informational')">
+                                        </div>
+                                    </div>
+                                    <!-- Action badges -->
+                                    <div class="app-actions">
+                                        {% if app.blocked_count > 0 %}
+                                        <span class="action-badge blocked clickable" 
+                                              onclick="event.stopPropagation(); navigateToLogs('application={{ app.application|urlencode }}&action=block-url')"
+                                              title="{{ app.blocked_count|intcomma }} blocked">
+                                            <i class="fas fa-ban"></i> {{ app.blocked_count|intcomma }}
+                                        </span>
+                                        {% endif %}
+                                        {% if app.alert_count > 0 %}
+                                        <span class="action-badge alert clickable" 
+                                              onclick="event.stopPropagation(); navigateToLogs('application={{ app.application|urlencode }}&action=alert')"
+                                              title="{{ app.alert_count|intcomma }} alerts">
+                                            <i class="fas fa-exclamation-triangle"></i> {{ app.alert_count|intcomma }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Severity Legend -->
+                        <div class="severity-legend">
+                            <h6>Severity Levels:</h6>
+                            <div class="legend-items">
+                                <div class="legend-item">
+                                    <span class="legend-color critical"></span>
+                                    <span class="legend-text">Critical</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color high"></span>
+                                    <span class="legend-text">High</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color medium"></span>
+                                    <span class="legend-text">Medium</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color low"></span>
+                                    <span class="legend-text">Low</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color informational"></span>
+                                    <span class="legend-text">Info</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Activity Feed -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-stream"></i>
+                    Recent Security Events
+                </h3>
+                <div class="live-indicator">
+                    <span class="blink"></span> Live
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="activity-feed">
+                    {% for activity in security_activity|slice:":8" %}
+                    <div class="activity-item {% if activity.action == 'block-url' %}danger{% else %}warning{% endif %} clickable" onclick="navigateToLogs('action={{ activity.action|urlencode }}&category={{ activity.category|urlencode }}')">
+                        <div class="activity-icon">
+                            {% if activity.action == 'block-url' %}
+                                <i class="fas fa-ban"></i>
+                            {% else %}
+                                <i class="fas fa-exclamation-triangle"></i>
+                            {% endif %}
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">
+                                {{ activity.action|title }} - {{ activity.category }}
+                            </div>
+                            <div class="activity-meta">
+                                {{ activity.count|intcomma }} events • {{ activity.unique_sources }} sources
+                            </div>
+                        </div>
+                        <div class="activity-time">
+                            <i class="far fa-clock"></i> Recent
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Summary Section -->
+    <div class="summary-section">
+        <div class="summary-card-grid">
+            <!-- Quick Access Links -->
+            <div class="quick-access-card">
+                <h4><i class="fas fa-link"></i> Quick Actions</h4>
+                <div class="quick-links">
+                    <a href="/pa-url-logs/" class="quick-link">
+                        <i class="fas fa-list"></i> View All Logs
+                    </a>
+                    <a href="/pa-url-logs/?action=block-url" class="quick-link danger">
+                        <i class="fas fa-ban"></i> Blocked URLs
+                    </a>
+                    <a href="/pa-url-logs/?action=alert" class="quick-link warning">
+                        <i class="fas fa-exclamation"></i> Security Alerts
+                    </a>
+                    <a href="/logs-config/" class="quick-link">
+                        <i class="fas fa-cog"></i> Configure Rules
+                    </a>
+                </div>
+            </div>
+
+            <!-- Top Domains -->
+            <div class="top-domains-card">
+                <h4><i class="fas fa-globe"></i> Most Visited Domains</h4>
+                <div class="domain-list">
+                    {% for url in top_urls|slice:":5" %}
+                    <div class="domain-item clickable" onclick="navigateToLogs('url={{ url.domain|urlencode }}')">
+                        <div class="domain-name">
+                            <i class="fas fa-globe-americas"></i>
+                            {{ url.domain|truncatechars:30 }}
+                        </div>
+                        <div class="domain-stats">
+                            <span class="visits">{{ url.request_count|intcomma }} visits</span>
+                            <span class="users">{{ url.unique_users }} users</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-/* Modern Top Summary Page Styles - Matching Logs Page Design */
-.top-summary-container {
-    width: 100%;
-    max-width: 100%;
-    padding: 0;
-}
+<!-- Custom Date Modal -->
+<div id="customDateModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Select Custom Date Range</h3>
+            <span class="close">&times;</span>
+        </div>
+        <form method="get" action="">
+            <div class="modal-body">
+                <div class="date-inputs">
+                    <div class="date-input-group">
+                        <label for="start_date">Start Date & Time</label>
+                        <input type="datetime-local" id="start_date" name="start_date" required>
+                    </div>
+                    <div class="date-input-group">
+                        <label for="end_date">End Date & Time</label>
+                        <input type="datetime-local" id="end_date" name="end_date" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Apply Range</button>
+            </div>
+            <input type="hidden" name="time_range" value="custom">
+        </form>
+    </div>
+</div>
 
-.top-summary-content {
+<style>
+/* Enhanced Dashboard Styles */
+.enhanced-dashboard {
     padding: 1.5rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    background: #f5f7fa;
+    min-height: 100vh;
 }
 
 /* Header Section */
-.page-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 12px;
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
     padding: 2rem;
     margin-bottom: 2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border: 1px solid #e1e5e9;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+    color: white;
 }
 
-.header-content {
+.header-main {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 2rem;
-    flex-wrap: wrap;
+    margin-bottom: 2rem;
 }
 
-.page-title h1 {
+.dashboard-title {
+    font-size: 2rem;
+    font-weight: 700;
     margin: 0;
-    font-size: 1.8rem;
-    font-weight: 600;
-    color: #495057;
     display: flex;
     align-items: center;
+    gap: 0.75rem;
+}
+
+.title-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+}
+
+.dashboard-subtitle {
+    margin: 0.5rem 0 0 3.5rem;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+/* Live Status */
+.live-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
     gap: 0.5rem;
 }
 
-.page-title h1 i {
-    color: #667eea;
-    font-size: 1.6rem;
-}
-
-.subtitle {
-    margin: 0.5rem 0 0 0;
-    color: #6c757d;
-    font-size: 0.95rem;
-}
-
-.header-controls {
+.status-indicator {
     display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
 }
 
-/* Summary Stats */
-.summary-stats {
+.pulse {
+    width: 8px;
+    height: 8px;
+    background: #4ade80;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+
+.last-update {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+/* Quick Stats Bar */
+.quick-stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: -1rem;
+}
+
+.stat-item {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 1.5rem;
     display: flex;
     gap: 1rem;
+    align-items: center;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.stat-card {
-    background: white;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    border: 1px solid #e1e5e9;
-    text-align: center;
-    min-width: 120px;
+.stat-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
-.stat-value {
-    font-size: 1.4rem;
-    font-weight: 700;
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 1.5rem;
+}
+
+.stat-item.primary .stat-icon {
+    background: #e0e7ff;
     color: #667eea;
-    display: block;
 }
 
-.stat-label {
-    font-size: 0.75rem;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.stat-item.success .stat-icon {
+    background: #dcfce7;
+    color: #22c55e;
+}
+
+.stat-item.danger .stat-icon {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.stat-item.warning .stat-icon {
+    background: #fef3c7;
+    color: #f59e0b;
+}
+
+.stat-item.info .stat-icon {
+    background: #dbeafe;
+    color: #3b82f6;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.stat-title {
+    font-size: 0.875rem;
+    color: #6b7280;
     margin-top: 0.25rem;
 }
 
-/* Time Filter Section */
-.time-filter-section {
+.stat-trend {
     display: flex;
     align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.stat-trend.up {
+    color: #22c55e;
+}
+
+.stat-trend.down {
+    color: #ef4444;
+}
+
+.stat-percentage {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.stat-subtitle {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.25rem;
+}
+
+/* Controls Section */
+.controls-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 1rem;
 }
 
-.time-range-tabs {
+.time-controls {
     display: flex;
-    gap: 0.5rem;
-    background: white;
-    padding: 0.25rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    border: 1px solid #e1e5e9;
+    align-items: center;
+    gap: 2rem;
 }
 
-.time-tab {
-    padding: 0.5rem 1rem;
+.time-selector {
+    display: flex;
+    gap: 0.5rem;
+    background: #f3f4f6;
+    padding: 0.25rem;
+    border-radius: 10px;
+}
+
+.time-btn {
+    padding: 0.625rem 1rem;
     border: none;
     background: transparent;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #6c757d;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.time-tab:hover {
-    background: #f8f9fa;
-    color: #667eea;
-}
-
-.time-tab.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
-}
-
-.header-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.action-btn {
-    padding: 0.5rem 1rem;
-    border: 1px solid #dee2e6;
-    background: white;
-    border-radius: 6px;
-    font-size: 0.85rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
@@ -546,345 +719,846 @@
     gap: 0.5rem;
 }
 
-.action-btn:hover {
-    background: #f8f9fa;
+.time-btn:hover {
+    background: white;
+    color: #667eea;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.time-btn.active {
+    background: #667eea;
+    color: white;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.action-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.control-btn {
+    padding: 0.625rem 1rem;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.control-btn:hover {
+    background: #f9fafb;
     border-color: #667eea;
     color: #667eea;
 }
 
-.refresh-btn:hover {
-    transform: rotate(90deg);
+.control-btn.refresh:hover i {
+    animation: rotate 1s linear infinite;
 }
 
-/* Analytics Grid */
-.analytics-grid {
+@keyframes rotate {
+    100% { transform: rotate(360deg); }
+}
+
+.time-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
-/* Summary Cards */
-.summary-card {
+.dashboard-card {
     background: white;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border: 1px solid #e1e5e9;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     overflow: hidden;
     transition: all 0.3s ease;
 }
 
-.summary-card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+.dashboard-card:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
 }
 
-.summary-card.full-width {
+.dashboard-card.full-width {
     grid-column: 1 / -1;
 }
 
 .card-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #e1e5e9;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.card-header h3 {
+.card-header.danger-header {
+    background: #fef2f2;
+    border-bottom-color: #fee2e2;
+}
+
+.card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
     margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #495057;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.card-header h3 i {
-    color: #667eea;
-    font-size: 1rem;
+.card-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
 }
 
-.card-actions {
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Threat List */
+.threat-list {
     display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.threat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.threat-item:hover {
+    background: #f3f4f6;
+}
+
+.threat-info {
+    display: flex;
+    flex-direction: column;
     gap: 0.5rem;
 }
 
-.card-action-btn {
-    padding: 0.25rem 0.5rem;
-    background: transparent;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    color: #6c757d;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.2s ease;
-}
-
-.card-action-btn:hover {
-    background: #667eea;
-    color: white;
-    border-color: #667eea;
-}
-
-.card-content {
-    padding: 0;
-}
-
-/* Summary Tables */
-.summary-table-container {
-    overflow-x: auto;
-}
-
-.summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-}
-
-.summary-table thead th {
-    background: #f8f9fa;
-    padding: 0.75rem 1rem;
-    text-align: left;
-    font-weight: 600;
-    color: #495057;
-    border-bottom: 2px solid #e1e5e9;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.summary-table tbody tr {
-    border-bottom: 1px solid #f1f3f4;
-    transition: all 0.2s ease;
-}
-
-.summary-table tbody tr:hover {
-    background: #f8f9fa;
-}
-
-.summary-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-.summary-table tbody td {
-    padding: 0.75rem 1rem;
-    vertical-align: middle;
-}
-
-/* Table Elements */
-.table-link {
-    color: #495057;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    display: block;
-}
-
-.table-link:hover {
-    color: #667eea;
-}
-
-.ip-address {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.85rem;
+.threat-domain {
     font-weight: 500;
-}
-
-.port-badge {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.count-badge {
-    background: #f8f9fa;
-    color: #495057;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    border: 1px solid #e1e5e9;
-}
-
-.bytes-display {
-    font-weight: 600;
-    color: #28a745;
-}
-
-.bytes-display.total-bytes {
-    color: #667eea;
-    font-weight: 700;
-}
-
-.category-name, .username-display {
-    font-weight: 500;
-}
-
-.url-display {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.8rem;
-}
-
-.country-display {
+    color: #1f2937;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-weight: 500;
-}
-
-.no-data {
-    text-align: center;
-    color: #6c757d;
-    font-style: italic;
-    padding: 2rem 1rem;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .header-content {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .header-controls {
-        align-items: stretch;
-    }
-    
-    .time-filter-section {
-        flex-direction: column;
-    }
-    
-    .summary-stats {
-        justify-content: space-between;
-    }
-    
-    .stat-card {
-        flex: 1;
-        min-width: 0;
-    }
-    
-    .analytics-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .time-range-tabs {
-        width: 100%;
-        justify-content: space-between;
-    }
-    
-    .time-tab {
-        flex: 1;
-        text-align: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .top-summary-content {
-        padding: 1rem;
-    }
-    
-    .page-header {
-        padding: 1.5rem;
-    }
-    
-    .page-title h1 {
-        font-size: 1.5rem;
-    }
-    
-    .summary-stats {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-}
-
-/* URL Analytics specific styles */
-.security-alert .stat-value {
-    color: #e74c3c;
-}
-
-.url-domain {
-    font-family: 'Courier New', monospace;
-    font-size: 0.9em;
-    color: #2c3e50;
-}
-
-.url-domain.blocked {
-    color: #e74c3c;
-    font-weight: 600;
 }
 
 .category-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.8em;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
     font-weight: 500;
-    text-transform: capitalize;
 }
 
-.category-badge.computer-and-internet-info { background: #e3f2fd; color: #1976d2; }
-.category-badge.search-engines { background: #f3e5f5; color: #7b1fa2; }
-.category-badge.social-networking { background: #e8f5e8; color: #388e3c; }
-.category-badge.internet-portals { background: #fff3e0; color: #f57c00; }
-.category-badge.online-storage-and-backup { background: #fce4ec; color: #c2185b; }
+.category-badge.danger {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.threat-stats {
+    text-align: right;
+}
+
+.threat-count {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #dc2626;
+}
+
+.threat-users {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+/* User Activity List */
+.user-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.user-item:hover {
+    background: #f3f4f6;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background: #e0e7ff;
+    color: #667eea;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+}
+
+.user-info {
+    flex: 1;
+}
+
+.user-name {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.user-ip {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-family: monospace;
+}
+
+.user-stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-requests {
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.stat-value {
+    display: block;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* Activity Feed */
+.activity-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #f9fafb;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.activity-item.danger {
+    border-left-color: #ef4444;
+}
+
+.activity-item.warning {
+    border-left-color: #f59e0b;
+}
+
+.activity-item:hover {
+    background: #f3f4f6;
+}
+
+.activity-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.activity-item.danger .activity-icon {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.activity-item.warning .activity-icon {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-title {
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.activity-meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.activity-time {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Chart Styles */
+.chart-type-selector {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chart-type-selector:hover {
+    border-color: #667eea;
+}
+
+.chart-type-selector:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.card-options {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-refresh {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+}
+
+.chart-refresh:hover {
+    background: #f9fafb;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.chart-refresh i {
+    font-size: 0.875rem;
+}
+
+/* Chart container enhancements */
+#security-timeline-chart {
+    border-radius: 8px;
+    background: #fafbfc;
+    padding: 0.5rem;
+}
+
+/* Clickable elements */
+.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-item.clickable:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.threat-item.clickable:hover {
+    background: #f1f5f9;
+    border-left: 3px solid #ef4444;
+}
+
+.user-item.clickable:hover {
+    background: #f1f5f9;
+    border-left: 3px solid #667eea;
+}
+
+.activity-item.clickable:hover {
+    background: #f1f5f9;
+}
+
+.legend-item.clickable:hover {
+    background: #f9fafb;
+    border-radius: 4px;
+    padding: 0.25rem;
+    margin: -0.25rem;
+}
+
+.domain-item.clickable:hover {
+    background: #f1f5f9;
+    border-left: 3px solid #22c55e;
+}
+
+.category-badge.clickable:hover {
+    background: #dc2626 !important;
+    color: white !important;
+    transform: scale(1.05);
+}
+
+.badge.clickable:hover {
+    transform: scale(1.05);
+}
+
+/* Application Usage & Severity Styles */
+.application-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.application-chart-section {
+    width: 100%;
+}
+
+.application-severity-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+}
+
+.severity-title {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.application-severity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.application-severity-item {
+    background: white;
+    border-radius: 6px;
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.application-severity-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.app-info {
+    flex: 1;
+}
+
+.app-name {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.app-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.app-requests {
+    font-weight: 600;
+}
+
+.app-severity {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+
+.severity-bars {
+    display: flex;
+    height: 6px;
+    width: 100px;
+    background: #f3f4f6;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.severity-bar {
+    height: 100%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.severity-bar:hover {
+    opacity: 0.8;
+    transform: scaleY(1.2);
+}
+
+.severity-bar.critical {
+    background: #dc2626;
+}
+
+.severity-bar.high {
+    background: #ea580c;
+}
+
+.severity-bar.medium {
+    background: #d97706;
+}
+
+.severity-bar.low {
+    background: #eab308;
+}
+
+.severity-bar.informational {
+    background: #16a34a;
+}
+
+.app-actions {
+    display: flex;
+    gap: 0.25rem;
+}
 
 .action-badge {
-    padding: 4px 8px;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.action-badge.blocked {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.action-badge.alert {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.action-badge:hover {
+    transform: scale(1.05);
+}
+
+.action-badge.blocked:hover {
+    background: #dc2626;
+    color: white;
+}
+
+.action-badge.alert:hover {
+    background: #d97706;
+    color: white;
+}
+
+.severity-legend {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.75rem;
+}
+
+.severity-legend h6 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.severity-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border-radius: 0;
+}
+
+.severity-legend .legend-color {
+    width: 12px;
+    height: 8px;
+    border-radius: 2px;
+}
+
+.severity-legend .legend-color.critical {
+    background: #dc2626;
+}
+
+.severity-legend .legend-color.high {
+    background: #ea580c;
+}
+
+.severity-legend .legend-color.medium {
+    background: #d97706;
+}
+
+.severity-legend .legend-color.low {
+    background: #eab308;
+}
+
+.severity-legend .legend-color.informational {
+    background: #16a34a;
+}
+
+.legend-text {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* Category Legend */
+.category-legend {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.legend-label {
+    flex: 1;
+    color: #6b7280;
+}
+
+.legend-value {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* Summary Section */
+.summary-section {
+    margin-top: 2rem;
+}
+
+.summary-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.quick-access-card,
+.top-domains-card {
+    background: white;
     border-radius: 12px;
-    font-size: 0.8em;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.quick-access-card h4,
+.top-domains-card h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quick-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.quick-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #374151;
+    font-size: 0.875rem;
     font-weight: 500;
-    text-transform: capitalize;
+    transition: all 0.2s ease;
 }
 
-.action-badge.action-alert {
-    background: #fff3cd;
-    color: #856404;
+.quick-link:hover {
+    background: #f3f4f6;
+    color: #667eea;
 }
 
-.action-badge.action-block-url {
-    background: #f8d7da;
-    color: #721c24;
+.quick-link.danger:hover {
+    background: #fee2e2;
+    color: #dc2626;
 }
 
-.action-badge.action-allow {
-    background: #d4edda;
-    color: #155724;
+.quick-link.warning:hover {
+    background: #fef3c7;
+    color: #d97706;
 }
 
-.security-red {
-    color: #e74c3c;
+.domain-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.domain-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.domain-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.domain-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.visits {
     font-weight: 600;
 }
 
-.security-yellow {
-    color: #f39c12;
+/* Badge Styles */
+.badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.badge-danger {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* View All Link */
+.view-all-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    color: #667eea;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.view-all-link:hover {
+    gap: 0.75rem;
+}
+
+/* Live Indicator */
+.live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 9999px;
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
-.username {
-    font-weight: 500;
-    color: #2c3e50;
+.blink {
+    width: 8px;
+    height: 8px;
+    background: #dc2626;
+    border-radius: 50%;
+    animation: blink 1.5s ease-in-out infinite;
 }
 
-.application-name {
-    font-weight: 500;
-    color: #34495e;
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
 }
 
-.category-name {
-    font-weight: 500;
-    color: #2c3e50;
+/* Chart Colors */
+:root {
+    --chart-color-1: #667eea;
+    --chart-color-2: #f59e0b;
+    --chart-color-3: #ef4444;
+    --chart-color-4: #22c55e;
+    --chart-color-5: #3b82f6;
 }
 
-.metric-value {
-    font-weight: 600;
-    color: #495057;
-}
-
-/* Custom date modal styles */
+/* Modal Styles */
 .modal {
     display: none;
     position: fixed;
@@ -893,139 +1567,510 @@
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
 }
 
 .modal-content {
     background-color: white;
-    margin: 15% auto;
-    padding: 0;
-    border-radius: 8px;
-    width: 500px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    margin: 10% auto;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
 .modal-header {
-    padding: 20px;
-    border-bottom: 1px solid #eee;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.modal-body {
-    padding: 20px;
-}
-
-.form-row {
-    display: flex;
-    gap: 20px;
-}
-
-.form-group {
-    flex: 1;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.form-actions {
-    margin-top: 20px;
-    text-align: right;
-}
-
-.btn-secondary, .btn-primary {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    margin-left: 10px;
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-primary {
-    background: #667eea;
-    color: white;
+.modal-header h3 {
+    margin: 0;
+    color: #1f2937;
 }
 
 .close {
-    font-size: 24px;
-    font-weight: bold;
+    font-size: 1.5rem;
     cursor: pointer;
-    color: #999;
+    color: #6b7280;
+    transition: color 0.2s;
 }
 
 .close:hover {
-    color: #333;
+    color: #1f2937;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.date-inputs {
+    display: flex;
+    gap: 1rem;
+    flex-direction: column;
+}
+
+.date-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.date-input-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.date-input-group input {
+    padding: 0.625rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .quick-stats-bar {
+        grid-template-columns: 1fr;
+    }
+    
+    .header-main {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .time-controls {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .time-selector {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    .controls-section {
+        flex-direction: column;
+    }
+    
+    .application-severity-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .app-severity {
+        align-items: flex-start;
+        width: 100%;
+    }
+    
+    .severity-bars {
+        width: 100%;
+    }
+    
+    .legend-items {
+        justify-content: center;
+    }
+    
+    .app-stats {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
 }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Time range tab functionality
-    const timeTabs = document.querySelectorAll('.time-tab');
-    timeTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            const range = this.dataset.range;
-            
-            if (range === 'custom') {
-                openCustomDateModal();
-            } else {
-                // Remove active class from all tabs
-                timeTabs.forEach(t => t.classList.remove('active'));
-                // Add active class to clicked tab
-                this.classList.add('active');
-                
-                // Navigate to new time range
-                const url = new URL(window.location);
-                url.searchParams.set('time_range', range);
-                window.location.href = url.toString();
-            }
-        });
+// Time range selection
+document.querySelectorAll('.time-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const range = this.dataset.range;
+        if (range === 'custom') {
+            document.getElementById('customDateModal').style.display = 'block';
+        } else {
+            window.location.href = `?time_range=${range}`;
+        }
     });
 });
 
-function openCustomDateModal() {
-    document.getElementById('customDateModal').style.display = 'block';
-    
-    // Set default values to current time range if available
-    const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
-    
-    document.getElementById('start_date').value = oneHourAgo.toISOString().slice(0, 16);
-    document.getElementById('end_date').value = now.toISOString().slice(0, 16);
-}
-
-function closeCustomDateModal() {
+// Modal functions
+function closeModal() {
     document.getElementById('customDateModal').style.display = 'none';
 }
 
-function refreshDashboard() {
-    window.location.reload();
-}
+document.querySelector('.close').addEventListener('click', closeModal);
 
-// Close modal when clicking outside
 window.onclick = function(event) {
     const modal = document.getElementById('customDateModal');
     if (event.target == modal) {
-        closeCustomDateModal();
+        closeModal();
     }
 }
+
+// Refresh dashboard
+function refreshDashboard() {
+    location.reload();
+}
+
+// Refresh chart function
+function refreshChart() {
+    if (timelineChart) {
+        // Add refresh animation
+        const refreshBtn = document.querySelector('.chart-refresh i');
+        refreshBtn.style.animation = 'rotate 1s linear infinite';
+        
+        // Simulate data refresh (in production, fetch new data via AJAX)
+        setTimeout(() => {
+            refreshBtn.style.animation = '';
+            // For now, just re-render the chart
+            timelineChart.refresh();
+        }, 1000);
+    }
+}
+
+// Navigation function to pa-url-logs with filters
+function navigateToLogs(filters) {
+    // Get current time range
+    const currentTimeRange = '{{ selected_time_range }}';
+    
+    // Base URL
+    let url = '/pa-url-logs/';
+    
+    // Add time range to filters
+    const params = new URLSearchParams();
+    
+    // Add time range mapping (pa-url-logs uses different parameter names)
+    if (currentTimeRange === '1h') {
+        params.append('time_range', 'last_hour');
+    } else if (currentTimeRange === '6h') {
+        params.append('time_range', 'last_6_hours');
+    } else if (currentTimeRange === '1d') {
+        params.append('time_range', 'last_24_hours');
+    } else if (currentTimeRange === '7d') {
+        params.append('time_range', 'last_7_days');
+    } else {
+        params.append('time_range', 'last_hour');
+    }
+    
+    // Add additional filters if provided
+    if (filters) {
+        const filterPairs = filters.split('&');
+        filterPairs.forEach(pair => {
+            if (pair.trim()) {
+                const [key, value] = pair.split('=');
+                if (key && value) {
+                    params.append(key.trim(), decodeURIComponent(value.trim()));
+                }
+            }
+        });
+    }
+    
+    // Navigate to the filtered URL
+    window.location.href = url + '?' + params.toString();
+}
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    document.getElementById('last-update-time').textContent = 'Updated: Just now';
+    // In production, you would fetch new data here
+}, 30000);
+
+// Global chart variable
+let timelineChart;
+
+// Initialize Charts
+document.addEventListener('DOMContentLoaded', function() {
+    // Security Timeline Chart with real data
+    const timelineLabels = [
+        {% for label in timeline_labels %}
+        '{{ label }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const allowedData = [
+        {% for val in timeline_allowed %}
+        {{ val }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const blockedData = [
+        {% for val in timeline_blocked %}
+        {{ val }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const alertsData = [
+        {% for val in timeline_alerts %}
+        {{ val }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    function createTimelineChart(chartType = 'area') {
+        const timelineOptions = {
+            series: [{
+                name: 'Allowed Requests',
+                data: allowedData,
+                type: chartType
+            }, {
+                name: 'Blocked Requests', 
+                data: blockedData,
+                type: chartType
+            }, {
+                name: 'Security Alerts',
+                data: alertsData,
+                type: chartType
+            }],
+            chart: {
+                type: chartType,
+                height: 300,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                },
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800
+                }
+            },
+            colors: ['#22c55e', '#ef4444', '#f59e0b'],
+            dataLabels: {
+                enabled: chartType === 'bar' ? true : false,
+                formatter: function(val) {
+                    return val > 0 ? val.toLocaleString() : '';
+                }
+            },
+            markers: {
+                size: chartType === 'line' ? 4 : 0,
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: {
+                    size: 6
+                }
+            },
+            stroke: {
+                curve: 'smooth',
+                width: chartType === 'line' ? 3 : 2
+            },
+            fill: {
+                type: chartType === 'area' ? 'gradient' : 'solid',
+                gradient: {
+                    opacityFrom: chartType === 'area' ? 0.6 : 1,
+                    opacityTo: chartType === 'area' ? 0.1 : 1
+                }
+            },
+            xaxis: {
+                categories: timelineLabels,
+                title: {
+                    text: 'Time'
+                },
+                labels: {
+                    style: {
+                        fontSize: '12px'
+                    }
+                }
+            },
+            yaxis: {
+                title: {
+                    text: 'Number of Requests'
+                },
+                labels: {
+                    formatter: function(val) {
+                        return val.toLocaleString();
+                    }
+                }
+            },
+            tooltip: {
+                theme: 'light',
+                shared: true,
+                intersect: false,
+                y: {
+                    formatter: function(val, { seriesIndex, dataPointIndex, w }) {
+                        return val.toLocaleString() + ' requests';
+                    }
+                }
+            },
+            legend: {
+                show: true,
+                position: 'top',
+                horizontalAlign: 'right',
+                markers: {
+                    width: 12,
+                    height: 12,
+                    radius: 6
+                }
+            },
+            grid: {
+                borderColor: '#e7e7e7',
+                strokeDashArray: 3
+            }
+        };
+        
+        return timelineOptions;
+    }
+    
+    // Create initial chart
+    timelineChart = new ApexCharts(document.querySelector("#security-timeline-chart"), createTimelineChart('area'));
+    timelineChart.render();
+    
+    // Chart type selector
+    document.getElementById('chartTypeSelector').addEventListener('change', function() {
+        const selectedType = this.value;
+        timelineChart.destroy();
+        timelineChart = new ApexCharts(document.querySelector("#security-timeline-chart"), createTimelineChart(selectedType));
+        timelineChart.render();
+    });
+    
+    // Category Donut Chart
+    const categoryData = [
+        {% for cat in categories|slice:":5" %}
+        {{ cat.request_count }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const categoryLabels = [
+        {% for cat in categories|slice:":5" %}
+        '{{ cat.category|truncatechars:20 }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const donutOptions = {
+        series: categoryData,
+        labels: categoryLabels,
+        chart: {
+            type: 'donut',
+            height: 280
+        },
+        colors: ['#667eea', '#f59e0b', '#ef4444', '#22c55e', '#3b82f6'],
+        dataLabels: {
+            enabled: true,
+            formatter: function(val) {
+                return Math.round(val) + '%';
+            }
+        },
+        legend: {
+            show: false
+        },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '70%',
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true,
+                            label: 'Total',
+                            formatter: function(w) {
+                                return w.globals.seriesTotals.reduce((a, b) => a + b, 0).toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+    
+    const donutChart = new ApexCharts(document.querySelector("#category-donut-chart"), donutOptions);
+    donutChart.render();
+    
+    // Application Bar Chart
+    const appData = [
+        {% for app in applications|slice:":8" %}
+        {{ app.request_count }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const appLabels = [
+        {% for app in applications|slice:":8" %}
+        '{{ app.application|truncatechars:15 }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    const barOptions = {
+        series: [{
+            name: 'Requests',
+            data: appData
+        }],
+        chart: {
+            type: 'bar',
+            height: 250,
+            toolbar: {
+                show: false
+            }
+        },
+        plotOptions: {
+            bar: {
+                horizontal: true,
+                borderRadius: 4,
+                dataLabels: {
+                    position: 'top'
+                }
+            }
+        },
+        colors: ['#667eea'],
+        dataLabels: {
+            enabled: true,
+            formatter: function(val) {
+                return val.toLocaleString();
+            },
+            offsetX: -6,
+            style: {
+                fontSize: '12px',
+                colors: ['#fff']
+            }
+        },
+        xaxis: {
+            categories: appLabels,
+            labels: {
+                formatter: function(val) {
+                    return val.toLocaleString();
+                }
+            }
+        },
+        yaxis: {
+            labels: {
+                style: {
+                    fontSize: '12px'
+                }
+            }
+        },
+        tooltip: {
+            theme: 'light',
+            y: {
+                formatter: function(val) {
+                    return val.toLocaleString() + ' requests';
+                }
+            }
+        }
+    };
+    
+    const barChart = new ApexCharts(document.querySelector("#application-bar-chart"), barOptions);
+    barChart.render();
+});
 </script>
+
 {% endblock %}
