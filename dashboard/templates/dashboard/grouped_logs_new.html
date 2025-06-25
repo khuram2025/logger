@@ -1,0 +1,576 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Grouped Logs{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='grouped_logs' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+<div class="logs-page-container">
+    <div class="logs-main-content">
+        <div class="logs-content-header">
+            <div class="controls-bar logs-controls-row">
+                <div class="logs-controls-group">
+                    <div class="log-summary">
+                        Displayed Subnet Groups: <span id="total-groups">{{ displayed_subnet_groups_count|default:0 }}</span> (Total fine-grained groups: {{ total_grouped_logs_count|default:0 }})
+                    </div>
+                    <div class="date-range-display">
+                        Displaying groups for: {{ selected_time_range_display }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+        /* Professional Filter Sidebar Styles */
+        .logs-page-container {
+            display: flex;
+            gap: 20px;
+            max-width: 100%;
+            overflow: visible;
+            width: 100%;
+        }
+
+        .logs-main-content {
+            flex: 1;
+            min-width: 0;
+            width: calc(100% - 300px);
+            overflow-x: auto;
+        }
+
+        .logs-filter-sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e1e5e9;
+            height: fit-content;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            display: block;
+            visibility: visible;
+        }
+
+        .logs-filter-sidebar.hidden {
+            display: none;
+        }
+
+        .logs-main-content.sidebar-hidden {
+            width: 100%;
+        }
+
+        .logs-table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .filter-sidebar-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 12px 16px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .filter-sidebar-header h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-sidebar-header h3 i {
+            color: #667eea;
+            font-size: 12px;
+        }
+
+        .clear-all-filters {
+            background: none;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .clear-all-filters:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .filter-sections {
+            padding: 12px;
+        }
+
+        .filter-section {
+            margin-bottom: 16px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .filter-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .filter-section-header i {
+            font-size: 11px;
+            color: #667eea;
+        }
+
+        .filter-section-content {
+            margin-top: 8px;
+        }
+
+        .filter-group {
+            margin-bottom: 10px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 11px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #fff;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .filter-input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-input::placeholder {
+            color: #adb5bd;
+            font-size: 11px;
+        }
+
+        .btn-apply-filters {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-apply-filters:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-apply-filters i {
+            font-size: 11px;
+        }
+
+        /* Time Range Tabs */
+        .time-range-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .time-tab {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            color: #495057;
+        }
+
+        .time-tab:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .time-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Active Filters Banner */
+        .active-filters-banner {
+            background-color: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 4px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+        }
+
+        .filter-tag {
+            background-color: #1976d2;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            margin: 0 5px;
+            font-size: 0.85em;
+            display: inline-block;
+        }
+
+        /* Table styles */
+        .sort-link {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .sort-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .logs-page-container {
+                flex-direction: column;
+            }
+            
+            .logs-main-content {
+                width: 100%;
+            }
+            
+            .logs-filter-sidebar {
+                width: 100%;
+                max-width: 100%;
+                position: relative;
+                top: 0;
+                margin-bottom: 20px;
+            }
+        }
+        </style>
+
+        <!-- Active Filters Banner -->
+        {% if dstip_filter or dstport_filter or action_filter or devname_filter %}
+        <div class="active-filters-banner">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <strong style="color: #1976d2;">Active Filters:</strong>
+                    {% if dstip_filter %}
+                        <span class="filter-tag">Destination IP: {{ dstip_filter }}</span>
+                    {% endif %}
+                    {% if dstport_filter %}
+                        <span class="filter-tag">Destination Port: {{ dstport_filter }}</span>
+                    {% endif %}
+                    {% if action_filter %}
+                        <span class="filter-tag">Action: {{ action_filter }}</span>
+                    {% endif %}
+                    {% if devname_filter %}
+                        <span class="filter-tag">Device: {{ devname_filter }}</span>
+                    {% endif %}
+                </div>
+                <a href="{% url 'grouped_logs' %}?time_range={{ selected_time_range }}" style="color: #1976d2; text-decoration: none; font-size: 0.9em;">
+                    <i class="fas fa-times"></i> Clear All
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="logs-table-container">
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Source Subnet / IP</th>
+                        <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=dstip&sort_order={% if sort_by == 'dstip' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}">Destination IP {% if sort_by == 'dstip' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
+                        <th>Destination Port</th>
+                        <th>Action</th>
+                        <th>Protocol(s)</th>
+                        <th>Total Sent</th>
+                        <th>Total Received</th>
+                        <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=last_seen&sort_order={% if sort_by == 'last_seen' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}">Last Seen {% if sort_by == 'last_seen' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
+                        <th><a class="sort-link" href="?time_range={{ selected_time_range }}&page={{ current_page }}&sort_by=count&sort_order={% if sort_by == 'count' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}">Count {% if sort_by == 'count' %}{% if sort_order == 'asc' %}&uarr;{% else %}&darr;{% endif %}{% endif %}</a></th>
+                    </tr>
+                </thead>
+                <tbody id="groupedLogsTableBody">
+                    {% for group in grouped_logs %}
+                    <tr class="subnet-summary-row" data-group-id="{{ group.group_id }}" 
+                        {% if group.details|length > 1 %}style="cursor: pointer; background-color: #f9f9f9;"{% else %}style="background-color: #f9f9f9;"{% endif %}>
+                        <td>
+                            {% if group.details|length > 1 %}
+                                <span class="toggle-icon">[+]</span> {{ group.src_subnet_display }}
+                            {% elif group.details|length == 1 %}
+                                {{ group.details.0.srcip }}
+                            {% else %}
+                                {{ group.src_subnet_display }}
+                            {% endif %}
+                        </td>
+                        <td>{{ group.dstip }}</td>
+                        <td>{{ group.dstport }}</td>
+                        <td>{{ group.action }}</td>
+                        <td>{{ group.proto_display }}</td>
+                        <td>{{ group.total_sent_display }}</td>
+                        <td>{{ group.total_rcvd_display }}</td>
+                        <td>{{ group.last_seen_display }}</td>
+                        <td>{{ group.event_count }}</td>
+                    </tr>
+                    {% if group.details|length > 1 %}
+                        {% for detail in group.details %}
+                        <tr class="subnet-detail-row {{ group.group_id }}" style="display: none; background-color: #fff;">
+                            <td style="padding-left: 30px;">{{ detail.srcip }}</td>
+                            <td>{{ detail.dstip }}</td>
+                            <td>{{ detail.dstport }}</td>
+                            <td>{{ detail.action }}</td>
+                            <td>{{ detail.proto }}</td>
+                            <td>{{ detail.total_sent_display }}</td>
+                            <td>{{ detail.total_rcvd_display }}</td>
+                            <td>{{ detail.last_seen_display }}</td>
+                            <td>{{ detail.event_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 20px;">No grouped logs found for the selected period.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination Bar -->
+            {% if total_pages > 1 %}
+            <div class="pagination-bar" style="display: flex; justify-content: center; align-items: center; margin: 24px 0;">
+                <nav aria-label="Grouped logs pagination">
+                    <ul class="pagination" style="display: flex; gap: 4px; list-style: none; padding: 0;">
+                        {% if current_page > 1 %}
+                        <li><a class="pagination-link" href="?page={{ current_page|add:'-1' }}&time_range={{ selected_time_range }}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">« Previous</a></li>
+                        {% else %}
+                        <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">« Previous</span></li>
+                        {% endif %}
+                        
+                        {% for page_num in page_range %}
+                            {% if page_num == current_page %}
+                                <li><span class="pagination-link active" style="padding: 6px 12px; border: 1px solid #007bff; background: #007bff; color: #fff; border-radius: 4px;">{{ page_num }}</span></li>
+                            {% else %}
+                                <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ page_num }}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if current_page < total_pages %}
+                        <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ current_page|add:'1' }}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">Next »</a></li>
+                        {% else %}
+                        <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">Next »</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Professional Filter Sidebar -->
+    <div class="logs-filter-sidebar" id="filterSidebar">
+        <div class="filter-sidebar-header">
+            <h3><i class="fas fa-filter"></i> Filters</h3>
+            <button class="clear-all-filters" onclick="clearAllFilters()">
+                <i class="fas fa-times"></i> Clear All
+            </button>
+        </div>
+        
+        <form id="filterForm" method="GET" action="{% url 'grouped_logs' %}">
+            <div class="filter-sections">
+                <!-- Time Range Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-clock"></i>
+                        <span>Time Range</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <div class="time-range-tabs">
+                            <button type="button" class="time-tab {% if selected_time_range == 'last_hour' %}active{% endif %}" data-range="last_hour">1H</button>
+                            <button type="button" class="time-tab {% if selected_time_range == 'last_6_hours' %}active{% endif %}" data-range="last_6_hours">6H</button>
+                            <button type="button" class="time-tab {% if selected_time_range == 'last_24_hours' %}active{% endif %}" data-range="last_24_hours">24H</button>
+                            <button type="button" class="time-tab {% if selected_time_range == 'last_7_days' %}active{% endif %}" data-range="last_7_days">7D</button>
+                            <button type="button" class="time-tab {% if selected_time_range == 'last_30_days' %}active{% endif %}" data-range="last_30_days">30D</button>
+                        </div>
+                        <input type="hidden" name="time_range" id="timeRangeInput" value="{{ selected_time_range|default:'last_hour' }}">
+                    </div>
+                </div>
+
+                <!-- Destination IP Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-network-wired"></i>
+                        <span>Destination IP</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <div class="filter-group">
+                            <label>DESTINATION IP</label>
+                            <input type="text" class="filter-input" name="dstip" 
+                                   placeholder="e.g., 10.0.0.1" 
+                                   value="{{ dstip_filter|default:'' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Destination Port Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-plug"></i>
+                        <span>Destination Port</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <div class="filter-group">
+                            <label>DESTINATION PORT</label>
+                            <input type="text" class="filter-input" name="dstport" 
+                                   placeholder="443 or 3000-4000"
+                                   value="{{ dstport_filter|default:'' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Action</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <div class="filter-group">
+                            <label>ACTION</label>
+                            <select class="filter-input" name="action">
+                                <option value="">All Actions</option>
+                                {% for action_type in available_actions %}
+                                    <option value="{{ action_type }}" {% if action_filter == action_type %}selected{% endif %}>{{ action_type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device Filter -->
+                <div class="filter-section">
+                    <div class="filter-section-header">
+                        <i class="fas fa-server"></i>
+                        <span>Device</span>
+                    </div>
+                    <div class="filter-section-content">
+                        <div class="filter-group">
+                            <label>DEVICE</label>
+                            <select class="filter-input" name="devname">
+                                <option value="">All Devices</option>
+                                {% for device_name in available_devices %}
+                                    <option value="{{ device_name }}" {% if devname_filter == device_name %}selected{% endif %}>{{ device_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Apply Filters Button -->
+                <button type="submit" class="btn-apply-filters">
+                    <i class="fas fa-check"></i> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Time range tab functionality
+document.querySelectorAll('.time-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        // Remove active class from all tabs
+        document.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
+        // Add active class to clicked tab
+        this.classList.add('active');
+        // Update hidden input
+        document.getElementById('timeRangeInput').value = this.dataset.range;
+    });
+});
+
+// Clear all filters
+function clearAllFilters() {
+    window.location.href = '{% url "grouped_logs" %}';
+}
+
+// Expand/collapse functionality for subnet groups
+document.addEventListener('DOMContentLoaded', function() {
+    const summaryRows = document.querySelectorAll('.subnet-summary-row');
+    summaryRows.forEach(row => {
+        const toggleIcon = row.querySelector('.toggle-icon');
+        if (!toggleIcon) return;
+
+        row.addEventListener('click', function() {
+            const groupId = this.dataset.groupId;
+            const detailRows = document.querySelectorAll('.subnet-detail-row.' + groupId);
+
+            if (detailRows.length === 0) return;
+
+            let allHidden = true;
+            detailRows.forEach(detailRow => {
+                if (detailRow.style.display !== 'none') {
+                    allHidden = false;
+                }
+            });
+
+            if (allHidden) {
+                detailRows.forEach(detailRow => {
+                    detailRow.style.display = 'table-row';
+                });
+                toggleIcon.textContent = '[-]';
+            } else {
+                detailRows.forEach(detailRow => {
+                    detailRow.style.display = 'none';
+                });
+                toggleIcon.textContent = '[+]';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

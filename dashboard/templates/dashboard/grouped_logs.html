@@ -12,6 +12,48 @@
 .sort-link:hover {
   text-decoration: underline; /* Optional: underline on hover */
 }
+
+/* Page layout with sidebar */
+.page-container {
+    display: flex;
+    gap: 20px;
+    max-width: 100%;
+}
+
+.main-content-area {
+    flex: 1;
+    min-width: 0; /* Prevent flex item from overflowing */
+}
+
+.sidebar-right {
+    width: 280px;
+    flex-shrink: 0;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 0;
+}
+
+/* Responsive layout */
+@media (max-width: 1200px) {
+    .sidebar-right {
+        width: 260px;
+    }
+}
+
+@media (max-width: 992px) {
+    .page-container {
+        flex-direction: column;
+    }
+    
+    .sidebar-right {
+        width: 100%;
+        max-height: none;
+        order: -1; /* Show filters above content on mobile */
+    }
+}
 </style>
 {% endblock %}
 
@@ -22,49 +64,51 @@
 {% endblock %}
 
 {% block content %}
-<!-- Active Filters Banner -->
-{% if srcip_filter or dstip_filter or srcport_filter or dstport_filter or action_filter or devname_filter or appcategory_filter or hostname_filter or username_filter or dstcountry_filter %}
-<div class="active-filters-banner" style="background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 4px; padding: 10px 15px; margin-bottom: 15px;">
-    <div style="display: flex; align-items: center; justify-content: space-between;">
-        <div>
-            <strong style="color: #1976d2;">Active Filters:</strong>
-            {% if srcip_filter %}
-                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Source IP: {{ srcip_filter }}</span>
-            {% endif %}
-            {% if dstip_filter %}
-                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Destination IP: {{ dstip_filter }}</span>
-            {% endif %}
-            {% if srcport_filter %}
-                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Source Port: {{ srcport_filter }}</span>
-            {% endif %}
-            {% if dstport_filter %}
-                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Destination Port: {{ dstport_filter }}</span>
-            {% endif %}
-            {% if action_filter %}
-                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Action: {{ action_filter }}</span>
-            {% endif %}
-            {% if devname_filter %}
-                <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Device: {{ devname_filter }}</span>
-            {% endif %}
-            {% if appcategory_filter %}
-                <span class="filter-tag" style="background-color: #f39c12; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Category: {{ appcategory_filter }}</span>
-            {% endif %}
-            {% if hostname_filter %}
-                <span class="filter-tag" style="background-color: #e67e22; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Hostname: {{ hostname_filter }}</span>
-            {% endif %}
-            {% if username_filter %}
-                <span class="filter-tag" style="background-color: #9b59b6; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">User: {{ username_filter }}</span>
-            {% endif %}
-            {% if dstcountry_filter %}
-                <span class="filter-tag" style="background-color: #1abc9c; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Country: {{ dstcountry_filter }}</span>
-            {% endif %}
+<div class="page-container">
+    <main class="main-content-area">
+        <!-- Active Filters Banner -->
+        {% if srcip_filter or dstip_filter or srcport_filter or dstport_filter or action_filter or devname_filter or appcategory_filter or hostname_filter or username_filter or dstcountry_filter %}
+        <div class="active-filters-banner" style="background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 4px; padding: 10px 15px; margin-bottom: 15px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <strong style="color: #1976d2;">Active Filters:</strong>
+                    {% if srcip_filter %}
+                        <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Source IP: {{ srcip_filter }}</span>
+                    {% endif %}
+                    {% if dstip_filter %}
+                        <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Destination IP: {{ dstip_filter }}</span>
+                    {% endif %}
+                    {% if srcport_filter %}
+                        <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Source Port: {{ srcport_filter }}</span>
+                    {% endif %}
+                    {% if dstport_filter %}
+                        <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Destination Port: {{ dstport_filter }}</span>
+                    {% endif %}
+                    {% if action_filter %}
+                        <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Action: {{ action_filter }}</span>
+                    {% endif %}
+                    {% if devname_filter %}
+                        <span class="filter-tag" style="background-color: #1976d2; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Device: {{ devname_filter }}</span>
+                    {% endif %}
+                    {% if appcategory_filter %}
+                        <span class="filter-tag" style="background-color: #f39c12; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Category: {{ appcategory_filter }}</span>
+                    {% endif %}
+                    {% if hostname_filter %}
+                        <span class="filter-tag" style="background-color: #e67e22; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Hostname: {{ hostname_filter }}</span>
+                    {% endif %}
+                    {% if username_filter %}
+                        <span class="filter-tag" style="background-color: #9b59b6; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">User: {{ username_filter }}</span>
+                    {% endif %}
+                    {% if dstcountry_filter %}
+                        <span class="filter-tag" style="background-color: #1abc9c; color: white; padding: 3px 8px; border-radius: 3px; margin: 0 5px; font-size: 0.85em;">Country: {{ dstcountry_filter }}</span>
+                    {% endif %}
+                </div>
+                <a href="{% url 'grouped_logs' %}?time_range={{ selected_time_range }}" style="color: #1976d2; text-decoration: none; font-size: 0.9em;">
+                    <i class="fas fa-times"></i> Clear All
+                </a>
+            </div>
         </div>
-        <a href="{% url 'grouped_logs' %}?time_range={{ selected_time_range }}" style="color: #1976d2; text-decoration: none; font-size: 0.9em;">
-            <i class="fas fa-times"></i> Clear All
-        </a>
-    </div>
-</div>
-{% endif %}
+        {% endif %}
 
 <div class="logs-content-header">
     <div class="controls-bar logs-controls-row">
@@ -141,34 +185,41 @@
         </tbody>
     </table>
 
-    <!-- Pagination Bar -->
-    {% if total_pages > 1 %}
-    <div class="pagination-bar" style="display: flex; justify-content: center; align-items: center; margin: 24px 0;">
-        <nav aria-label="Grouped logs pagination">
-            <ul class="pagination" style="display: flex; gap: 4px; list-style: none; padding: 0;">
-                {% if current_page > 1 %}
-                <li><a class="pagination-link" href="?page={{ current_page|add:'-1' }}&time_range={{ selected_time_range }}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">« Previous</a></li>
-                {% else %}
-                <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">« Previous</span></li>
-                {% endif %}
-                
-                {% for page_num in page_range %}
-                    {% if page_num == current_page %}
-                        <li><span class="pagination-link active" style="padding: 6px 12px; border: 1px solid #007bff; background: #007bff; color: #fff; border-radius: 4px;">{{ page_num }}</span></li>
+        <!-- Pagination Bar -->
+        {% if total_pages > 1 %}
+        <div class="pagination-bar" style="display: flex; justify-content: center; align-items: center; margin: 24px 0;">
+            <nav aria-label="Grouped logs pagination">
+                <ul class="pagination" style="display: flex; gap: 4px; list-style: none; padding: 0;">
+                    {% if current_page > 1 %}
+                    <li><a class="pagination-link" href="?page={{ current_page|add:'-1' }}&time_range={{ selected_time_range }}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">« Previous</a></li>
                     {% else %}
-                        <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ page_num }}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a></li>
+                    <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">« Previous</span></li>
                     {% endif %}
-                {% endfor %}
+                    
+                    {% for page_num in page_range %}
+                        {% if page_num == current_page %}
+                            <li><span class="pagination-link active" style="padding: 6px 12px; border: 1px solid #007bff; background: #007bff; color: #fff; border-radius: 4px;">{{ page_num }}</span></li>
+                        {% else %}
+                            <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ page_num }}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">{{ page_num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
 
-                {% if current_page < total_pages %}
-                <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ current_page|add:'1' }}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">Next »</a></li>
-                {% else %}
-                <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">Next »</span></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </div>
-    {% endif %}
+                    {% if current_page < total_pages %}
+                    <li><a class="pagination-link" href="?time_range={{ selected_time_range }}&page={{ current_page|add:'1' }}{% if srcip_filter %}&srcip={{ srcip_filter }}{% endif %}{% if dstip_filter %}&dstip={{ dstip_filter }}{% endif %}{% if srcport_filter %}&srcport={{ srcport_filter }}{% endif %}{% if dstport_filter %}&dstport={{ dstport_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if devname_filter %}&devname={{ devname_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #333;">Next »</a></li>
+                    {% else %}
+                    <li><span class="pagination-link disabled" style="padding: 6px 12px; border: 1px solid #eee; border-radius: 4px; color: #bbb;">Next »</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        </div>
+    </main>
+    
+    <!-- Sidebar with Filters -->
+    <aside class="sidebar-right">
+        {% include 'dashboard/_filters_sidebar.html' %}
+    </aside>
 </div>
 {% endblock %}
 

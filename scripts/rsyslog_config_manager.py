@@ -172,20 +172,21 @@ if ($fromhost-ip == '{log_source.ip_address}') then {{
         
         # Add queue configuration for reliability
         if log_source.device_type in ['fortigate', 'paloalto']:
-            content += """        queue.type="LinkedList"
-        queue.filename="{}_queue"
+            queue_name = log_source.name.replace(' ', '_').lower()
+            content += f"""        queue.type="LinkedList"
+        queue.filename="{queue_name}_queue"
         queue.maxdiskspace="100m"
         queue.saveonshutdown="on"
         queue.highwatermark="5000"
         queue.lowwatermark="1000"
-""".format(log_source.name.replace(' ', '_').lower())
+"""
         
-        content += """    )
+        content += f"""    )
     stop
-}
+}}
 
-#### End configuration for {} ####
-""".format(log_source.name)
+#### End configuration for {log_source.name} ####
+"""
         
         return content
         

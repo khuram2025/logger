@@ -1,10 +1,11 @@
 from django.urls import path
 from . import views
+from .views_grouped_logs import grouped_logs_view
 
 urlpatterns = [
     path('logs/', views.clickhouse_logs_view, name='clickhouse_logs'),
     path('top-summary/', views.top_summary_view, name='top_summary'),
-    path('grouped-logs/', views.grouped_logs_view, name='grouped_logs'),
+    path('grouped-logs/', grouped_logs_view, name='grouped_logs'),
     path('system-config/', views.system_config_view, name='system_config'),
     path('service-action/', views.service_action_view, name='service_action'),
     path('logs-config/', views.logs_config_view, name='logs_config'),
