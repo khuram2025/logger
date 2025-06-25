@@ -368,9 +368,24 @@ class EnhancedLogHandler(FileSystemEventHandler):
                         logging.info(f"Resuming from position {file_info.last_processed_position}")
                         self._fp.seek(file_info.last_processed_position)
                 else:
-                    self._fp.seek(0, os.SEEK_END)
+                    logging.info(f"No saved position found, starting from beginning of file")
+                    self._fp.seek(0)
             else:
-                self._fp.seek(0, os.SEEK_END)
+                logging.info(f"Log manager not available, starting from near end of file")
+                # Seek to last 10MB instead of beginning to avoid processing millions of old logs
+                try:
+                    file_size = os.path.getsize(self.filepath)
+                    if file_size > 10 * 1024 * 1024:  # If file > 10MB
+                        self._fp.seek(max(0, file_size - 10 * 1024 * 1024))
+                        # Skip to next line boundary
+                        self._fp.readline()
+                        logging.info(f"Started from last 10MB of file (position: {self._fp.tell()})")
+                    else:
+                        self._fp.seek(0)
+                        logging.info(f"File small enough, started from beginning")
+                except Exception as e:
+                    logging.error(f"Error positioning file: {e}, starting from end")
+                    self._fp.seek(0, os.SEEK_END)
                 
             current_pos = self._fp.tell()
             logging.info(f"Opened log file: {self.filepath} (position: {current_pos})")
@@ -476,7 +491,7 @@ def main():
         except Exception as e:
             logging.warning(f"Could not initialize log manager: {e}")
     
-    logging.info("Starting Enhanced PaloAlto → ClickHouse ingestion with batch size %d", BATCH_SIZE)
+    logging.info("Starting Enhanced PaloAlto → ClickHouse ingestion with batch size %d (processing from file start)", BATCH_SIZE)
 
     buffer = []
     buffer_lock = threading.Lock()

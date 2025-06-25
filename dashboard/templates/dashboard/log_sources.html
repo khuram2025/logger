@@ -759,14 +759,18 @@ function scanForSources() {
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCsrfToken(),
-        }
+        },
+        body: JSON.stringify({
+            'scan_type': 'discover'
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert(`Network scan completed. Found ${data.discovered_count} new sources.`, 'info');
-            if (data.discovered_count > 0) {
-                setTimeout(() => window.location.reload(), 3000);
+            const message = `Network scan completed. Found ${data.discovered_count} sources (${data.new_sources} new, ${data.updated_sources} updated).`;
+            showAlert(message, 'success');
+            if (data.new_sources > 0) {
+                setTimeout(() => window.location.reload(), 2000);
             }
         } else {
             showAlert(`Scan failed: ${data.error}`, 'error');

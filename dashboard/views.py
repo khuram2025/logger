@@ -28,6 +28,147 @@ CH_PASSWORD = os.getenv('CH_PASSWORD', 'Read@123')
 CH_DB = os.getenv('CH_DB', 'network_logs')
 SUBNET_GROUP_PAGE_SIZE = 50
 
+def create_rsyslog_config(log_source):
+    """
+    Create rsyslog configuration for a log source device
+    Adds device to appropriate config file based on device type
+    """
+    device_type = log_source.device_type
+    ip_address = log_source.ip_address
+    
+    try:
+        # Determine target config file based on device type
+        if device_type == 'fortigate':
+            config_file = '/etc/rsyslog.d/fortigate.conf'
+            template_name = "FortiGateRaw"  # Use existing template
+        elif device_type == 'paloalto':
+            config_file = '/etc/rsyslog.d/02-paloalto.conf'
+            template_name = "PaloAltoRaw"  # Use existing template
+        else:
+            # For other device types, create a generic config file
+            config_file = f'/etc/rsyslog.d/99-device-{ip_address.replace(".", "-")}.conf'
+            template_name = f"DeviceRaw_{ip_address.replace('.', '_')}"
+        
+        # Generate log file path (use existing patterns)
+        if device_type == 'fortigate':
+            log_file = '/var/log/fortigate.log'  # All FortiGate devices use same file
+        elif device_type == 'paloalto':
+            # PaloAlto uses format like paloalto-1002.log, paloalto-1004.log
+            ip_suffix = ip_address.split('.')[-1]  # Get last octet
+            log_file = f'/var/log/paloalto-{ip_suffix}.log'
+        else:
+            log_file = f'/var/log/device-{ip_address.replace(".", "-")}.log'
+        
+        # Update log source with log file path
+        log_source.log_file_path = log_file
+        log_source.save()
+        
+        # Check if device already exists in config
+        if os.path.exists(config_file):
+            with open(config_file, 'r') as f:
+                content = f.read()
+                if ip_address in content:
+                    return {
+                        'success': True,
+                        'message': f'Device {ip_address} already configured in {config_file}'
+                    }
+        
+        # Generate new config entry
+        if device_type in ['fortigate', 'paloalto']:
+            # Add to existing config file
+            new_config_entry = f"""
+if ($fromhost-ip == '{ip_address}') then {{
+    action(
+        type="omfile"
+        file="{log_file}"
+        template="{template_name}"
+    )
+    stop
+}}
+"""
+            
+            # Read existing config
+            if os.path.exists(config_file):
+                with open(config_file, 'r') as f:
+                    existing_content = f.read()
+                
+                # Find insertion point (before the last #### end comment)
+                if device_type == 'fortigate':
+                    insertion_point = existing_content.rfind('#### end fortigate.conf ####')
+                elif device_type == 'paloalto':
+                    insertion_point = existing_content.rfind('#### end paloalto.conf ####')
+                
+                if insertion_point != -1:
+                    # Insert new config before the end comment
+                    new_content = (existing_content[:insertion_point] + 
+                                 new_config_entry + 
+                                 existing_content[insertion_point:])
+                else:
+                    # Append to end if no end comment found
+                    new_content = existing_content + new_config_entry
+            else:
+                return {
+                    'success': False,
+                    'error': f'Config file {config_file} does not exist'
+                }
+        else:
+            # Create new config file for other device types
+            new_content = f"""#### start device-{ip_address.replace('.', '-')}.conf ####
+
+template(name="{template_name}" type="string" string="%rawmsg-after-pri%\\n")
+
+if ($fromhost-ip == '{ip_address}') then {{
+    action(
+        type="omfile"
+        file="{log_file}"
+        template="{template_name}"
+    )
+    stop
+}}
+
+#### end device-{ip_address.replace('.', '-')}.conf ####
+"""
+        
+        # Write config file using subprocess to handle permissions
+        try:
+            # Write to temp file first
+            temp_file = f'/tmp/rsyslog_config_{ip_address.replace(".", "_")}.conf'
+            with open(temp_file, 'w') as f:
+                f.write(new_content)
+            
+            # Try to copy to target location
+            try:
+                subprocess.run(['sudo', 'cp', temp_file, config_file], check=True, input=b'\n', timeout=5)
+                subprocess.run(['rm', temp_file], check=True)
+                
+                # Restart rsyslog to apply changes
+                subprocess.run(['sudo', 'systemctl', 'restart', 'rsyslog'], check=True, input=b'\n', timeout=10)
+                
+                return {
+                    'success': True,
+                    'message': f'Added {ip_address} to {config_file} and restarted rsyslog'
+                }
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                # If sudo fails, provide manual instructions
+                return {
+                    'success': False,
+                    'error': f'Config created at {temp_file}. Please run: sudo cp {temp_file} {config_file} && sudo systemctl restart rsyslog',
+                    'temp_file': temp_file,
+                    'config_content': new_content
+                }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Failed to create rsyslog config: {str(e)}'
+            }
+            
+    except Exception as e:
+        return {
+            'success': False,
+            'error': f'Error creating rsyslog config: {str(e)}'
+        }
+
 # Helper function to generate pagination range
 def get_pagination_range(current_page, total_pages, neighbors=2):
     """
@@ -140,8 +281,7 @@ def top_summary_view(request):
             sum(rcvdbyte) AS total_rcvd,
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
-        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
-          AND timestamp <= parseDateTimeBestEffort('{until_str}')
+        WHERE timestamp >= now() - INTERVAL {since_interval}
         GROUP BY srcip, dstip, dstport
         ORDER BY total_bytes DESC
         LIMIT 10
@@ -154,8 +294,7 @@ def top_summary_view(request):
             count(*) AS count,
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
-        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
-          AND timestamp <= parseDateTimeBestEffort('{until_str}')
+        WHERE timestamp >= now() - INTERVAL {since_interval}
           AND appcategory != '' AND appcategory IS NOT NULL
         GROUP BY appcategory
         ORDER BY count DESC
@@ -169,8 +308,7 @@ def top_summary_view(request):
             count(*) AS count,
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
-        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
-          AND timestamp <= parseDateTimeBestEffort('{until_str}')
+        WHERE timestamp >= now() - INTERVAL {since_interval}
           AND hostname != '' AND hostname IS NOT NULL
         GROUP BY hostname
         ORDER BY count DESC
@@ -184,8 +322,7 @@ def top_summary_view(request):
             count(*) AS count,
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
-        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
-          AND timestamp <= parseDateTimeBestEffort('{until_str}')
+        WHERE timestamp >= now() - INTERVAL {since_interval}
           AND username != '' AND username IS NOT NULL
         GROUP BY username
         ORDER BY count DESC
@@ -199,8 +336,7 @@ def top_summary_view(request):
             count(*) AS count,
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
-        WHERE timestamp >= parseDateTimeBestEffort('{since_str}')
-          AND timestamp <= parseDateTimeBestEffort('{until_str}')
+        WHERE timestamp >= now() - INTERVAL {since_interval}
           AND dstcountry != '' AND dstcountry IS NOT NULL
         GROUP BY dstcountry
         ORDER BY count DESC
@@ -292,10 +428,9 @@ def top_summary_view(request):
         conn_query = f"""
         SELECT COUNT(*) 
         FROM fortigate_traffic 
-        WHERE timestamp >= parseDateTimeBestEffort('{since.strftime('%Y-%m-%d %H:%M:%S')}')
+        WHERE timestamp >= now() - INTERVAL {since_interval}
         """
-        if time_range == 'custom' and 'until' in locals():
-            conn_query += f" AND timestamp <= parseDateTimeBestEffort('{until.strftime('%Y-%m-%d %H:%M:%S')}')"
+        # Custom time range until clause not needed for standard intervals
             
         conn_result = client.execute(conn_query)
         total_connections = conn_result[0][0] if conn_result else 0
@@ -304,10 +439,9 @@ def top_summary_view(request):
         bytes_query = f"""
         SELECT SUM(sentbyte + rcvdbyte) 
         FROM fortigate_traffic 
-        WHERE timestamp >= parseDateTimeBestEffort('{since.strftime('%Y-%m-%d %H:%M:%S')}')
+        WHERE timestamp >= now() - INTERVAL {since_interval}
         """
-        if time_range == 'custom' and 'until' in locals():
-            bytes_query += f" AND timestamp <= parseDateTimeBestEffort('{until.strftime('%Y-%m-%d %H:%M:%S')}')"
+        # Custom time range until clause not needed for standard intervals
             
         bytes_result = client.execute(bytes_query)
         total_bytes = bytes_result[0][0] if bytes_result and bytes_result[0][0] else 0
@@ -316,10 +450,9 @@ def top_summary_view(request):
         ips_query = f"""
         SELECT COUNT(DISTINCT srcip) 
         FROM fortigate_traffic 
-        WHERE timestamp >= parseDateTimeBestEffort('{since.strftime('%Y-%m-%d %H:%M:%S')}')
+        WHERE timestamp >= now() - INTERVAL {since_interval}
         """
-        if time_range == 'custom' and 'until' in locals():
-            ips_query += f" AND timestamp <= parseDateTimeBestEffort('{until.strftime('%Y-%m-%d %H:%M:%S')}')"
+        # Custom time range until clause not needed for standard intervals
             
         ips_result = client.execute(ips_query)
         active_ips = ips_result[0][0] if ips_result else 0
@@ -388,39 +521,44 @@ def clickhouse_logs_view(request):
 
     # --- Time Filter ---
     time_range = request.GET.get('time_range', 'last_hour')
-    now = datetime.utcnow()  # Use UTC to match ClickHouse 'now()'
+    # Use ClickHouse native time functions instead of Django UTC time to avoid timezone issues
+    use_clickhouse_time = True
     until = None
     
     if time_range == 'last_6_hours':
-        since = now - timedelta(hours=6)
+        since_interval = '6 HOUR'
     elif time_range == 'last_24_hours':
-        since = now - timedelta(hours=24)
+        since_interval = '1 DAY'
     elif time_range == 'last_7_days':
-        since = now - timedelta(days=7)
+        since_interval = '7 DAY'
     elif time_range == 'last_30_days':
-        since = now - timedelta(days=30)
+        since_interval = '30 DAY'
     elif time_range == 'custom':
-        # Handle custom time range
+        # Handle custom time range - still use Django time for custom ranges
+        use_clickhouse_time = False
         time_from = request.GET.get('time_from', '')
         time_to = request.GET.get('time_to', '')
+        
+        # Get ClickHouse current time for proper timezone handling
+        ch_now = client.execute('SELECT now()')[0][0]
         
         if time_from:
             try:
                 since = datetime.strptime(time_from, '%Y-%m-%dT%H:%M')
             except ValueError:
-                since = now - timedelta(hours=1)
+                since = ch_now - timedelta(hours=1)
         else:
-            since = now - timedelta(hours=1)
+            since = ch_now - timedelta(hours=1)
             
         if time_to:
             try:
                 until = datetime.strptime(time_to, '%Y-%m-%dT%H:%M')
             except ValueError:
                 until = None
+        
+        since_str = since.strftime('%Y-%m-%d %H:%M:%S')
     else:  # default to last_hour
-        since = now - timedelta(hours=1)
-    
-    since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+        since_interval = '1 HOUR'
     
     # Create user-friendly time range display
     time_range_display = {
@@ -458,12 +596,14 @@ def clickhouse_logs_view(request):
     max_duration_filter = request.GET.get('max_duration', '').strip()
     
     # Build WHERE clauses based on filter inputs
-    where_clauses = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"]
-    
-    # Add until clause if custom time range with end date
-    if until:
-        until_str = until.strftime('%Y-%m-%d %H:%M:%S')
-        where_clauses.append(f"timestamp <= parseDateTimeBestEffort('{until_str}')") 
+    if use_clickhouse_time:
+        where_clauses = [f"timestamp >= now() - INTERVAL {since_interval}"]
+    else:
+        where_clauses = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"]
+        # Add until clause if custom time range with end date
+        if until:
+            until_str = until.strftime('%Y-%m-%d %H:%M:%S')
+            where_clauses.append(f"timestamp <= parseDateTimeBestEffort('{until_str}')") 
     
     if srcip_filter:
         if srcip_filter == 'external_only':
@@ -985,7 +1125,10 @@ def grouped_logs_view(request):
     dstcountry_filter = request.GET.get('dstcountry', '').strip()
 
     # Build WHERE conditions
-    where_conditions = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"]
+    if use_clickhouse_time:
+        where_conditions = [f"timestamp >= now() - INTERVAL {since_interval}"]
+    else:
+        where_conditions = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"]
     
     if srcip_filter:
         where_conditions.append(f"srcip = '{srcip_filter}'")
@@ -1979,48 +2122,93 @@ def test_log_source_view(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Test failed: {str(e)}'})
 
+@csrf_exempt
 def scan_log_sources_view(request):
     """Scan network for potential log sources"""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Method not allowed'})
     
     try:
-        import subprocess
-        import re
+        import sys
+        sys.path.append('/home/net/analyzer/scripts')
+        from proper_log_source_scanner import ProperLogSourceScanner
         
-        # Scan common syslog ports on local network
-        # This is a simplified scan - in production you'd want more sophisticated discovery
+        scanner = ProperLogSourceScanner()
+        
+        # Get scan type from request (handle both POST form data and JSON)
+        if request.content_type == 'application/json':
+            import json
+            try:
+                data = json.loads(request.body)
+                scan_type = data.get('scan_type', 'quick')
+                network_range = data.get('network_range', None)
+            except:
+                scan_type = 'quick'
+                network_range = None
+        else:
+            scan_type = request.POST.get('scan_type', 'quick')
+            network_range = request.POST.get('network_range', None)
+        
+        # Discover actual log source devices
+        results = scanner.discover_log_sources()
+        
+        # Process results and create/update log sources
         discovered_sources = []
+        new_sources = 0
+        updated_sources = 0
         
-        # Get local network range
-        try:
-            # Get default gateway to determine network range
-            route_result = subprocess.run(['ip', 'route', 'show', 'default'], 
-                                        capture_output=True, text=True)
+        for result in results:
+            if result['in_database']:
+                # Update existing source
+                try:
+                    source = LogSource.objects.get(ip_address=result['ip'])
+                    source.last_seen = timezone.now()
+                    if result['hostname'] and not source.hostname:
+                        source.hostname = result['hostname']
+                    source.save()
+                    updated_sources += 1
+                except:
+                    pass
+            else:
+                # Create new pending source
+                try:
+                    source, created = LogSource.objects.get_or_create(
+                        ip_address=result['ip'],
+                        defaults={
+                            'name': result['hostname'] or f"Device-{result['ip']}",
+                            'hostname': result['hostname'] or '',
+                            'device_type': result['device_type'],
+                            'status': 'pending',
+                            'port': 514,
+                            'protocol': 'udp'
+                        }
+                    )
+                    if created:
+                        new_sources += 1
+                        # Log detection event
+                        LogSourceEvent.objects.create(
+                            log_source=source,
+                            event_type='detected',
+                            description=f"Detected via network scan ({scan_type})",
+                            user=request.user.username if request.user.is_authenticated else 'system'
+                        )
+                except:
+                    pass
             
-            # For demonstration, we'll simulate discovering some devices
-            discovered_sources = [
-                {
-                    'ip': '192.168.1.50',
-                    'port': 514,
-                    'device_type': 'unknown',
-                    'status': 'pending'
-                },
-                {
-                    'ip': '10.10.10.100',
-                    'port': 514,
-                    'device_type': 'cisco',
-                    'status': 'pending'
-                }
-            ]
-            
-        except Exception as e:
-            # Fallback to mock data
-            discovered_sources = []
+            discovered_sources.append({
+                'ip': result['ip'],
+                'hostname': result.get('hostname', ''),
+                'device_type': result.get('device_type', 'unknown'),
+                'status': result.get('current_status', 'pending'),
+                'in_database': result['in_database']
+            })
         
         return JsonResponse({
             'success': True,
+            'scan_type': scan_type,
             'discovered_count': len(discovered_sources),
+            'new_sources': new_sources,
+            'updated_sources': updated_sources,
             'sources': discovered_sources
         })
         
@@ -2041,9 +2229,83 @@ def log_sources_status_view(request):
     return JsonResponse(status_data)
 
 def add_log_source_view(request):
-    """Add a new log source (placeholder for future implementation)"""
-    # This would render a form or handle POST data to add a new source
-    return JsonResponse({'success': False, 'error': 'Not implemented yet'})
+    """Add a new log source manually"""
+    if request.method == 'GET':
+        # Return form data for GET request
+        return JsonResponse({
+            'device_types': [{'value': k, 'label': v} for k, v in LogSource.DEVICE_TYPE_CHOICES],
+            'protocols': [{'value': k, 'label': v} for k, v in LogSource.PROTOCOL_CHOICES],
+            'templates': [{'value': k, 'label': v} for k, v in LogSource.TEMPLATE_CHOICES]
+        })
+    
+    elif request.method == 'POST':
+        try:
+            # Validate required fields
+            ip_address = request.POST.get('ip_address', '').strip()
+            name = request.POST.get('name', '').strip()
+            device_type = request.POST.get('device_type', 'unknown')
+            
+            if not ip_address:
+                return JsonResponse({'success': False, 'error': 'IP address is required'})
+            
+            if not name:
+                name = f"Device-{ip_address}"
+            
+            # Check if IP already exists
+            if LogSource.objects.filter(ip_address=ip_address).exists():
+                return JsonResponse({'success': False, 'error': f'Log source with IP {ip_address} already exists'})
+            
+            # Create new log source
+            source = LogSource.objects.create(
+                ip_address=ip_address,
+                name=name,
+                device_type=device_type,
+                hostname=request.POST.get('hostname', ''),
+                port=int(request.POST.get('port', 514)),
+                protocol=request.POST.get('protocol', 'udp'),
+                status='pending',
+                description=request.POST.get('description', ''),
+                save_logs=request.POST.get('save_logs', 'true').lower() == 'true'
+            )
+            
+            # Generate default log file path
+            source.generate_log_file_path()
+            
+            # Auto-configure parser if device type is known
+            if device_type in ['fortigate', 'paloalto']:
+                source.auto_configure_parser()
+            
+            # Create rsyslog configuration automatically
+            try:
+                create_rsyslog_config_result = create_rsyslog_config(source)
+                if create_rsyslog_config_result['success']:
+                    source.status = 'active'  # Set to active since config is created
+                    source.save()
+                    config_message = create_rsyslog_config_result['message']
+                else:
+                    config_message = f"Warning: {create_rsyslog_config_result['error']}"
+            except Exception as e:
+                config_message = f"Warning: Failed to create rsyslog config: {str(e)}"
+            
+            # Log creation event
+            LogSourceEvent.objects.create(
+                log_source=source,
+                event_type='detected',
+                description='Manually added via web interface',
+                user=request.user.username if request.user.is_authenticated else 'admin'
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Log source {name} added successfully. {config_message}',
+                'source_id': source.id,
+                'config_created': create_rsyslog_config_result.get('success', False) if 'create_rsyslog_config_result' in locals() else False
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Failed to add log source: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'error': 'Method not allowed'})
 
 def configure_log_source_view(request, source_id):
     """Configure a specific log source"""
@@ -2832,31 +3094,35 @@ def pa_url_logs_view(request):
         database=CH_DB
     )
     
-    # Time filter
+    # Time filter - use ClickHouse native time to avoid timezone issues
     time_range = request.GET.get('time_range', 'last_hour')
-    now = datetime.utcnow()
     
     if time_range == 'last_6_hours':
-        since = now - timedelta(hours=6)
+        since_interval = '6 HOUR'
     elif time_range == 'last_24_hours':
-        since = now - timedelta(hours=24)
+        since_interval = '1 DAY'
     elif time_range == 'last_7_days':
-        since = now - timedelta(days=7)
+        since_interval = '7 DAY'
     elif time_range == 'custom':
+        # Handle custom time range with explicit timestamps  
+        use_custom_time = True
         time_from = request.GET.get('time_from', '')
-        time_to = request.GET.get('time_to', '')
+        
+        # Get ClickHouse current time for proper timezone handling
+        ch_now = client.execute('SELECT now()')[0][0]
         
         if time_from:
             try:
                 since = datetime.strptime(time_from, '%Y-%m-%dT%H:%M')
             except ValueError:
-                since = now - timedelta(hours=1)
+                since = ch_now - timedelta(hours=1)
         else:
-            since = now - timedelta(hours=1)
+            since = ch_now - timedelta(hours=1)
+            
+        since_str = since.strftime('%Y-%m-%d %H:%M:%S')
     else:  # default to last_hour
-        since = now - timedelta(hours=1)
-    
-    since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+        since_interval = '1 HOUR'
+        use_custom_time = False
     
     # Create user-friendly time range display
     time_range_display = {
@@ -2875,9 +3141,13 @@ def pa_url_logs_view(request):
     action_filter = request.GET.get('action', '').strip()
     severity_filter = request.GET.get('severity', '').strip()
     device_filter = request.GET.get('device', '').strip()
+    user_filter = request.GET.get('user', '').strip()
     
     # Build WHERE clause
-    where_conditions = [f"timestamp >= '{since_str}'"]
+    if use_custom_time:
+        where_conditions = [f"timestamp >= parseDateTimeBestEffort('{since_str}')"]
+    else:
+        where_conditions = [f"timestamp >= now() - INTERVAL {since_interval}"]
     
     if url_filter:
         where_conditions.append(f"url ILIKE '%{url_filter}%'")
@@ -2893,6 +3163,8 @@ def pa_url_logs_view(request):
         where_conditions.append(f"action = '{severity_filter}'")  # Using action field since no severity in this table
     if device_filter:
         where_conditions.append(f"device_name ILIKE '%{device_filter}%'")
+    if user_filter:
+        where_conditions.append(f"source_user ILIKE '%{user_filter}%'")
     
     where_clause = " AND ".join(where_conditions)
     
@@ -3014,6 +3286,7 @@ def pa_url_logs_view(request):
         'action_filter': action_filter,
         'severity_filter': severity_filter,
         'device_filter': device_filter,
+        'user_filter': user_filter,
         'categories': [row[0] for row in categories],
         'actions': [row[0] for row in actions],
         'severities': [row[0] for row in severities],
@@ -3039,21 +3312,21 @@ def url_summary_view(request):
     
     # Define time filter conditions using ClickHouse native time functions
     # This avoids timezone issues between Python and ClickHouse
-    # Note: Data timestamps are in UTC+3, so we add 3 hours to ClickHouse now() to match data timezone
+    # Server is already in Asia/Riyadh timezone, so use now() directly
     if time_range == '1h':
-        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 1 HOUR AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        time_condition = "timestamp >= now() - INTERVAL 1 HOUR AND timestamp <= now()"
         selected_time_range = '1h'
     elif time_range == '6h':
-        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 6 HOUR AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        time_condition = "timestamp >= now() - INTERVAL 6 HOUR AND timestamp <= now()"
         selected_time_range = '6h'
     elif time_range == '1d':
-        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 1 DAY AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        time_condition = "timestamp >= now() - INTERVAL 1 DAY AND timestamp <= now()"
         selected_time_range = '1d'
     elif time_range == '7d':
-        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 7 DAY AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        time_condition = "timestamp >= now() - INTERVAL 7 DAY AND timestamp <= now()"
         selected_time_range = '7d'
     elif time_range == '1m':
-        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 30 DAY AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        time_condition = "timestamp >= now() - INTERVAL 30 DAY AND timestamp <= now()"
         selected_time_range = '1m'
     elif time_range == 'custom':
         # Handle custom date range
@@ -3071,27 +3344,27 @@ def url_summary_view(request):
                 selected_time_range = 'custom'
             except ValueError:
                 # Fallback to last hour if parsing fails
-                time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 1 HOUR AND timestamp <= (now() + INTERVAL 3 HOUR)"
+                time_condition = "timestamp >= now() - INTERVAL 1 HOUR AND timestamp <= now()"
                 since_str = "N/A"
                 until_str = "N/A"
                 selected_time_range = '1h'
         else:
             # Fallback to last hour if dates not provided
-            time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 1 HOUR AND timestamp <= (now() + INTERVAL 3 HOUR)"
+            time_condition = "timestamp >= now() - INTERVAL 1 HOUR AND timestamp <= now()"
             since_str = "N/A"
             until_str = "N/A"
             selected_time_range = '1h'
     else:
         # Default to last hour
-        time_condition = "timestamp >= (now() + INTERVAL 3 HOUR) - INTERVAL 1 HOUR AND timestamp <= (now() + INTERVAL 3 HOUR)"
+        time_condition = "timestamp >= now() - INTERVAL 1 HOUR AND timestamp <= now()"
         since_str = "N/A"
         until_str = "N/A"
         selected_time_range = '1h'
     
     # For non-custom ranges, set display values for template
     if time_range != 'custom':
-        # Get current time with timezone offset for display
-        now_display = datetime.now() + timedelta(hours=3)  # Match data timezone
+        # Get current time (server is already in correct timezone)
+        now_display = datetime.now()
         if time_range == '1h':
             since_display = now_display - timedelta(hours=1)
         elif time_range == '6h':
@@ -3222,6 +3495,33 @@ def url_summary_view(request):
         FROM pa_urls_optimized
         WHERE {time_condition}
     '''
+    
+    # Query 8: Previous Period Statistics for Trend Calculation
+    # Calculate previous period condition based on time range
+    if time_range == '1h':
+        prev_time_condition = "timestamp >= now() - INTERVAL 2 HOUR AND timestamp < now() - INTERVAL 1 HOUR"
+    elif time_range == '6h':
+        prev_time_condition = "timestamp >= now() - INTERVAL 12 HOUR AND timestamp < now() - INTERVAL 6 HOUR"
+    elif time_range == '1d':
+        prev_time_condition = "timestamp >= now() - INTERVAL 2 DAY AND timestamp < now() - INTERVAL 1 DAY"
+    elif time_range == '7d':
+        prev_time_condition = "timestamp >= now() - INTERVAL 14 DAY AND timestamp < now() - INTERVAL 7 DAY"
+    elif time_range == '1m':
+        prev_time_condition = "timestamp >= now() - INTERVAL 60 DAY AND timestamp < now() - INTERVAL 30 DAY"
+    else:
+        # Default to 1h comparison
+        prev_time_condition = "timestamp >= now() - INTERVAL 2 HOUR AND timestamp < now() - INTERVAL 1 HOUR"
+    
+    prev_summary_stats_query = f'''
+        SELECT
+            count(*) AS total_requests,
+            uniq(url_domain) AS unique_domains,
+            uniq(source_address) AS unique_users,
+            countIf(action = 'block-url') AS blocked_requests,
+            countIf(action = 'alert') AS threat_alerts
+        FROM pa_urls_optimized
+        WHERE {prev_time_condition}
+    '''
 
     # Execute all queries with error handling
     try:
@@ -3269,6 +3569,36 @@ def url_summary_view(request):
     except Exception as e:
         print(f"Error executing summary_stats_query: {e}")
         total_requests = unique_domains = unique_users = blocked_requests = threat_alerts = 0
+    
+    # Execute previous period query for trend calculation
+    try:
+        prev_summary_stats = client.execute(prev_summary_stats_query)
+        if prev_summary_stats:
+            prev_total_requests, prev_unique_domains, prev_unique_users, prev_blocked_requests, prev_threat_alerts = prev_summary_stats[0]
+        else:
+            prev_total_requests = prev_unique_domains = prev_unique_users = prev_blocked_requests = prev_threat_alerts = 0
+    except Exception as e:
+        print(f"Error executing prev_summary_stats_query: {e}")
+        prev_total_requests = prev_unique_domains = prev_unique_users = prev_blocked_requests = prev_threat_alerts = 0
+    
+    # Calculate trend percentages
+    def calculate_trend(current, previous):
+        if previous == 0:
+            return {"percentage": 0, "direction": "neutral", "sign": ""}
+        
+        change = ((current - previous) / previous) * 100
+        direction = "up" if change > 0 else "down" if change < 0 else "neutral"
+        sign = "+" if change > 0 else ""
+        
+        return {
+            "percentage": abs(round(change, 1)),
+            "direction": direction,
+            "sign": sign
+        }
+    
+    # Calculate trends for each metric
+    total_requests_trend = calculate_trend(total_requests, prev_total_requests)
+    threat_alerts_trend = calculate_trend(threat_alerts, prev_threat_alerts)
 
     # Prepare data for template
     context = {
@@ -3282,6 +3612,10 @@ def url_summary_view(request):
         'unique_users': unique_users,
         'blocked_requests': blocked_requests,
         'threat_alerts': threat_alerts,
+        
+        # Trend data
+        'total_requests_trend': total_requests_trend,
+        'threat_alerts_trend': threat_alerts_trend,
         
         # Top data sets
         'top_urls': [

@@ -123,3 +123,29 @@ sudo tcpdump -i any host 10.10.100.4 and port 514 -A
 
 
 python paloalto_Url_Clickhose.py
+
+
+
+  - Created /home/net/analyzer/scripts/parser_monitor.py that checks:
+    - Parser process health (CPU/memory)
+    - Data ingestion lag
+    - Log file sizes and updates
+    - Parser error counts
+  - Created /home/net/analyzer/scripts/auto_restart_parsers.sh that:
+    - Automatically restarts failed parsers
+    - Runs health checks
+    - Can be added to cron for automatic monitoring
+
+  To implement these improvements:
+
+  1. Set up log rotation:
+  sudo bash /home/net/analyzer/scripts/fix_log_rotation.sh
+  2. Add monitoring to cron:
+  crontab -e
+  # Add: */5 * * * * 
+  /home/net/analyzer/scripts/auto_restart_parsers.sh
+  3. Test the monitoring:
+  python /home/net/analyzer/scripts/parser_monitor.py
+
+  These solutions will prevent future issues and provide automatic
+  recovery when problems occur.

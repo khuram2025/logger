@@ -47,8 +47,12 @@
                 <div class="stat-content">
                     <div class="stat-number">{{ total_requests|default:"0"|intcomma }}</div>
                     <div class="stat-title">Total Requests</div>
-                    <div class="stat-trend up">
-                        <i class="fas fa-arrow-up"></i> 12% from last period
+                    <div class="stat-trend {{ total_requests_trend.direction }}">
+                        {% if total_requests_trend.direction == 'neutral' %}
+                            <i class="fas fa-minus"></i> No change from last period
+                        {% else %}
+                            <i class="fas fa-arrow-{{ total_requests_trend.direction }}"></i> {{ total_requests_trend.sign }}{{ total_requests_trend.percentage }}% from last period
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -76,8 +80,12 @@
                 <div class="stat-content">
                     <div class="stat-number">{{ threat_alerts|default:"0"|intcomma }}</div>
                     <div class="stat-title">Security Alerts</div>
-                    <div class="stat-trend down">
-                        <i class="fas fa-arrow-down"></i> 8% from last period
+                    <div class="stat-trend {{ threat_alerts_trend.direction }}">
+                        {% if threat_alerts_trend.direction == 'neutral' %}
+                            <i class="fas fa-minus"></i> No change from last period
+                        {% else %}
+                            <i class="fas fa-arrow-{{ threat_alerts_trend.direction }}"></i> {{ threat_alerts_trend.sign }}{{ threat_alerts_trend.percentage }}% from last period
+                        {% endif %}
                     </div>
                 </div>
             </div>
