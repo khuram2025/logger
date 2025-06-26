@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Enhanced PaloAlto log processor - Fixed version for URL processing
-Coordinates with log_manager.py to ensure proper file rotation and cleanup.
+Enhanced PaloAlto log processor with extensive debugging for URL parsing issues
 """
 
 import os
@@ -15,6 +14,7 @@ from watchdog.events import FileSystemEventHandler
 import threading
 import signal
 import sys
+import json
 
 # Import log manager for coordination
 try:
@@ -32,14 +32,15 @@ CH_DB       = os.getenv('CH_DB',       'network_logs')
 
 LOG_FILE    = '/var/log/paloalto-1004.log'
 STATUS_UPDATE_INTERVAL = 30
+DEBUG_MODE = True  # Enable extensive debugging
 
 # ── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s [PaloAlto-FIXED] %(message)s',
+    level=logging.DEBUG if DEBUG_MODE else logging.INFO,
+    format='%(asctime)s %(levelname)s [PaloAlto-DEBUG] %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('/tmp/paloalto-fixed.log')
+        logging.FileHandler('/tmp/paloalto-debug.log')
     ]
 )
 
@@ -52,7 +53,7 @@ CLIENT = Client(
     database=CH_DB
 )
 
-# ── Parsing Logic ─────────────────────────────────────────────────────────────
+# ── Parsing Logic with Debug ─────────────────────────────────────────────────
 NUMERIC_FIELDS = {
     'srcport', 'dstport', 'proto', 'sentbyte', 'rcvdbyte', 'sentpkt', 'rcvdpkt'
 }
@@ -88,13 +89,25 @@ ALL_URL_FIELDS = [
     'raw_message', 'log_type', 'log_subtype', 'virtual_system'
 ]
 
-# Statistics
+# Statistics tracking
 stats = {
-    'traffic_processed': 0,
-    'url_processed': 0,
-    'errors': 0,
-    'last_update': time.time()
+    'total_lines': 0,
+    'traffic_logs': 0,
+    'url_logs': 0,
+    'url_logs_parsed': 0,
+    'url_logs_inserted': 0,
+    'parsing_errors': 0,
+    'insert_errors': 0,
+    'last_url_log': None,
+    'last_error': None
 }
+
+def print_stats():
+    """Print current statistics"""
+    logging.info("=== STATISTICS ===")
+    for key, value in stats.items():
+        logging.info(f"{key}: {value}")
+    logging.info("==================")
 
 def parse_traffic_log(fields, data, device_name):
     """Parse TRAFFIC log format"""
@@ -196,8 +209,11 @@ def parse_traffic_log(fields, data, device_name):
     return data
 
 def parse_url_log(fields, data, device_name):
-    """Parse THREAT,url log format"""
+    """Parse THREAT,url log format with extensive debugging"""
     try:
+        logging.debug(f"Parsing URL log with {len(fields)} fields")
+        logging.debug(f"First 10 fields: {fields[:10] if len(fields) > 10 else fields}")
+        
         # Preserve raw_message if already set, then set default values for URL fields
         raw_message = data.get('raw_message', '')
         for field in ALL_URL_FIELDS:
@@ -229,34 +245,38 @@ def parse_url_log(fields, data, device_name):
                 parsed_time = datetime.strptime(timestamp_str, "%Y/%m/%d %H:%M:%S")
                 data['timestamp'] = parsed_time  # Use actual log time
                 data['generated_time'] = parsed_time
-            except ValueError:
+                logging.debug(f"Timestamp parsed: {parsed_time}")
+            except ValueError as e:
+                logging.error(f"Error parsing timestamp: {e}")
                 data['timestamp'] = current_time
                 data['generated_time'] = current_time
         else:
             data['timestamp'] = current_time
             data['generated_time'] = current_time
         
-        # Extract key fields
+        # Extract key fields with debug logging
         data['sequence_number'] = int(fields[5]) if len(fields) > 5 and fields[5].isdigit() else 0
         data['source_address'] = fields[7] if len(fields) > 7 else ''
         data['destination_address'] = fields[8] if len(fields) > 8 else ''
         data['source_port'] = int(fields[24]) if len(fields) > 24 and fields[24].isdigit() else 0
         data['destination_port'] = int(fields[25]) if len(fields) > 25 and fields[25].isdigit() else 0
-        data['source_zone'] = fields[16] if len(fields) > 16 else ''
-        data['destination_zone'] = fields[17] if len(fields) > 17 else ''
-        data['inbound_interface'] = fields[18] if len(fields) > 18 else ''
-        data['outbound_interface'] = fields[19] if len(fields) > 19 else ''
+        data['source_zone'] = fields[18] if len(fields) > 18 else ''
+        data['destination_zone'] = fields[19] if len(fields) > 19 else ''
+        data['inbound_interface'] = fields[20] if len(fields) > 20 else ''
+        data['outbound_interface'] = fields[21] if len(fields) > 21 else ''
         data['protocol'] = fields[29] if len(fields) > 29 else ''
         data['rule_name'] = fields[11] if len(fields) > 11 else ''
         data['source_user'] = fields[12] if len(fields) > 12 else ''
         data['application'] = fields[14] if len(fields) > 14 else ''
         data['action'] = fields[30] if len(fields) > 30 else ''
+        # For URL logs: field 32 is threat/content type (like 9999), field 34 is severity
         data['severity'] = fields[34] if len(fields) > 34 else ''
         data['direction'] = fields[35] if len(fields) > 35 else ''
-        data['virtual_system'] = fields[15] if len(fields) > 15 else ''
+        data['virtual_system'] = fields[16] if len(fields) > 16 else ''
         
         # Extract URL (field 31) - remove quotes
         data['url'] = fields[31].strip('"') if len(fields) > 31 else ''
+        logging.debug(f"URL extracted: {data['url']}")
         
         # Extract threat/content type (field 32) - often contains threat ID like (9999)
         threat_type_field = fields[32] if len(fields) > 32 else ''
@@ -274,14 +294,14 @@ def parse_url_log(fields, data, device_name):
                 try:
                     url_parts = data['url'].split('//')[1]
                     domain = url_parts.split('/')[0]
-                    path = '/' + '/'.join(url_parts.split('/')[1:]) if '/' in url_parts else '/'
+                    path = '/' + '/'.join(url_parts.split('/')[1:]) if '/' in url_parts else ''
                 except:
                     domain = data['url']
-                    path = '/'
+                    path = ''
             else:
                 url_parts = data['url'].split('/', 1)
                 domain = url_parts[0]
-                path = '/' + url_parts[1] if len(url_parts) > 1 else '/'
+                path = '/' + url_parts[1] if len(url_parts) > 1 else ''
             data['url_domain'] = domain
             data['url_path'] = path
         
@@ -294,19 +314,31 @@ def parse_url_log(fields, data, device_name):
         
         # Validate required fields
         if not data.get('url') or not data.get('source_address') or not data.get('destination_address'):
+            logging.warning(f"Missing required fields - url: {data.get('url')}, src: {data.get('source_address')}, dst: {data.get('destination_address')}")
             return None
+        
+        logging.debug(f"Successfully parsed URL log - URL: {data['url']}, Src: {data['source_address']}, Dst: {data['destination_address']}")
+        stats['url_logs_parsed'] += 1
+        stats['last_url_log'] = {
+            'timestamp': str(data['timestamp']),
+            'url': data['url'],
+            'source': data['source_address'],
+            'destination': data['destination_address']
+        }
+        return data
             
     except Exception as e:
         logging.error(f"Error parsing URL log: {e}")
+        stats['parsing_errors'] += 1
+        stats['last_error'] = str(e)
         if 'timestamp' not in data:
             data['timestamp'] = datetime.now()
         return None
-    
-    return data
 
 def parse_line(line: str) -> dict:
     """Parse a PaloAlto firewall syslog line and route to appropriate parser"""
     try:
+        stats['total_lines'] += 1
         data = {}
         data['raw_message'] = line.rstrip('\n')
         
@@ -320,14 +352,14 @@ def parse_line(line: str) -> dict:
                 fields = log_data.split(',')
                 
                 # Handle both TRAFFIC and THREAT,url logs
-                if len(fields) > 4:
+                if len(fields) > 3:
                     log_type = fields[3]
-                    log_subtype = fields[4] if len(fields) > 4 else ''
-                    
                     if log_type == 'TRAFFIC':
+                        stats['traffic_logs'] += 1
                         return parse_traffic_log(fields, data, device_name)
-                    elif log_type == 'THREAT' and log_subtype == 'url':
-                        logging.debug(f"Processing URL log: {line[:100]}")
+                    elif log_type == 'THREAT' and len(fields) > 4 and fields[4] == 'url':
+                        stats['url_logs'] += 1
+                        logging.info(f"Found URL log: {line[:100]}...")
                         return parse_url_log(fields, data, device_name)
                     else:
                         return None  # Skip other log types
@@ -336,10 +368,12 @@ def parse_line(line: str) -> dict:
         
     except Exception as e:
         logging.error(f"Error parsing line: {e}\nLine: {line}")
+        stats['parsing_errors'] += 1
+        stats['last_error'] = str(e)
         return None
 
-# ── Enhanced Log Handler ─────────────────────────────────────────────────────
-BATCH_SIZE = 500
+# ── Enhanced Log Handler with Debug ─────────────────────────────────────────
+BATCH_SIZE = 100  # Smaller batch for debugging
 BATCH_FLUSH_INTERVAL = 1
 FILE_CHECK_INTERVAL = 1
 
@@ -353,7 +387,7 @@ class EnhancedLogHandler(FileSystemEventHandler):
         
         self.total_lines_processed = 0
         self.total_bytes_processed = 0
-        self.last_status_update = time.time()
+        self.last_status_update = 0
         
         self._open_file()
         
@@ -365,39 +399,23 @@ class EnhancedLogHandler(FileSystemEventHandler):
             
             self._fp = open(self.filepath, 'r')
             
-            # Start from a reasonable position
-            file_size = os.path.getsize(self.filepath)
-            start_from_beginning = os.getenv('PROCESS_FROM_BEGINNING', 'false').lower() == 'true'
-            
-            if start_from_beginning:
-                self._fp.seek(0)
-                logging.info(f"Starting from beginning of file as requested")
-            elif self.log_manager and hasattr(self.log_manager, 'file_info'):
-                file_info = self.log_manager.file_info.get(self.filepath)
-                if file_info and file_info.last_processed_position > 0:
-                    if file_size < file_info.last_processed_position:
-                        logging.info(f"File {self.filepath} was rotated, starting from beginning")
-                        self._fp.seek(0)
-                    else:
-                        logging.info(f"Resuming from position {file_info.last_processed_position}")
-                        self._fp.seek(file_info.last_processed_position)
+            # Start from near the end for debugging
+            try:
+                file_size = os.path.getsize(self.filepath)
+                if file_size > 1 * 1024 * 1024:  # If file > 1MB
+                    self._fp.seek(max(0, file_size - 1 * 1024 * 1024))
+                    # Skip to next line boundary
+                    self._fp.readline()
+                    logging.info(f"Started from last 1MB of file (position: {self._fp.tell()})")
                 else:
-                    # Start from last 100MB to catch recent logs
-                    seek_pos = max(0, file_size - 100 * 1024 * 1024)
-                    self._fp.seek(seek_pos)
-                    if seek_pos > 0:
-                        self._fp.readline()  # Skip partial line
-                    logging.info(f"Starting from position {self._fp.tell()}")
-            else:
-                # Default: start from last 100MB
-                seek_pos = max(0, file_size - 100 * 1024 * 1024)
-                self._fp.seek(seek_pos)
-                if seek_pos > 0:
-                    self._fp.readline()  # Skip partial line
-                logging.info(f"Starting from position {self._fp.tell()} (last 100MB)")
+                    self._fp.seek(0)
+                    logging.info(f"File small enough, started from beginning")
+            except Exception as e:
+                logging.error(f"Error positioning file: {e}, starting from end")
+                self._fp.seek(0, os.SEEK_END)
                 
             current_pos = self._fp.tell()
-            logging.info(f"Opened log file: {self.filepath} (position: {current_pos}, size: {file_size})")
+            logging.info(f"Opened log file: {self.filepath} (position: {current_pos})")
             
         except Exception as e:
             logging.error(f"Error opening log file: {e}")
@@ -410,12 +428,6 @@ class EnhancedLogHandler(FileSystemEventHandler):
                 self._update_processing_status()
                 self._open_file()
                 return True
-                
-            if self.log_manager and self.log_manager.check_file_rotation_needed(self.filepath):
-                logging.warning(f"File {self.filepath} approaching size limit, requesting rotation")
-                if self.log_manager.coordinate_rotation(self.filepath):
-                    self._open_file()
-                    return True
                     
         except Exception as e:
             logging.error(f"Error checking file rotation: {e}")
@@ -438,8 +450,13 @@ class EnhancedLogHandler(FileSystemEventHandler):
             except Exception as e:
                 logging.error(f"Error updating processing status: {e}")
 
-    def process_file(self):
-        """Process any unread data in the file"""
+    def on_modified(self, event):
+        if event.src_path != self.filepath:
+            return
+            
+        logging.debug(f"File modification detected for: {self.filepath}")
+        self._check_file_rotation()
+        
         lines_read = 0
         while True:
             try:
@@ -465,18 +482,10 @@ class EnhancedLogHandler(FileSystemEventHandler):
         
         if lines_read > 0:
             self.total_bytes_processed = self._fp.tell()
-            logging.info(f"Processed {lines_read} lines from {self.filepath}")
+            logging.info(f"Read {lines_read} new lines from {self.filepath}")
             
             if time.time() - self.last_status_update > STATUS_UPDATE_INTERVAL:
                 self._update_processing_status()
-
-    def on_modified(self, event):
-        if event.src_path != self.filepath:
-            return
-            
-        logging.debug(f"File modification detected for: {self.filepath}")
-        self._check_file_rotation()
-        self.process_file()
 
     def on_moved(self, event):
         if event.src_path == self.filepath or event.dest_path == self.filepath:
@@ -484,7 +493,7 @@ class EnhancedLogHandler(FileSystemEventHandler):
             self._update_processing_status()
             self._open_file()
 
-# ── Main Enhanced Processing ─────────────────────────────────────────────────
+# ── Main Enhanced Processing with Debug ─────────────────────────────────────
 def main():
     """Enhanced main function with log manager integration"""
     traffic_insert_query = f"""
@@ -503,7 +512,7 @@ def main():
         except Exception as e:
             logging.warning(f"Could not initialize log manager: {e}")
     
-    logging.info("Starting Enhanced PaloAlto → ClickHouse ingestion (FIXED) with batch size %d", BATCH_SIZE)
+    logging.info("Starting Enhanced PaloAlto → ClickHouse DEBUG ingestion with batch size %d", BATCH_SIZE)
 
     buffer = []
     buffer_lock = threading.Lock()
@@ -512,7 +521,7 @@ def main():
         with buffer_lock:
             if not buffer:
                 return
-            batch = buffer[::]
+            batch = buffer[:]
             buffer.clear()
             
         traffic_rows = []
@@ -533,7 +542,7 @@ def main():
                             return False
                     
                     if is_valid_ip(srcip) and is_valid_ip(dstip):
-                        row = [record.get(field, '') for field in ALL_FIELDS]
+                        row = [record[field] for field in ALL_FIELDS]
                         traffic_rows.append(row)
                     else:
                         logging.warning(f"Invalid IP addresses in traffic log - srcip='{srcip}', dstip='{dstip}' - skipping")
@@ -541,39 +550,34 @@ def main():
                 elif record.get('log_type') == 'THREAT' and record.get('log_subtype') == 'url':
                     # Validate URL record
                     if record.get('url') and record.get('source_address') and record.get('destination_address'):
-                        row = [record.get(field, '') for field in ALL_URL_FIELDS]
+                        row = [record[field] for field in ALL_URL_FIELDS]
                         url_rows.append(row)
+                        logging.info(f"Preparing URL record for insert: {record['url']} from {record['source_address']}")
                     else:
                         logging.warning(f"Missing required URL fields - skipping")
                         
             except Exception as e:
                 logging.error(f"Error processing record: {e}")
-                stats['errors'] += 1
                 
         # Insert traffic logs
         if traffic_rows:
             try:
                 CLIENT.execute(traffic_insert_query, traffic_rows)
                 logging.info(f"✅ Inserted {len(traffic_rows)} TRAFFIC records to ClickHouse")
-                stats['traffic_processed'] += len(traffic_rows)
             except Exception as e:
                 logging.error(f"❌ TRAFFIC batch insert error: {e}")
-                stats['errors'] += 1
+                stats['insert_errors'] += 1
                 
         # Insert URL logs  
         if url_rows:
             try:
                 CLIENT.execute(url_insert_query, url_rows)
                 logging.info(f"✅ Inserted {len(url_rows)} URL records to ClickHouse")
-                stats['url_processed'] += len(url_rows)
+                stats['url_logs_inserted'] += len(url_rows)
             except Exception as e:
                 logging.error(f"❌ URL batch insert error: {e}")
-                stats['errors'] += 1
-                
-        # Log stats periodically
-        if time.time() - stats['last_update'] > 60:
-            logging.info(f"Stats - Traffic: {stats['traffic_processed']}, URLs: {stats['url_processed']}, Errors: {stats['errors']}")
-            stats['last_update'] = time.time()
+                stats['insert_errors'] += 1
+                stats['last_error'] = str(e)
 
     # Create enhanced file handler
     handler = EnhancedLogHandler(LOG_FILE, buffer, buffer_lock, process_batch, log_manager)
@@ -583,16 +587,12 @@ def main():
     
     logging.info(f"Monitoring log file: {LOG_FILE}")
     logging.info(f"ClickHouse connection: {CH_HOST}:{CH_PORT}, DB: {CH_DB}")
-    
-    # Process existing data immediately
-    logging.info("Processing existing data in file...")
-    handler.process_file()
 
     def flush_and_exit(signum, frame):
         logging.info("Shutting down. Flushing remaining logs...")
         handler._update_processing_status()
         process_batch()
-        logging.info(f"Final stats - Traffic: {stats['traffic_processed']}, URLs: {stats['url_processed']}, Errors: {stats['errors']}")
+        print_stats()
         observer.stop()
         observer.join()
         sys.exit(0)
@@ -600,8 +600,9 @@ def main():
     signal.signal(signal.SIGINT, flush_and_exit)
     signal.signal(signal.SIGTERM, flush_and_exit)
 
-    # Enhanced monitoring loop
+    # Enhanced monitoring loop with stats
     last_check_time = time.time()
+    last_stats_time = time.time()
     
     try:
         while True:
@@ -616,24 +617,21 @@ def main():
                     file_size = os.path.getsize(LOG_FILE)
                     current_pos = handler._fp.tell()
                     
-                    if log_manager:
-                        status = log_manager.get_status()
-                        file_status = status.get('file_info', {}).get(LOG_FILE, {})
-                        processing_lag_mb = file_status.get('processing_lag_mb', 0)
-                        
-                        if processing_lag_mb > 100:
-                            logging.warning(f"High processing lag detected: {processing_lag_mb:.1f} MB")
-                    
                     if file_size > current_pos:
                         unread_bytes = file_size - current_pos
                         logging.info(f"Detected {unread_bytes} unread bytes, triggering read")
-                        handler.process_file()
+                        handler.on_modified(type('obj', (object,), {'src_path': LOG_FILE})())
                     
                 except Exception as e:
                     logging.error(f"Error checking file: {e}")
             
             if current_time - handler.last_status_update > STATUS_UPDATE_INTERVAL:
                 handler._update_processing_status()
+            
+            # Print stats every minute
+            if current_time - last_stats_time > 60:
+                last_stats_time = current_time
+                print_stats()
             
             process_batch()
             time.sleep(BATCH_FLUSH_INTERVAL)

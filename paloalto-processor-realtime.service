@@ -1,0 +1,33 @@
+[Unit]
+Description=Enhanced PaloAlto Real-time Log Processor (Traffic + URL)
+After=network.target clickhouse-server.service
+Wants=clickhouse-server.service
+
+[Service]
+Type=simple
+User=net
+Group=net
+WorkingDirectory=/home/net/analyzer
+Environment="PATH=/home/net/analyzer/env/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="CH_HOST=localhost"
+Environment="CH_PORT=9000"
+Environment="CH_USER=default"
+Environment="CH_PASSWORD=Read@123"
+Environment="CH_DB=network_logs"
+ExecStart=/home/net/analyzer/env/bin/python /home/net/analyzer/scripts/enhanced_paloalto_realtime.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=paloalto-processor
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=1G
+
+# Remove watchdog to prevent timeout issues
+# WatchdogSec=300
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
