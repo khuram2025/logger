@@ -640,7 +640,7 @@ def clickhouse_logs_view(request):
     if action_filter:
         where_clauses.append(f"action = '{action_filter}'")
     if devname_filter:
-        where_clauses.append(f"devname = '{devname_filter}'")
+        where_clauses.append(f"device_name = '{devname_filter}'")
     if appcategory_filter:
         where_clauses.append(f"appcategory = '{appcategory_filter}'")
     if hostname_filter:
@@ -690,7 +690,7 @@ def clickhouse_logs_view(request):
     if has_fortigate_traffic:
         action_queries.append(f"SELECT DISTINCT action FROM fortigate_traffic WHERE {where_clause}")
     if has_pa_traffic:
-        pa_where_clause = where_clause.replace('srcip', 'src_ip').replace('dstip', 'dst_ip').replace('srcport', 'src_port').replace('dstport', 'dst_port').replace('devname', 'device_name').replace('appcategory', 'app_category').replace('hostname', 'application').replace('username', 'src_user').replace('dstcountry', 'dst_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
+        pa_where_clause = where_clause.replace('srcip', 'src_ip').replace('dstip', 'dst_ip').replace('srcport', 'src_port').replace('dstport', 'dst_port').replace('appcategory', 'app_category').replace('hostname', 'application').replace('username', 'src_user').replace('dstcountry', 'dst_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
         action_queries.append(f"SELECT DISTINCT action FROM pa_traffic WHERE {pa_where_clause}")
     
     if action_queries:
@@ -703,20 +703,30 @@ def clickhouse_logs_view(request):
     except Exception as e:
         available_actions = ['allow', 'deny', 'drop', 'accept']  # Default fallback
 
-    # --- Fetch available device names for dropdown from all tables (without filtering) ---
-    device_queries = []
-    if has_fortigate_traffic:
-        device_queries.append("SELECT DISTINCT devname as device_name FROM fortigate_traffic WHERE devname IS NOT NULL AND devname <> '' AND length(devname) >= 3 AND devname NOT LIKE '%:%' AND devname NOT LIKE '%=' AND (devname NOT LIKE '%.%' OR devname LIKE '%.%.%.%') AND devname NOT LIKE 'FGT-' AND devname NOT LIKE 'FGT-F' AND devname NOT LIKE 'FGT-FW' AND devname NOT LIKE 'FGT-FW0'")
-    if has_pa_traffic:
-        device_queries.append("SELECT DISTINCT device_name FROM pa_traffic WHERE device_name IS NOT NULL AND device_name <> '' AND length(device_name) > 8 AND NOT match(device_name, '^[0-9]+$') AND (device_name LIKE '%FW%' OR device_name LIKE '%PA%' OR device_name LIKE '%PALO%')")
-    
-    if device_queries:
-        device_query = f"SELECT DISTINCT device_name FROM ({' UNION ALL '.join(device_queries)}) AS combined_devices ORDER BY device_name"
-    else:
-        device_query = "SELECT 'N/A' as device_name"
-    
+    # --- Fetch available device names from registered_devices table ---
     try:
-        available_devices = [row[0] for row in client.execute(device_query)]
+        # First, check if registered_devices table exists
+        tables_result = client.execute("SHOW TABLES LIKE 'registered_devices'")
+        has_registered_devices = len(tables_result) > 0
+        
+        if has_registered_devices:
+            # Get device names from registered_devices table (only enabled devices)
+            device_query = "SELECT DISTINCT device_name FROM registered_devices WHERE enabled = 1 AND device_name IS NOT NULL AND device_name <> '' ORDER BY device_name"
+            available_devices = [row[0] for row in client.execute(device_query)]
+        else:
+            # Fallback to old method if registered_devices table doesn't exist
+            device_queries = []
+            if has_fortigate_traffic:
+                device_queries.append("SELECT DISTINCT devname as device_name FROM fortigate_traffic WHERE devname IS NOT NULL AND devname <> '' AND length(devname) >= 3 AND devname NOT LIKE '%:%' AND devname NOT LIKE '%=' AND (devname NOT LIKE '%.%' OR devname LIKE '%.%.%.%') AND devname NOT LIKE 'FGT-' AND devname NOT LIKE 'FGT-F' AND devname NOT LIKE 'FGT-FW' AND devname NOT LIKE 'FGT-FW0'")
+            if has_pa_traffic:
+                device_queries.append("SELECT DISTINCT device_name FROM pa_traffic WHERE device_name IS NOT NULL AND device_name <> '' AND length(device_name) > 8 AND NOT match(device_name, '^[0-9]+$') AND (device_name LIKE '%FW%' OR device_name LIKE '%PA%' OR device_name LIKE '%PALO%')")
+            
+            if device_queries:
+                device_query = f"SELECT DISTINCT device_name FROM ({' UNION ALL '.join(device_queries)}) AS combined_devices ORDER BY device_name"
+                available_devices = [row[0] for row in client.execute(device_query)]
+            else:
+                available_devices = []
+                
     except Exception as e:
         logging.error(f"Error fetching device names: {e}")
         available_devices = []
@@ -729,10 +739,10 @@ def clickhouse_logs_view(request):
     if has_fortigate_traffic:
         count_queries.append(f"SELECT count() FROM fortigate_traffic WHERE {where_clause}")
     if has_pa_traffic:
-        pa_where_clause = where_clause.replace('srcip', 'src_ip').replace('dstip', 'dst_ip').replace('srcport', 'src_port').replace('dstport', 'dst_port').replace('devname', 'device_name').replace('appcategory', 'app_category').replace('hostname', 'application').replace('username', 'src_user').replace('dstcountry', 'dst_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
+        pa_where_clause = where_clause.replace('srcip', 'src_ip').replace('dstip', 'dst_ip').replace('srcport', 'src_port').replace('dstport', 'dst_port').replace('appcategory', 'app_category').replace('hostname', 'application').replace('username', 'src_user').replace('dstcountry', 'dst_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
         count_queries.append(f"SELECT count() FROM pa_traffic WHERE {pa_where_clause}")
     if has_threat_logs:
-        threat_where_clause = where_clause.replace('srcip', 'source_address').replace('dstip', 'destination_address').replace('srcport', 'source_port').replace('dstport', 'destination_port').replace('devname', 'device_name').replace('appcategory', 'application_category').replace('hostname', 'application').replace('username', 'source_user').replace('dstcountry', 'destination_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
+        threat_where_clause = where_clause.replace('srcip', 'source_address').replace('dstip', 'destination_address').replace('srcport', 'source_port').replace('dstport', 'destination_port').replace('appcategory', 'application_category').replace('hostname', 'application').replace('username', 'source_user').replace('dstcountry', 'destination_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
         count_queries.append(f"SELECT count() FROM threat_logs WHERE {threat_where_clause}")
     
     if count_queries:
@@ -805,7 +815,7 @@ def clickhouse_logs_view(request):
                 srccountry as src_country,
                 dstcountry as dst_country,
                 'fortigate_traffic' as log_source,
-                devname as device_name,
+                device_name,
                 '' as application,
                 '' as threat_id,
                 '' as severity
@@ -1597,43 +1607,81 @@ def log_sources_view(request):
     from datetime import datetime, timedelta
     from dashboard.models import LogSource
     
-    # Get all log sources from database
-    log_sources = LogSource.objects.all().order_by('-last_seen')
+    # Get registered devices from ClickHouse instead of Django LogSource
+    from clickhouse_driver import Client
     
-    # Convert to dict format for template compatibility
-    log_sources_data = []
-    for source in log_sources:
-        log_sources_data.append({
-            'id': source.id,
-            'name': source.name,
-            'description': source.description,
-            'ip_address': source.ip_address,
-            'hostname': source.hostname,
-            'port': source.port,
-            'status': source.status,
-            'device_type': source.device_type,
-            'device_model': source.device_model,
-            'save_logs': source.save_logs,
-            'logs_today': source.logs_today,
-            'logs_last_hour': source.logs_last_hour,
-            'total_logs': source.total_logs,
-            'log_file_path': source.log_file_path,
-            'log_template': source.log_template,
-            'parse_to_database': source.parse_to_database,
-            'first_seen': source.first_seen,
-            'last_seen': source.last_seen,
-            'approved_by': source.approved_by,
-            'approved_at': source.approved_at,
-            'rejected_reason': source.rejected_reason
-        })
-    
-    # Calculate overview statistics
-    total_sources = log_sources.count()
-    active_sources = log_sources.filter(status='active').count()
-    inactive_sources = log_sources.filter(status='inactive').count()
-    pending_sources = log_sources.filter(status='pending').count()
-    approved_sources = log_sources.filter(status='approved').count()
-    rejected_sources = log_sources.filter(status='rejected').count()
+    try:
+        client = Client(
+            host=CH_HOST,
+            port=CH_PORT,
+            user=CH_USER,
+            password=CH_PASSWORD,
+            database=CH_DB
+        )
+        
+        # Get all registered devices from ClickHouse
+        devices_query = """
+            SELECT device_ip, device_name, parser_type, enabled, created_at 
+            FROM registered_devices 
+            ORDER BY created_at DESC
+        """
+        devices = client.execute(devices_query)
+        
+        # Convert to format expected by template
+        log_sources_data = []
+        for device in devices:
+            device_ip, device_name, parser_type, enabled, created_at = device
+            
+            # Map parser_type to device_type and determine status
+            device_type = parser_type  # fortigate, paloalto, etc.
+            status = 'approved' if enabled else 'inactive'
+            
+            # Map parser_type to log_template
+            if parser_type == 'fortigate':
+                log_template = 'fortigate_default'
+            elif parser_type == 'paloalto':
+                log_template = 'paloalto_default'
+            else:
+                log_template = 'generic'
+            
+            log_sources_data.append({
+                'id': f"ch_{device_ip.replace('.', '_')}",  # Create unique ID for ClickHouse devices
+                'name': device_name,
+                'description': f'Registered via ClickHouse integration - {parser_type.title()} parser',
+                'ip_address': device_ip,
+                'hostname': '',
+                'port': 514,
+                'status': status,
+                'device_type': device_type,
+                'device_model': '',
+                'save_logs': enabled,
+                'logs_today': 0,  # Not tracking these stats for ClickHouse devices
+                'logs_last_hour': 0,
+                'total_logs': 0,
+                'log_file_path': '',
+                'log_template': log_template,
+                'parse_to_database': enabled,
+                'first_seen': created_at,
+                'last_seen': created_at,
+                'approved_by': 'system',
+                'approved_at': created_at if enabled else None,
+                'rejected_reason': '' if enabled else 'Device disabled',
+                'created_at': created_at
+            })
+        
+        # Calculate overview statistics from ClickHouse data
+        total_sources = len(log_sources_data)
+        active_sources = sum(1 for d in log_sources_data if d['status'] == 'approved')
+        inactive_sources = sum(1 for d in log_sources_data if d['status'] == 'inactive')
+        pending_sources = sum(1 for d in log_sources_data if d['status'] == 'pending')
+        approved_sources = active_sources
+        rejected_sources = 0
+        
+    except Exception as e:
+        logging.error(f"Error fetching devices from ClickHouse: {e}")
+        # Fallback to empty data if ClickHouse is unavailable
+        log_sources_data = []
+        total_sources = active_sources = inactive_sources = pending_sources = approved_sources = rejected_sources = 0
     
     # Get recent events for activity feed
     from dashboard.models import LogSourceEvent
@@ -2038,6 +2086,177 @@ def add_log_source_view(request):
             return JsonResponse({'success': False, 'error': f'Failed to add log source: {str(e)}'})
     
     return JsonResponse({'success': False, 'error': 'Method not allowed'})
+
+def device_registration_view(request):
+    """Device registration view with ClickHouse integration"""
+    if request.method == 'GET':
+        # Return form data for GET request or render the form template
+        if request.headers.get('Accept') == 'application/json':
+            return JsonResponse({
+                'device_types': [
+                    {'value': 'fortigate', 'label': 'FortiGate Firewall'},
+                    {'value': 'paloalto', 'label': 'Palo Alto Firewall'},
+                    {'value': 'cisco', 'label': 'Cisco Device'},
+                    {'value': 'checkpoint', 'label': 'Check Point Firewall'},
+                    {'value': 'sophos', 'label': 'Sophos Firewall'},
+                    {'value': 'juniper', 'label': 'Juniper Device'},
+                    {'value': 'generic', 'label': 'Generic Syslog Device'},
+                ],
+                'parser_types': [
+                    {'value': 'fortigate', 'label': 'FortiGate Parser'},
+                    {'value': 'paloalto', 'label': 'Palo Alto Parser'},
+                    {'value': 'generic', 'label': 'Generic Parser'},
+                ]
+            })
+        else:
+            # Render the HTML template
+            context = {
+                'device_types': [
+                    {'value': 'fortigate', 'label': 'FortiGate Firewall'},
+                    {'value': 'paloalto', 'label': 'Palo Alto Firewall'},
+                    {'value': 'cisco', 'label': 'Cisco Device'},
+                    {'value': 'checkpoint', 'label': 'Check Point Firewall'},
+                    {'value': 'sophos', 'label': 'Sophos Firewall'},
+                    {'value': 'juniper', 'label': 'Juniper Device'},
+                    {'value': 'generic', 'label': 'Generic Syslog Device'},
+                ],
+                'parser_types': [
+                    {'value': 'fortigate', 'label': 'FortiGate Parser'},
+                    {'value': 'paloalto', 'label': 'Palo Alto Parser'},
+                    {'value': 'generic', 'label': 'Generic Parser'},
+                ]
+            }
+            return render(request, 'dashboard/device_registration.html', context)
+    
+    elif request.method == 'POST':
+        try:
+            # Validate required fields
+            device_ip = request.POST.get('device_ip', '').strip()
+            device_name = request.POST.get('device_name', '').strip()
+            parser_type = request.POST.get('parser_type', 'fortigate')
+            
+            if not device_ip:
+                return JsonResponse({'success': False, 'error': 'Device IP address is required'})
+            
+            if not device_name:
+                device_name = f"Device-{device_ip}"
+            
+            # Connect to ClickHouse
+            try:
+                client = Client(
+                    host=CH_HOST,
+                    port=CH_PORT,
+                    user=CH_USER,
+                    password=CH_PASSWORD,
+                    database=CH_DB
+                )
+                
+                # Check if device already exists
+                existing_device = client.execute(
+                    "SELECT COUNT(*) FROM registered_devices WHERE device_ip = %(device_ip)s",
+                    {'device_ip': device_ip}
+                )
+                
+                if existing_device[0][0] > 0:
+                    return JsonResponse({'success': False, 'error': f'Device with IP {device_ip} already registered'})
+                
+                # Create the registered_devices table if it doesn't exist
+                client.execute("""
+                    CREATE TABLE IF NOT EXISTS registered_devices (
+                        device_ip String,
+                        device_name String,
+                        parser_type String,
+                        enabled UInt8,
+                        created_at DateTime DEFAULT now()
+                    ) ENGINE = MergeTree()
+                    ORDER BY device_ip
+                """)
+                
+                # Insert the new device
+                client.execute(
+                    """INSERT INTO registered_devices (device_ip, device_name, parser_type, enabled) 
+                       VALUES (%(device_ip)s, %(device_name)s, %(parser_type)s, 1)""",
+                    {
+                        'device_ip': device_ip,
+                        'device_name': device_name,
+                        'parser_type': parser_type
+                    }
+                )
+                
+                # Also create a LogSource entry for compatibility
+                source = LogSource.objects.create(
+                    ip_address=device_ip,
+                    name=device_name,
+                    device_type=parser_type,
+                    port=514,
+                    protocol='udp',
+                    status='approved',
+                    description=f'Device registered via ClickHouse integration',
+                    save_logs=True
+                )
+                
+                # Auto-configure parser
+                source.auto_configure_parser()
+                
+                # Log creation event
+                LogSourceEvent.objects.create(
+                    log_source=source,
+                    event_type='detected',
+                    description='Registered via device registration interface',
+                    user=request.user.username if request.user.is_authenticated else 'admin'
+                )
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Device {device_name} ({device_ip}) registered successfully with {parser_type} parser',
+                    'device_id': device_ip,
+                    'source_id': source.id
+                })
+                
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': f'ClickHouse error: {str(e)}'})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Failed to register device: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'error': 'Method not allowed'})
+
+def device_list_view(request):
+    """List registered devices from ClickHouse"""
+    try:
+        client = Client(
+            host=CH_HOST,
+            port=CH_PORT,
+            user=CH_USER,
+            password=CH_PASSWORD,
+            database=CH_DB
+        )
+        
+        # Get all registered devices
+        devices = client.execute("""
+            SELECT device_ip, device_name, parser_type, enabled, created_at 
+            FROM registered_devices 
+            ORDER BY created_at DESC
+        """)
+        
+        device_list = []
+        for device in devices:
+            device_list.append({
+                'device_ip': device[0],
+                'device_name': device[1],
+                'parser_type': device[2],
+                'enabled': bool(device[3]),
+                'created_at': device[4].strftime('%Y-%m-%d %H:%M:%S') if device[4] else 'Unknown'
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'devices': device_list,
+            'count': len(device_list)
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Failed to fetch devices: {str(e)}'})
 
 def configure_log_source_view(request, source_id):
     """Configure a specific log source"""

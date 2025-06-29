@@ -1,0 +1,45 @@
+[Unit]
+Description=FortiGate Syslog Rust Receiver
+Documentation=https://github.com/your-org/fortigate-syslog-rust
+After=network.target clickhouse-server.service
+Wants=network.target
+Requires=clickhouse-server.service
+
+[Service]
+Type=simple
+User=syslog
+Group=syslog
+WorkingDirectory=/opt/fortigate-syslog-rust
+ExecStart=/opt/fortigate-syslog-rust/fortigate-syslog-rust --config /etc/fortigate-syslog-rust/config.toml
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log /tmp
+# CapabilityBoundingSet not needed for non-privileged ports
+CapabilityBoundingSet=
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=32768
+
+# Restart policy
+Restart=always
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fortigate-syslog-rust
+
+# Environment
+Environment=RUST_LOG=debug
+Environment=RUST_BACKTRACE=full
+
+[Install]
+WantedBy=multi-user.target

@@ -18,7 +18,9 @@ urlpatterns = [
     path('logs-sources/test/', views.test_log_source_view, name='test_log_source'),
     path('logs-sources/scan/', views.scan_log_sources_view, name='scan_log_sources'),
     path('logs-sources/status/', views.log_sources_status_view, name='log_sources_status'),
-    path('logs-sources/add/', views.add_log_source_view, name='add_log_source'),
+    path('logs-sources/add/', views.device_registration_view, name='device_registration'),
+    path('logs-sources/add-legacy/', views.add_log_source_view, name='add_log_source'),
+    path('device-list/', views.device_list_view, name='device_list'),
     path('logs-sources/configure/<int:source_id>/', views.configure_log_source_view, name='configure_log_source'),
     path('logs-sources/configure/<int:source_id>/save/', views.save_log_source_config_view, name='save_log_source_config'),
     # Log Management

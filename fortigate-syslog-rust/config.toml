@@ -1,0 +1,31 @@
+# FortiGate Syslog Rust Receiver Configuration
+
+[syslog]
+# UDP syslog server configuration
+bind_address = "0.0.0.0"
+bind_port = 5514
+buffer_size = 65536
+
+# Allowed source IP addresses (empty array allows all)
+allowed_sources = [
+    "192.168.100.221",
+    "10.16.5.254",
+    "10.10.100.4"
+]
+
+[clickhouse]
+# ClickHouse database connection
+host = "localhost"
+port = 8123
+user = "default"
+password = "Read@123"
+database = "network_logs"
+table = "fortigate_traffic"
+connection_timeout = 30
+
+[processing]
+# Batch processing configuration
+batch_size = 500
+batch_timeout = 1  # seconds
+buffer_size = 10000
+worker_threads = 4
