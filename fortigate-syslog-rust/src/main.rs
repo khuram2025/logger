@@ -7,6 +7,7 @@ use tracing::{error, info};
 
 mod config;
 mod fortigate;
+mod paloalto;
 mod clickhouse_client;
 mod syslog;
 mod device_manager_simple;

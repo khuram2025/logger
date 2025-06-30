@@ -557,6 +557,7 @@
                 <th>Device Information</th>
                 <th>Status</th>
                 <th>Configuration</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -605,6 +606,16 @@
                         </div>
                     </div>
                 </td>
+                <td>
+                    <div class="source-actions">
+                        <button class="action-btn configure" onclick="editDevice('{{ source.ip_address }}')" title="Edit Device">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="action-btn reject" onclick="deleteDevice('{{ source.ip_address }}', '{{ source.name }}')" title="Delete Device">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
@@ -644,5 +655,276 @@ function getCsrfToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
 }
 
+function editDevice(deviceIp) {
+    // Fetch current device data
+    fetch(`/device/edit/${deviceIp}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showEditDeviceModal(data.device);
+            } else {
+                showAlert('Failed to fetch device data: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('Error fetching device data: ' + error.message, 'error');
+        });
+}
+
+function showEditDeviceModal(device) {
+    const modalHtml = `
+        <div id="editDeviceModal" class="modal-overlay" onclick="closeEditModal(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h3>Edit Device</h3>
+                    <button class="modal-close" onclick="closeEditModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="editDeviceForm">
+                        <div class="form-group">
+                            <label for="editDeviceIp">Device IP Address:</label>
+                            <input type="text" id="editDeviceIp" value="${device.device_ip}" readonly style="background-color: #f8f9fa;">
+                        </div>
+                        <div class="form-group">
+                            <label for="editDeviceName">Device Name:</label>
+                            <input type="text" id="editDeviceName" value="${device.device_name}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editParserType">Parser Type:</label>
+                            <select id="editParserType" required>
+                                <option value="fortigate" ${device.parser_type === 'fortigate' ? 'selected' : ''}>FortiGate Parser</option>
+                                <option value="paloalto" ${device.parser_type === 'paloalto' ? 'selected' : ''}>Palo Alto Parser</option>
+                                <option value="generic" ${device.parser_type === 'generic' ? 'selected' : ''}>Generic Parser</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="editEnabled" ${device.enabled ? 'checked' : ''}>
+                                Device Enabled
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                            <button type="submit" class="btn-primary">Update Device</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Add form submit handler
+    document.getElementById('editDeviceForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveDeviceChanges(device.device_ip);
+    });
+}
+
+function saveDeviceChanges(deviceIp) {
+    const formData = {
+        device_name: document.getElementById('editDeviceName').value,
+        parser_type: document.getElementById('editParserType').value,
+        enabled: document.getElementById('editEnabled').checked
+    };
+    
+    fetch(`/device/edit/${deviceIp}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            closeEditModal();
+            // Refresh the page to show updated data
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showAlert('Failed to update device: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('Error updating device: ' + error.message, 'error');
+    });
+}
+
+function closeEditModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    const modal = document.getElementById('editDeviceModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function deleteDevice(deviceIp, deviceName) {
+    if (!confirm(`Are you sure you want to delete device "${deviceName}" (${deviceIp})? This action cannot be undone.`)) {
+        return;
+    }
+    
+    fetch(`/device/delete/${deviceIp}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            // Remove the row from the table
+            const row = document.querySelector(`[data-source-id*="${deviceIp.replace(/\./g, '_')}"]`);
+            if (row) {
+                row.remove();
+            }
+            // Refresh the page to update statistics
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showAlert('Failed to delete device: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('Error deleting device: ' + error.message, 'error');
+    });
+}
+
 </script>
+
+<style>
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90%;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6c757d;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: #dc3545;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+}
+
+.alert-error {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+</style>
 {% endblock %}

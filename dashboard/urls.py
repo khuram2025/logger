@@ -23,6 +23,9 @@ urlpatterns = [
     path('device-list/', views.device_list_view, name='device_list'),
     path('logs-sources/configure/<int:source_id>/', views.configure_log_source_view, name='configure_log_source'),
     path('logs-sources/configure/<int:source_id>/save/', views.save_log_source_config_view, name='save_log_source_config'),
+    # Device Management (Edit/Delete)
+    path('device/edit/<str:device_ip>/', views.edit_device_view, name='edit_device'),
+    path('device/delete/<str:device_ip>/', views.delete_device_view, name='delete_device'),
     # Log Management
     path('log-management/', views.log_management_status_view, name='log_management'),
     path('log-management/service-control/', views.service_control_view, name='service_control'),

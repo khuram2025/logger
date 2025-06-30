@@ -140,7 +140,7 @@ def grouped_logs_view(request):
     if action_filter:
         where_conditions.append(f"action = '{action_filter}'")
     if devname_filter:
-        where_conditions.append(f"devicename = '{devname_filter}'")
+        where_conditions.append(f"devname = '{devname_filter}'")
     if appcategory_filter:
         where_conditions.append(f"appcategory = '{appcategory_filter}'")
     if hostname_filter:
@@ -322,8 +322,8 @@ def grouped_logs_view(request):
         actions_result = client.execute("SELECT DISTINCT action FROM fortigate_traffic WHERE action != '' ORDER BY action")
         available_actions = [row[0] for row in actions_result if row[0]]
         
-        # Query for distinct device names
-        devices_result = client.execute("SELECT DISTINCT devicename FROM fortigate_traffic WHERE devicename != '' ORDER BY devicename")
+        # Query for distinct device names - use same logic as regular logs view
+        devices_result = client.execute("SELECT DISTINCT devname as device_name FROM fortigate_traffic WHERE devname IS NOT NULL AND devname <> '' AND length(devname) >= 3 AND devname NOT LIKE '%:%' AND devname NOT LIKE '%=' AND (devname NOT LIKE '%.%' OR devname LIKE '%.%.%.%') AND devname NOT LIKE 'FGT-' AND devname NOT LIKE 'FGT-F' AND devname NOT LIKE 'FGT-FW' AND devname NOT LIKE 'FGT-FW0' ORDER BY devname")
         available_devices = [row[0] for row in devices_result if row[0]]
     except:
         pass
