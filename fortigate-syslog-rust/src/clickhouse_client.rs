@@ -6,6 +6,15 @@ use tracing::{debug, error, info, warn};
 use crate::config::Config;
 use crate::fortigate::FortiGateRecord;
 
+/// Escape string for ClickHouse SQL to prevent query injection and parameter confusion
+fn escape_clickhouse_string(s: &str) -> String {
+    s.replace('\\', "\\\\")
+     .replace('\'', "''")
+     .replace('\n', "\\n")
+     .replace('\r', "\\r")
+     .replace('\t', "\\t")
+}
+
 #[derive(Row, Serialize)]
 struct ClickHouseRecord<'a> {
     timestamp: &'a chrono::DateTime<chrono::Utc>,
@@ -176,37 +185,37 @@ impl ClickHouseClient {
             let value = format!(
                 "('{}', '{}', '{}', '{}', {}, '{}', '{}', '{}', '{}', '{}', '{}', '{}', {}, '{}', '{}', '{}', {}, '{}', '{}', '{}', '{}', '', {}, {}, '{}', {}, '{}', '{}', '{}', '{}', '{}', '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, '{}', '{}', '{}')",
                 record.timestamp.format("%Y-%m-%d %H:%M:%S"),
-                record.raw_message.replace("'", "''"), // Escape quotes
-                record.devname.replace("'", "''"),
-                record.devid.replace("'", "''"),
+                escape_clickhouse_string(&record.raw_message),
+                escape_clickhouse_string(&record.devname),
+                escape_clickhouse_string(&record.devid),
                 record.eventtime,
-                record.tz.replace("'", "''"),
-                record.logid.replace("'", "''"),
-                record.log_type.replace("'", "''"),
-                record.subtype.replace("'", "''"),
-                record.level.replace("'", "''"),
-                record.vd.replace("'", "''"),
-                record.srcip.replace("'", "''"),
+                escape_clickhouse_string(&record.tz),
+                escape_clickhouse_string(&record.logid),
+                escape_clickhouse_string(&record.log_type),
+                escape_clickhouse_string(&record.subtype),
+                escape_clickhouse_string(&record.level),
+                escape_clickhouse_string(&record.vd),
+                escape_clickhouse_string(&record.srcip),
                 record.srcport,
-                record.srcintf.replace("'", "''"),
-                record.srcintfrole.replace("'", "''"),
-                record.dstip.replace("'", "''"),
+                escape_clickhouse_string(&record.srcintf),
+                escape_clickhouse_string(&record.srcintfrole),
+                escape_clickhouse_string(&record.dstip),
                 record.dstport,
-                record.dstintf.replace("'", "''"),
-                record.dstintfrole.replace("'", "''"),
-                record.srccountry.replace("'", "''"),
-                record.dstcountry.replace("'", "''"),
+                escape_clickhouse_string(&record.dstintf),
+                escape_clickhouse_string(&record.dstintfrole),
+                escape_clickhouse_string(&record.srccountry),
+                escape_clickhouse_string(&record.dstcountry),
                 // username (empty for now)
                 record.sessionid,
                 record.proto,
-                record.action.replace("'", "''"),
+                escape_clickhouse_string(&record.action),
                 record.policyid,
-                record.policytype.replace("'", "''"),
-                record.poluuid.replace("'", "''"),
-                record.policyname.replace("'", "''"),
-                record.service.replace("'", "''"),
-                record.trandisp.replace("'", "''"),
-                record.appcat.replace("'", "''"),
+                escape_clickhouse_string(&record.policytype),
+                escape_clickhouse_string(&record.poluuid),
+                escape_clickhouse_string(&record.policyname),
+                escape_clickhouse_string(&record.service),
+                escape_clickhouse_string(&record.trandisp),
+                escape_clickhouse_string(&record.appcat),
                 record.duration,
                 record.sentbyte,
                 record.rcvdbyte,
@@ -217,9 +226,9 @@ impl ClickHouseClient {
                 record.durationdelta,
                 record.sentpktdelta,
                 record.rcvdpktdelta,
-                record.vpntype.replace("'", "''"),
-                record.device_name.replace("'", "''"),
-                record.device_ip.replace("'", "''")
+                escape_clickhouse_string(&record.vpntype),
+                escape_clickhouse_string(&record.device_name),
+                escape_clickhouse_string(&record.device_ip)
             );
             values.push(value);
         }
