@@ -8,13 +8,17 @@ use tracing::{error, info};
 mod config;
 mod fortigate;
 mod paloalto;
+mod paloalto_url;
 mod clickhouse_client;
+mod clickhouse_url_client;
 mod syslog;
 mod device_manager_simple;
 
 use config::Config;
 use fortigate::FortiGateRecord;
+use paloalto_url::PaloAltoUrlRecord;
 use clickhouse_client::ClickHouseClient;
+use clickhouse_url_client::ClickHouseUrlClient;
 use syslog::SyslogReceiver;
 use device_manager_simple::DeviceManager;
 
@@ -46,9 +50,12 @@ async fn main() -> Result<()> {
     let config = Config::load(&args.config)?;
     info!("Configuration loaded from: {}", args.config);
     
-    // Initialize ClickHouse client
+    // Initialize ClickHouse clients
     let ch_client = Arc::new(ClickHouseClient::new(&config).await?);
     info!("ClickHouse client initialized");
+    
+    let ch_url_client = Arc::new(ClickHouseUrlClient::new(&config).await?);
+    info!("ClickHouse URL client initialized");
     
     // Initialize Device Manager
     let device_manager = Arc::new(DeviceManager::new());
@@ -61,8 +68,9 @@ async fn main() -> Result<()> {
     
     // Create channels for communication
     let (tx, rx) = mpsc::channel::<FortiGateRecord>(config.buffer_size());
+    let (url_tx, url_rx) = mpsc::channel::<PaloAltoUrlRecord>(config.buffer_size());
     
-    // Start ClickHouse writer task
+    // Start ClickHouse writer tasks
     let ch_writer = tokio::spawn({
         let client = Arc::clone(&ch_client);
         let batch_size = config.batch_size();
@@ -72,12 +80,21 @@ async fn main() -> Result<()> {
         }
     });
     
+    let ch_url_writer = tokio::spawn({
+        let client = Arc::clone(&ch_url_client);
+        let batch_size = config.batch_size();
+        let batch_timeout = config.batch_timeout();
+        async move {
+            clickhouse_url_writer_task(client, url_rx, batch_size, batch_timeout).await
+        }
+    });
+    
     // Start syslog receiver with device manager
     let syslog_receiver = SyslogReceiver::new(config.clone());
     let receiver_task = tokio::spawn({
         let device_mgr = Arc::clone(&device_manager);
         async move {
-            syslog_receiver.run(tx, device_mgr).await
+            syslog_receiver.run(tx, url_tx, device_mgr).await
         }
     });
     
@@ -96,8 +113,65 @@ async fn main() -> Result<()> {
     // Cleanup
     receiver_task.abort();
     ch_writer.abort();
+    ch_url_writer.abort();
     
     info!("Shutdown complete");
+    Ok(())
+}
+
+async fn clickhouse_url_writer_task(
+    client: Arc<ClickHouseUrlClient>,
+    mut rx: mpsc::Receiver<PaloAltoUrlRecord>,
+    batch_size: usize,
+    batch_timeout: u64,
+) -> Result<()> {
+    let mut batch = Vec::with_capacity(batch_size);
+    let mut last_flush = std::time::Instant::now();
+    let timeout_duration = std::time::Duration::from_secs(batch_timeout);
+    
+    loop {
+        tokio::select! {
+            record = rx.recv() => {
+                match record {
+                    Some(record) => {
+                        batch.push(record);
+                        
+                        if batch.len() >= batch_size {
+                            if let Err(e) = client.insert_batch(&batch).await {
+                                error!("Failed to insert URL batch: {:?}", e);
+                            } else {
+                                info!("Inserted URL batch of {} records", batch.len());
+                            }
+                            batch.clear();
+                            last_flush = std::time::Instant::now();
+                        }
+                    }
+                    None => break,
+                }
+            }
+            _ = tokio::time::sleep_until(tokio::time::Instant::from_std(last_flush + timeout_duration)) => {
+                if !batch.is_empty() {
+                    if let Err(e) = client.insert_batch(&batch).await {
+                        error!("Failed to insert URL timeout batch: {:?}", e);
+                    } else {
+                        info!("Inserted URL timeout batch of {} records", batch.len());
+                    }
+                    batch.clear();
+                    last_flush = std::time::Instant::now();
+                }
+            }
+        }
+    }
+    
+    // Flush remaining records
+    if !batch.is_empty() {
+        if let Err(e) = client.insert_batch(&batch).await {
+            error!("Failed to insert final URL batch: {:?}", e);
+        } else {
+            info!("Inserted final URL batch of {} records", batch.len());
+        }
+    }
+    
     Ok(())
 }
 

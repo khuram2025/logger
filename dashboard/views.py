@@ -271,6 +271,26 @@ def top_summary_view(request):
     since_str = since.strftime('%Y-%m-%d %H:%M:%S')
     until_str = until.strftime('%Y-%m-%d %H:%M:%S')
 
+    # For non-custom ranges, set until to now
+    if time_range != 'custom':
+        until = now
+
+    # ClickHouse expects ISO format
+    since_str = since.strftime('%Y-%m-%d %H:%M:%S')
+    until_str = until.strftime('%Y-%m-%d %H:%M:%S')
+
+    # Determine since_interval for ClickHouse native time functions
+    if time_range == '1h':
+        since_interval = '1 HOUR'
+    elif time_range == '1d':
+        since_interval = '1 DAY'
+    elif time_range == '7d':
+        since_interval = '7 DAY'
+    elif time_range == '1m':
+        since_interval = '30 DAY'
+    else: # Default or custom
+        since_interval = '1 HOUR' # Fallback, though custom uses since_str directly
+
     # Query 1: Top Traffic (existing)
     traffic_query = f'''
         SELECT
@@ -281,7 +301,7 @@ def top_summary_view(request):
             sum(rcvdbyte) AS total_rcvd,
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
-        WHERE timestamp >= now() - INTERVAL {since_interval}
+        WHERE timestamp >= toDateTime('{since_str}')
         GROUP BY srcip, dstip, dstport
         ORDER BY total_bytes DESC
         LIMIT 10
@@ -294,7 +314,7 @@ def top_summary_view(request):
             count(*) AS count,
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
-        WHERE timestamp >= now() - INTERVAL {since_interval}
+        WHERE timestamp >= toDateTime('{since_str}')
           AND appcategory != '' AND appcategory IS NOT NULL
         GROUP BY appcategory
         ORDER BY count DESC
@@ -308,7 +328,7 @@ def top_summary_view(request):
             count(*) AS count,
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
-        WHERE timestamp >= now() - INTERVAL {since_interval}
+        WHERE timestamp >= toDateTime('{since_str}')
           AND hostname != '' AND hostname IS NOT NULL
         GROUP BY hostname
         ORDER BY count DESC
@@ -322,7 +342,7 @@ def top_summary_view(request):
             count(*) AS count,
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
-        WHERE timestamp >= now() - INTERVAL {since_interval}
+        WHERE timestamp >= toDateTime('{since_str}')
           AND username != '' AND username IS NOT NULL
         GROUP BY username
         ORDER BY count DESC
@@ -336,7 +356,7 @@ def top_summary_view(request):
             count(*) AS count,
             sum(sentbyte) + sum(rcvdbyte) AS total_bytes
         FROM fortigate_traffic
-        WHERE timestamp >= now() - INTERVAL {since_interval}
+        WHERE timestamp >= toDateTime('{since_str}')
           AND dstcountry != '' AND dstcountry IS NOT NULL
         GROUP BY dstcountry
         ORDER BY count DESC
@@ -428,7 +448,7 @@ def top_summary_view(request):
         conn_query = f"""
         SELECT COUNT(*) 
         FROM fortigate_traffic 
-        WHERE timestamp >= now() - INTERVAL {since_interval}
+        WHERE timestamp >= toDateTime('{since_str}')
         """
         # Custom time range until clause not needed for standard intervals
             
@@ -439,7 +459,7 @@ def top_summary_view(request):
         bytes_query = f"""
         SELECT SUM(sentbyte + rcvdbyte) 
         FROM fortigate_traffic 
-        WHERE timestamp >= now() - INTERVAL {since_interval}
+        WHERE timestamp >= toDateTime('{since_str}')
         """
         # Custom time range until clause not needed for standard intervals
             
@@ -450,7 +470,7 @@ def top_summary_view(request):
         ips_query = f"""
         SELECT COUNT(DISTINCT srcip) 
         FROM fortigate_traffic 
-        WHERE timestamp >= now() - INTERVAL {since_interval}
+        WHERE timestamp >= toDateTime('{since_str}')
         """
         # Custom time range until clause not needed for standard intervals
             

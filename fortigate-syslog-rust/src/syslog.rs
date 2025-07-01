@@ -9,6 +9,7 @@ use std::sync::Arc;
 use crate::config::Config;
 use crate::fortigate::FortiGateRecord;
 use crate::paloalto::PaloAltoRecord;
+use crate::paloalto_url::PaloAltoUrlRecord;
 use crate::device_manager_simple::DeviceManager;
 
 pub struct SyslogReceiver {
@@ -20,7 +21,7 @@ impl SyslogReceiver {
         Self { config }
     }
     
-    pub async fn run(&self, tx: mpsc::Sender<FortiGateRecord>, device_manager: Arc<DeviceManager>) -> Result<()> {
+    pub async fn run(&self, tx: mpsc::Sender<FortiGateRecord>, url_tx: mpsc::Sender<PaloAltoUrlRecord>, device_manager: Arc<DeviceManager>) -> Result<()> {
         let bind_addr = format!("{}:{}", 
             self.config.syslog.bind_address, 
             self.config.syslog.bind_port
@@ -96,90 +97,6 @@ impl SyslogReceiver {
                                     
                                     if record.validate() {
                                         match tx.send(record).await {
-                                    Ok(_) => {
-                                        packets_processed += 1;
-                                        
-                                        // Log statistics every 1000 packets
-                                        if packets_received % 1000 == 0 {
-                                            info!("Statistics: received={}, processed={}, dropped={}", 
-                                                  packets_received, packets_processed, packets_dropped);
-                                        }
-                                    }
-                                    Err(e) => {
-                                        error!("Failed to send record to processing queue: {}", e);
-                                        packets_dropped += 1;
-                                    }
-                                        }
-                                    } else {
-                                        debug!("Dropping invalid FortiGate record from {}", addr.ip());
-                                        packets_dropped += 1;
-                                    }
-                                }
-                                Err(e) => {
-                                    warn!("Failed to parse FortiGate log from {}: {} | Message: {}", 
-                                          addr.ip(), e, clean_message.chars().take(200).collect::<String>());
-                                    packets_dropped += 1;
-                                }
-                            }
-                        }
-                        "paloalto" => {
-                            match PaloAltoRecord::parse(clean_message) {
-                                Ok(mut record) => {
-                                    // Set device information
-                                    if let Some(device) = &device_info {
-                                        record.set_device_info(&device.device_name, &device.device_ip);
-                                    }
-                                    
-                                    if record.validate() {
-                                        // Convert PaloAltoRecord to FortiGateRecord for unified processing
-                                        let fortigate_record = FortiGateRecord {
-                                            timestamp: record.timestamp,
-                                            raw_message: record.raw_message,
-                                            devname: record.devname,
-                                            devid: record.devid,
-                                            eventtime: record.eventtime,
-                                            tz: record.tz,
-                                            logid: record.logid,
-                                            log_type: record.log_type,
-                                            subtype: record.subtype,
-                                            level: record.level,
-                                            vd: record.vd,
-                                            srcip: record.srcip,
-                                            srcport: record.srcport,
-                                            srcintf: record.srcintf,
-                                            srcintfrole: record.srcintfrole,
-                                            dstip: record.dstip,
-                                            dstport: record.dstport,
-                                            dstintf: record.dstintf,
-                                            dstintfrole: record.dstintfrole,
-                                            srccountry: record.srccountry,
-                                            dstcountry: record.dstcountry,
-                                            sessionid: record.sessionid,
-                                            proto: record.proto,
-                                            action: record.action,
-                                            policyid: record.policyid,
-                                            policytype: record.policytype,
-                                            poluuid: record.poluuid,
-                                            policyname: record.policyname,
-                                            service: record.service,
-                                            trandisp: record.trandisp,
-                                            appcat: record.appcat,
-                                            duration: record.duration,
-                                            sentbyte: record.sentbyte,
-                                            rcvdbyte: record.rcvdbyte,
-                                            sentpkt: record.sentpkt,
-                                            rcvdpkt: record.rcvdpkt,
-                                            sentdelta: record.sentdelta,
-                                            rcvddelta: record.rcvddelta,
-                                            durationdelta: record.durationdelta,
-                                            sentpktdelta: record.sentpktdelta,
-                                            rcvdpktdelta: record.rcvdpktdelta,
-                                            vpntype: record.vpntype,
-                                            device_name: record.device_name,
-                                            device_ip: record.device_ip,
-                                        };
-                                        
-                                        match tx.send(fortigate_record).await {
                                             Ok(_) => {
                                                 packets_processed += 1;
                                                 
@@ -195,14 +112,136 @@ impl SyslogReceiver {
                                             }
                                         }
                                     } else {
-                                        debug!("Dropping invalid Palo Alto record from {}", addr.ip());
+                                        debug!("Dropping invalid FortiGate record from {}", addr.ip());
                                         packets_dropped += 1;
                                     }
                                 }
                                 Err(e) => {
-                                    warn!("Failed to parse Palo Alto log from {}: {} | Message: {}", 
+                                    warn!("Failed to parse FortiGate log from {}: {} | Message: {}", 
                                           addr.ip(), e, clean_message.chars().take(200).collect::<String>());
                                     packets_dropped += 1;
+                                }
+                            }
+                        }
+                        "paloalto" => {
+                            if clean_message.contains(",THREAT,url,") {
+                                match PaloAltoUrlRecord::parse(clean_message) {
+                                    Ok(mut url_record) => {
+                                        // Set device information
+                                        if let Some(device) = &device_info {
+                                            url_record.set_device_info(&device.device_name, &device.device_ip);
+                                        }
+                                        
+                                        if url_record.validate() {
+                                            match url_tx.send(url_record).await {
+                                                Ok(_) => {
+                                                    packets_processed += 1;
+                                                    
+                                                    // Log statistics every 1000 packets
+                                                    if packets_received % 1000 == 0 {
+                                                        info!("Statistics: received={}, processed={}, dropped={}", 
+                                                              packets_received, packets_processed, packets_dropped);
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    error!("Failed to send URL record to processing queue: {}", e);
+                                                    packets_dropped += 1;
+                                                }
+                                            }
+                                        } else {
+                                            debug!("Dropping invalid Palo Alto URL record from {}", addr.ip());
+                                            packets_dropped += 1;
+                                        }
+                                    }
+                                    Err(e) => {
+                                        warn!("Failed to parse Palo Alto URL log from {}: {} | Message: {}", 
+                                              addr.ip(), e, clean_message.chars().take(200).collect::<String>());
+                                        packets_dropped += 1;
+                                    }
+                                }
+                            } else if clean_message.contains(",TRAFFIC,") {
+                                // Parse as regular Palo Alto traffic log
+                                match PaloAltoRecord::parse(clean_message) {
+                                    Ok(mut record) => {
+                                        // Set device information
+                                        if let Some(device) = &device_info {
+                                            record.set_device_info(&device.device_name, &device.device_ip);
+                                        }
+                                        
+                                        if record.validate() {
+                                            // Convert PaloAltoRecord to FortiGateRecord for unified processing
+                                            let fortigate_record = FortiGateRecord {
+                                                timestamp: record.timestamp,
+                                                raw_message: record.raw_message,
+                                                devname: record.devname,
+                                                devid: record.devid,
+                                                eventtime: record.eventtime,
+                                                tz: record.tz,
+                                                logid: record.logid,
+                                                log_type: record.log_type,
+                                                subtype: record.subtype,
+                                                level: record.level,
+                                                vd: record.vd,
+                                                srcip: record.srcip,
+                                                srcport: record.srcport,
+                                                srcintf: record.srcintf,
+                                                srcintfrole: record.srcintfrole,
+                                                dstip: record.dstip,
+                                                dstport: record.dstport,
+                                                dstintf: record.dstintf,
+                                                dstintfrole: record.dstintfrole,
+                                                srccountry: record.srccountry,
+                                                dstcountry: record.dstcountry,
+                                                sessionid: record.sessionid,
+                                                proto: record.proto,
+                                                action: record.action,
+                                                policyid: record.policyid,
+                                                policytype: record.policytype,
+                                                poluuid: record.poluuid,
+                                                policyname: record.policyname,
+                                                service: record.service,
+                                                trandisp: record.trandisp,
+                                                appcat: record.appcat,
+                                                duration: record.duration,
+                                                sentbyte: record.sentbyte,
+                                                rcvdbyte: record.rcvdbyte,
+                                                sentpkt: record.sentpkt,
+                                                rcvdpkt: record.rcvdpkt,
+                                                sentdelta: record.sentdelta,
+                                                rcvddelta: record.rcvddelta,
+                                                durationdelta: record.durationdelta,
+                                                sentpktdelta: record.sentpktdelta,
+                                                rcvdpktdelta: record.rcvdpktdelta,
+                                                vpntype: record.vpntype,
+                                                device_name: record.device_name,
+                                                device_ip: record.device_ip,
+                                            };
+                                            
+                                            match tx.send(fortigate_record).await {
+                                                Ok(_) => {
+                                                    packets_processed += 1;
+                                                    
+                                                    // Log statistics every 1000 packets
+                                                    if packets_received % 1000 == 0 {
+                                                        info!("Statistics: received={}, processed={}, dropped={}", 
+                                                              packets_received, packets_processed, packets_dropped);
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    error!("Failed to send record to processing queue: {}", e);
+                                                    packets_dropped += 1;
+                                                }
+                                            }
+                                        } else {
+                                            debug!("Dropping invalid Palo Alto record from {}", addr.ip());
+                                            packets_dropped += 1;
+                                        }
+                                    }
+                                    Err(e) => {
+                                        warn!("Failed to parse Palo Alto log from {}: {} | Message: {}", 
+                                              addr.ip(), e, clean_message.chars().take(200).collect::<String>());
+                                        packets_dropped += 1;
+                                    }
                                 }
                             }
                         }
