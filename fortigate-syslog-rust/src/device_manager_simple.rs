@@ -84,21 +84,33 @@ impl DeviceManager {
 
     /// Query ClickHouse for registered devices
     async fn query_clickhouse_devices(&self) -> Result<Vec<RegisteredDevice>> {
-        let query = "SELECT device_ip, device_name, parser_type, enabled FROM registered_devices WHERE enabled = 1";
+        use reqwest;
         
-        // Use a simpler approach with deserializer
-        let devices_data: Vec<(String, String, String, u8)> = self.clickhouse_client
-            .query(query)
-            .fetch_all()
+        // Use HTTP client directly to avoid ClickHouse client library issues
+        let client = reqwest::Client::new();
+        let query = "SELECT device_ip, device_name, parser_type, enabled FROM network_logs.registered_devices WHERE enabled = 1 FORMAT JSONEachRow";
+        
+        let response = client
+            .post("http://localhost:8123/")
+            .basic_auth("default", Some("Read@123"))
+            .body(query)
+            .send()
             .await?;
         
+        let text = response.text().await?;
+        
         let mut devices = Vec::new();
-        for (device_ip, device_name, parser_type, enabled) in devices_data {
+        for line in text.lines() {
+            if line.trim().is_empty() {
+                continue;
+            }
+            
+            let json: serde_json::Value = serde_json::from_str(line)?;
             devices.push(RegisteredDevice {
-                device_ip,
-                device_name,
-                parser_type,
-                enabled: enabled == 1,
+                device_ip: json["device_ip"].as_str().unwrap_or("").to_string(),
+                device_name: json["device_name"].as_str().unwrap_or("").to_string(),
+                parser_type: json["parser_type"].as_str().unwrap_or("").to_string(),
+                enabled: json["enabled"].as_u64().unwrap_or(0) == 1,
             });
         }
         

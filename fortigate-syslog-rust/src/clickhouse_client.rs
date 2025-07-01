@@ -242,8 +242,20 @@ impl ClickHouseClient {
             values.join(",")
         );
         
-        self.client.query(&query).execute().await
-            .with_context(|| format!("Failed to insert batch of {} records", records.len()))?;
+        // Use direct HTTP request to avoid ClickHouse client library parameter binding issues
+        let http_client = reqwest::Client::new();
+        let response = http_client
+            .post(&format!("http://localhost:8123/"))
+            .basic_auth("default", Some("Read@123"))
+            .body(query)
+            .send()
+            .await
+            .with_context(|| format!("Failed to send HTTP request for batch of {} records", records.len()))?;
+            
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(anyhow::anyhow!("ClickHouse HTTP request failed: {}", error_text));
+        }
             
         debug!("Successfully inserted batch of {} records", records.len());
         Ok(())
@@ -254,27 +266,45 @@ impl ClickHouseClient {
     }
     
     pub async fn get_stats(&self) -> Result<(u64, String)> {
-        let count: u64 = self.client
-            .query(&format!("SELECT count() FROM {}.{}", self.database, self.table))
-            .fetch_one()
+        // Use HTTP requests to avoid ClickHouse client library issues
+        let http_client = reqwest::Client::new();
+        
+        // Get count
+        let count_query = format!("SELECT count() FROM {}.{}", self.database, self.table);
+        let count_response = http_client
+            .post("http://localhost:8123/")
+            .basic_auth("default", Some("Read@123"))
+            .body(count_query)
+            .send()
             .await
             .context("Failed to get record count")?;
-            
-        let last_timestamp: String = self.client
-            .query(&format!(
-                "SELECT toString(max(timestamp)) FROM {}.{}", 
-                self.database, self.table
-            ))
-            .fetch_one()
-            .await
-            .unwrap_or_else(|_| "N/A".to_string());
+        let count: u64 = count_response.text().await?.trim().parse().unwrap_or(0);
+        
+        // Get last timestamp
+        let timestamp_query = format!("SELECT toString(max(timestamp)) FROM {}.{}", self.database, self.table);
+        let timestamp_response = http_client
+            .post("http://localhost:8123/")
+            .basic_auth("default", Some("Read@123"))
+            .body(timestamp_query)
+            .send()
+            .await;
+        let last_timestamp = match timestamp_response {
+            Ok(resp) => resp.text().await.unwrap_or_else(|_| "N/A".to_string()).trim().to_string(),
+            Err(_) => "N/A".to_string()
+        };
             
         Ok((count, last_timestamp))
     }
     
     pub async fn health_check(&self) -> Result<bool> {
-        match self.client.query("SELECT 1").fetch_one::<u8>().await {
-            Ok(_) => Ok(true),
+        let http_client = reqwest::Client::new();
+        match http_client
+            .post("http://localhost:8123/")
+            .basic_auth("default", Some("Read@123"))
+            .body("SELECT 1")
+            .send()
+            .await {
+            Ok(response) => Ok(response.status().is_success()),
             Err(e) => {
                 error!("ClickHouse health check failed: {}", e);
                 Ok(false)
