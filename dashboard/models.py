@@ -358,3 +358,420 @@ class ParserTemplate(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.get_device_type_display()})"
+
+
+# ============================================================================
+# Network Topology Models for Device Interface, Zone, and Subnet Management
+# ============================================================================
+
+class DeviceZone(models.Model):
+    """Network zones for devices (e.g., DMZ, Internal, External)"""
+    
+    ZONE_TYPE_CHOICES = [
+        ('internal', 'Internal Zone'),
+        ('external', 'External Zone'),
+        ('dmz', 'DMZ Zone'),
+        ('management', 'Management Zone'),
+        ('guest', 'Guest Zone'),
+        ('trusted', 'Trusted Zone'),
+        ('untrusted', 'Untrusted Zone'),
+        ('vpn', 'VPN Zone'),
+        ('custom', 'Custom Zone'),
+    ]
+    
+    SECURITY_LEVEL_CHOICES = [
+        (0, 'Untrusted (0)'),
+        (25, 'Low Security (25)'),
+        (50, 'Medium Security (50)'),
+        (75, 'High Security (75)'),
+        (100, 'Maximum Security (100)'),
+    ]
+    
+    device = models.ForeignKey(
+        LogSource,
+        on_delete=models.CASCADE,
+        related_name='zones',
+        help_text="Device this zone belongs to"
+    )
+    
+    # Zone Information
+    name = models.CharField(
+        max_length=100,
+        help_text="Zone name (e.g., 'Internal', 'DMZ', 'External')"
+    )
+    zone_type = models.CharField(
+        max_length=20,
+        choices=ZONE_TYPE_CHOICES,
+        default='custom',
+        help_text="Type of zone"
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Optional description of the zone"
+    )
+    
+    # Security Configuration
+    security_level = models.IntegerField(
+        choices=SECURITY_LEVEL_CHOICES,
+        default=50,
+        help_text="Security level (0-100)"
+    )
+    
+    # Zone Configuration
+    is_active = models.BooleanField(default=True, help_text="Is this zone active")
+    allow_inter_zone = models.BooleanField(
+        default=True,
+        help_text="Allow traffic between interfaces in this zone"
+    )
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'device_zones'
+        unique_together = ['device', 'name']
+        ordering = ['device', 'security_level', 'name']
+        indexes = [
+            models.Index(fields=['device', 'zone_type']),
+            models.Index(fields=['device', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.device.name} - {self.name}"
+
+
+class DeviceSubnet(models.Model):
+    """Network subnets associated with devices"""
+    
+    SUBNET_TYPE_CHOICES = [
+        ('management', 'Management Network'),
+        ('user', 'User Network'),
+        ('server', 'Server Network'),
+        ('dmz', 'DMZ Network'),
+        ('wan', 'WAN Network'),
+        ('lan', 'LAN Network'),
+        ('vlan', 'VLAN Network'),
+        ('vpn', 'VPN Network'),
+        ('custom', 'Custom Network'),
+    ]
+    
+    device = models.ForeignKey(
+        LogSource,
+        on_delete=models.CASCADE,
+        related_name='subnets',
+        help_text="Device this subnet belongs to"
+    )
+    
+    # Subnet Information
+    name = models.CharField(
+        max_length=100,
+        help_text="Subnet name (e.g., 'Internal LAN', 'DMZ Servers')"
+    )
+    network_address = models.CharField(
+        max_length=18,
+        help_text="Network address with CIDR (e.g., '192.168.1.0/24')"
+    )
+    subnet_type = models.CharField(
+        max_length=20,
+        choices=SUBNET_TYPE_CHOICES,
+        default='custom',
+        help_text="Type of subnet"
+    )
+    
+    # Network Configuration
+    gateway = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text="Gateway IP address"
+    )
+    vlan_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="VLAN ID (if applicable)"
+    )
+    
+    # Assignment
+    zone = models.ForeignKey(
+        DeviceZone,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='subnets',
+        help_text="Zone this subnet belongs to"
+    )
+    
+    # Configuration
+    description = models.TextField(
+        blank=True,
+        help_text="Optional description of the subnet"
+    )
+    is_active = models.BooleanField(default=True, help_text="Is this subnet active")
+    monitor_traffic = models.BooleanField(
+        default=True,
+        help_text="Monitor traffic for this subnet"
+    )
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'device_subnets'
+        unique_together = ['device', 'network_address']
+        ordering = ['device', 'zone', 'name']
+        indexes = [
+            models.Index(fields=['device', 'subnet_type']),
+            models.Index(fields=['device', 'is_active']),
+            models.Index(fields=['zone']),
+        ]
+    
+    def __str__(self):
+        return f"{self.device.name} - {self.name} ({self.network_address})"
+
+
+class DeviceInterface(models.Model):
+    """Network interfaces for devices"""
+    
+    INTERFACE_TYPE_CHOICES = [
+        ('ethernet', 'Ethernet'),
+        ('wifi', 'Wireless'),
+        ('tunnel', 'Tunnel'),
+        ('vlan', 'VLAN'),
+        ('loopback', 'Loopback'),
+        ('virtual', 'Virtual'),
+        ('aggregate', 'Aggregate'),
+        ('management', 'Management'),
+        ('custom', 'Custom'),
+    ]
+    
+    INTERFACE_STATUS_CHOICES = [
+        ('up', 'Up'),
+        ('down', 'Down'),
+        ('admin_down', 'Administratively Down'),
+        ('unknown', 'Unknown'),
+    ]
+    
+    DUPLEX_CHOICES = [
+        ('full', 'Full Duplex'),
+        ('half', 'Half Duplex'),
+        ('auto', 'Auto Negotiate'),
+    ]
+    
+    SPEED_CHOICES = [
+        ('10', '10 Mbps'),
+        ('100', '100 Mbps'),
+        ('1000', '1 Gbps'),
+        ('10000', '10 Gbps'),
+        ('25000', '25 Gbps'),
+        ('40000', '40 Gbps'),
+        ('100000', '100 Gbps'),
+        ('auto', 'Auto Negotiate'),
+    ]
+    
+    device = models.ForeignKey(
+        LogSource,
+        on_delete=models.CASCADE,
+        related_name='interfaces',
+        help_text="Device this interface belongs to"
+    )
+    
+    # Interface Information
+    name = models.CharField(
+        max_length=100,
+        help_text="Interface name (e.g., 'eth0', 'GigabitEthernet0/1', 'ae1.100')"
+    )
+    alias = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Interface alias or description"
+    )
+    interface_type = models.CharField(
+        max_length=20,
+        choices=INTERFACE_TYPE_CHOICES,
+        default='ethernet',
+        help_text="Type of interface"
+    )
+    
+    # Network Configuration
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text="IP address assigned to interface"
+    )
+    subnet_mask = models.CharField(
+        max_length=15,
+        blank=True,
+        help_text="Subnet mask (e.g., '255.255.255.0')"
+    )
+    cidr_prefix = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="CIDR prefix length (e.g., 24 for /24)"
+    )
+    
+    # Physical Configuration
+    mac_address = models.CharField(
+        max_length=17,
+        blank=True,
+        help_text="MAC address (format: XX:XX:XX:XX:XX:XX)"
+    )
+    speed = models.CharField(
+        max_length=10,
+        choices=SPEED_CHOICES,
+        default='auto',
+        help_text="Interface speed"
+    )
+    duplex = models.CharField(
+        max_length=10,
+        choices=DUPLEX_CHOICES,
+        default='auto',
+        help_text="Duplex mode"
+    )
+    mtu = models.PositiveIntegerField(
+        default=1500,
+        help_text="Maximum Transmission Unit"
+    )
+    
+    # VLAN Configuration
+    vlan_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="VLAN ID (if interface is a VLAN)"
+    )
+    native_vlan = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Native VLAN ID for trunk interfaces"
+    )
+    
+    # Zone and Subnet Assignments
+    zone = models.ForeignKey(
+        DeviceZone,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='interfaces',
+        help_text="Zone this interface belongs to"
+    )
+    
+    # Many-to-many relationship with subnets (one interface can reach multiple subnets)
+    subnets = models.ManyToManyField(
+        DeviceSubnet,
+        blank=True,
+        related_name='interfaces',
+        help_text="Subnets accessible through this interface"
+    )
+    
+    # Status and Configuration
+    status = models.CharField(
+        max_length=20,
+        choices=INTERFACE_STATUS_CHOICES,
+        default='unknown',
+        help_text="Interface operational status"
+    )
+    is_active = models.BooleanField(default=True, help_text="Is this interface active")
+    is_management = models.BooleanField(
+        default=False,
+        help_text="Is this a management interface"
+    )
+    monitor_traffic = models.BooleanField(
+        default=True,
+        help_text="Monitor traffic on this interface"
+    )
+    
+    # Additional Configuration
+    description = models.TextField(
+        blank=True,
+        help_text="Optional description of the interface"
+    )
+    configuration_data = models.JSONField(
+        default=dict,
+        help_text="Additional interface configuration (routing, ACLs, etc.)"
+    )
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'device_interfaces'
+        unique_together = ['device', 'name']
+        ordering = ['device', 'name']
+        indexes = [
+            models.Index(fields=['device', 'interface_type']),
+            models.Index(fields=['device', 'is_active']),
+            models.Index(fields=['zone']),
+            models.Index(fields=['ip_address']),
+        ]
+    
+    def __str__(self):
+        return f"{self.device.name} - {self.name}"
+    
+    def get_network_address(self):
+        """Calculate network address from IP and CIDR"""
+        if self.ip_address and self.cidr_prefix:
+            import ipaddress
+            try:
+                network = ipaddress.IPv4Network(f"{self.ip_address}/{self.cidr_prefix}", strict=False)
+                return str(network)
+            except:
+                return None
+        return None
+    
+    def is_in_subnet(self, subnet_address):
+        """Check if interface IP is in given subnet"""
+        if not self.ip_address:
+            return False
+        
+        import ipaddress
+        try:
+            interface_ip = ipaddress.IPv4Address(self.ip_address)
+            network = ipaddress.IPv4Network(subnet_address, strict=False)
+            return interface_ip in network
+        except:
+            return False
+
+
+class NetworkTopologySnapshot(models.Model):
+    """Store snapshots of network topology for change tracking"""
+    
+    device = models.ForeignKey(
+        LogSource,
+        on_delete=models.CASCADE,
+        related_name='topology_snapshots',
+        help_text="Device this snapshot belongs to"
+    )
+    
+    # Snapshot Data
+    snapshot_data = models.JSONField(
+        help_text="Complete network topology data (zones, subnets, interfaces)"
+    )
+    
+    # Change Information
+    changes_detected = models.JSONField(
+        default=list,
+        help_text="List of changes from previous snapshot"
+    )
+    change_summary = models.TextField(
+        blank=True,
+        help_text="Human-readable summary of changes"
+    )
+    
+    # Metadata
+    created_by = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="User who created this snapshot"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'network_topology_snapshots'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['device', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.device.name} - Snapshot {self.created_at.strftime('%Y-%m-%d %H:%M')}"

@@ -85,3 +85,7 @@
  - - [02/Jul/2025:14:00:50 +0000] "GET /url-summary/ HTTP/1.0" 200 93493 "http://10.12.50.61/top-summary/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
  - - [02/Jul/2025:14:00:52 +0000] "GET /logs/ HTTP/1.0" 200 364431 "http://10.12.50.61/url-summary/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
  - - [02/Jul/2025:14:24:06 +0000] "GET /logs/ HTTP/1.0" 200 375042 "http://10.12.50.61/logs/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+ - - [02/Jul/2025:14:34:45 +0000] "GET /top-summary/ HTTP/1.0" 200 69213 "http://10.12.50.61/logs/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+ - - [02/Jul/2025:14:34:47 +0000] "GET /logs/ HTTP/1.0" 200 377137 "http://10.12.50.61/top-summary/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+ - - [02/Jul/2025:14:34:49 +0000] "GET /pa-url-logs/ HTTP/1.0" 200 191092 "http://10.12.50.61/logs/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+ - - [02/Jul/2025:14:52:47 +0000] "GET /log-sources/ HTTP/1.0" 500 311066 "http://10.12.50.61/pa-url-logs/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"

@@ -27,6 +27,28 @@ urlpatterns = [
     # Device Management (Edit/Delete)
     path('device/edit/<str:device_ip>/', views.edit_device_view, name='edit_device'),
     path('device/delete/<str:device_ip>/', views.delete_device_view, name='delete_device'),
+    
+    # Network Topology Management
+    path('device/<int:device_id>/topology/', views.device_topology_view, name='device_topology'),
+    path('device/<int:device_id>/zones/', views.device_zones_view, name='device_zones'),
+    path('device/<int:device_id>/zones/add/', views.add_zone_view, name='add_zone'),
+    path('zone/<int:zone_id>/edit/', views.edit_zone_view, name='edit_zone'),
+    path('zone/<int:zone_id>/delete/', views.delete_zone_view, name='delete_zone'),
+    
+    path('device/<int:device_id>/subnets/', views.device_subnets_view, name='device_subnets'),
+    path('device/<int:device_id>/subnets/add/', views.add_subnet_view, name='add_subnet'),
+    path('subnet/<int:subnet_id>/edit/', views.edit_subnet_view, name='edit_subnet'),
+    path('subnet/<int:subnet_id>/delete/', views.delete_subnet_view, name='delete_subnet'),
+    
+    path('device/<int:device_id>/interfaces/', views.device_interfaces_view, name='device_interfaces'),
+    path('device/<int:device_id>/interfaces/add/', views.add_interface_view, name='add_interface'),
+    path('interface/<int:interface_id>/edit/', views.edit_interface_view, name='edit_interface'),
+    path('interface/<int:interface_id>/delete/', views.delete_interface_view, name='delete_interface'),
+    
+    # AJAX endpoints for dynamic loading
+    path('ajax/device/<int:device_id>/zones/', views.ajax_device_zones, name='ajax_device_zones'),
+    path('ajax/device/<int:device_id>/subnets/', views.ajax_device_subnets, name='ajax_device_subnets'),
+    path('ajax/zone/<int:zone_id>/subnets/', views.ajax_zone_subnets, name='ajax_zone_subnets'),
     # Log Management
     path('log-management/', views.log_management_status_view, name='log_management'),
     path('log-management/service-control/', views.service_control_view, name='service_control'),

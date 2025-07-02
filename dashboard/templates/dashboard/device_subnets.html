@@ -1,0 +1,508 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ device.name }} - Network Subnets{% endblock %}
+
+{% block subheader %}
+    {% with active_tab='log_sources' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% block content %}
+<style>
+    .subnets-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .device-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .device-info h1 {
+        margin: 0 0 5px 0;
+        font-size: 28px;
+        font-weight: 600;
+    }
+    
+    .device-meta {
+        display: flex;
+        gap: 20px;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    .nav-tabs {
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 30px;
+        display: flex;
+        gap: 0;
+    }
+    
+    .nav-tab {
+        padding: 12px 24px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-bottom: none;
+        text-decoration: none;
+        color: #495057;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    
+    .nav-tab:first-child {
+        border-radius: 8px 0 0 0;
+    }
+    
+    .nav-tab:last-child {
+        border-radius: 0 8px 0 0;
+    }
+    
+    .nav-tab:hover {
+        background: #e9ecef;
+        color: #495057;
+        text-decoration: none;
+    }
+    
+    .nav-tab.active {
+        background: white;
+        color: #667eea;
+        border-color: #667eea #667eea white #667eea;
+        z-index: 1;
+    }
+    
+    .nav-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: white;
+    }
+    
+    .subnets-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .subnets-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #495057;
+        margin: 0;
+    }
+    
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-secondary {
+        background: white;
+        color: #495057;
+        border: 1px solid #dee2e6;
+    }
+    
+    .btn-secondary:hover {
+        background: #f8f9fa;
+        color: #495057;
+        text-decoration: none;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #c82333;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .subnets-table {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    
+    .subnets-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .subnets-table th {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .subnets-table td {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f1f3f4;
+        vertical-align: middle;
+    }
+    
+    .subnets-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .subnet-name {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 4px;
+    }
+    
+    .subnet-description {
+        font-size: 13px;
+        color: #6c757d;
+    }
+    
+    .subnet-network {
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        color: #495057;
+        background: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-bottom: 4px;
+    }
+    
+    .subnet-type-badge {
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: capitalize;
+        background: #e9ecef;
+        color: #495057;
+        margin-top: 4px;
+        display: inline-block;
+    }
+    
+    .subnet-type-badge.lan { background: #d4edda; color: #155724; }
+    .subnet-type-badge.wan { background: #f8d7da; color: #721c24; }
+    .subnet-type-badge.dmz { background: #fff3cd; color: #856404; }
+    .subnet-type-badge.management { background: #d1ecf1; color: #0c5460; }
+    .subnet-type-badge.guest { background: #e2e3e5; color: #383d41; }
+    .subnet-type-badge.voip { background: #cce7ff; color: #004085; }
+    .subnet-type-badge.vpn { background: #e7e3ff; color: #5a1a66; }
+    .subnet-type-badge.iot { background: #fff0e6; color: #cc5500; }
+    
+    .zone-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: rgba(102, 126, 234, 0.1);
+        display: inline-block;
+        margin-top: 4px;
+    }
+    
+    .zone-link:hover {
+        background: rgba(102, 126, 234, 0.2);
+        text-decoration: none;
+        color: #667eea;
+    }
+    
+    .subnet-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 13px;
+        color: #6c757d;
+    }
+    
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.3;
+    }
+    
+    .empty-state h3 {
+        margin-bottom: 10px;
+        color: #495057;
+    }
+    
+    .empty-state p {
+        margin-bottom: 20px;
+    }
+    
+    .delete-form {
+        display: inline;
+    }
+    
+    .ip-range {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 2px;
+    }
+    
+    .gateway-info {
+        font-size: 12px;
+        color: #495057;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+    }
+    
+    @media (max-width: 768px) {
+        .subnets-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        
+        .nav-tabs {
+            flex-wrap: wrap;
+        }
+        
+        .device-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        
+        .subnets-table {
+            overflow-x: auto;
+        }
+        
+        .actions {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="subnets-container">
+    <!-- Device Header -->
+    <div class="device-header">
+        <div class="device-info">
+            <h1>{{ device.name }} - Network Subnets</h1>
+            <div class="device-meta">
+                <span><i class="fas fa-globe"></i> {{ device.ip_address }}</span>
+                <span><i class="fas fa-server"></i> {{ device.get_device_type_display }}</span>
+                <span><i class="fas fa-circle" style="color: {% if device.status == 'active' %}#28a745{% else %}#dc3545{% endif %}"></i> {{ device.get_status_display }}</span>
+            </div>
+        </div>
+        <div>
+            <a href="{% url 'device_topology' device.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Topology
+            </a>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <a href="{% url 'device_topology' device.id %}" class="nav-tab {% if tab == 'topology' %}active{% endif %}">
+            <i class="fas fa-sitemap"></i> Overview
+        </a>
+        <a href="{% url 'device_zones' device.id %}" class="nav-tab {% if tab == 'zones' %}active{% endif %}">
+            <i class="fas fa-shield-alt"></i> Zones
+        </a>
+        <a href="{% url 'device_subnets' device.id %}" class="nav-tab {% if tab == 'subnets' %}active{% endif %}">
+            <i class="fas fa-network-wired"></i> Subnets ({{ subnets|length }})
+        </a>
+        <a href="{% url 'device_interfaces' device.id %}" class="nav-tab {% if tab == 'interfaces' %}active{% endif %}">
+            <i class="fas fa-ethernet"></i> Interfaces
+        </a>
+    </div>
+
+    <!-- Subnets Header -->
+    <div class="subnets-header">
+        <h2 class="subnets-title">
+            <i class="fas fa-network-wired"></i> Network Subnets Management
+        </h2>
+        <a href="{% url 'add_subnet' device.id %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Subnet
+        </a>
+    </div>
+
+    <!-- Subnets Table -->
+    {% if subnets %}
+    <div class="subnets-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Subnet Information</th>
+                    <th>Network Details</th>
+                    <th>Zone Assignment</th>
+                    <th>Configuration</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for subnet in subnets %}
+                <tr>
+                    <td>
+                        <div class="subnet-name">{{ subnet.name }}</div>
+                        {% if subnet.description %}
+                            <div class="subnet-description">{{ subnet.description }}</div>
+                        {% endif %}
+                        <span class="subnet-type-badge {{ subnet.subnet_type }}">{{ subnet.get_subnet_type_display }}</span>
+                    </td>
+                    <td>
+                        <div class="subnet-network">{{ subnet.network_address }}</div>
+                        {% if subnet.cidr_prefix %}
+                            <div class="ip-range">
+                                <i class="fas fa-info-circle"></i>
+                                /{{ subnet.cidr_prefix }} - {{ subnet.get_ip_count }} IPs
+                            </div>
+                        {% endif %}
+                        {% if subnet.gateway_ip %}
+                            <div class="gateway-info">
+                                <i class="fas fa-route"></i>
+                                Gateway: {{ subnet.gateway_ip }}
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if subnet.zone %}
+                            <a href="{% url 'edit_zone' subnet.zone.id %}" class="zone-link">
+                                <i class="fas fa-shield-alt"></i>
+                                {{ subnet.zone.name }}
+                            </a>
+                        {% else %}
+                            <span style="color: #6c757d; font-style: italic;">
+                                <i class="fas fa-minus-circle"></i>
+                                No zone assigned
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="subnet-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-ethernet"></i>
+                                {{ subnet.interfaces.count }} interface{{ subnet.interfaces.count|pluralize }}
+                            </div>
+                            {% if subnet.vlan_id %}
+                                <div class="stat-item">
+                                    <i class="fas fa-layer-group"></i>
+                                    VLAN {{ subnet.vlan_id }}
+                                </div>
+                            {% endif %}
+                            <div class="stat-item" style="color: {% if subnet.is_active %}#28a745{% else %}#dc3545{% endif %};">
+                                <i class="fas fa-circle" style="font-size: 8px;"></i>
+                                {% if subnet.is_active %}Active{% else %}Inactive{% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <a href="{% url 'edit_subnet' subnet.id %}" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <form method="post" action="{% url 'delete_subnet' subnet.id %}" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this subnet? This action cannot be undone.')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-network-wired"></i>
+        <h3>No Network Subnets Configured</h3>
+        <p>Network subnets help organize IP address ranges and define network segments. Start by creating your first subnet.</p>
+        <a href="{% url 'add_subnet' device.id %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create First Subnet
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Messages -->
+{% if messages %}
+<div id="messages" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible" style="margin-bottom: 10px; padding: 12px 20px; background: {% if message.tags == 'success' %}#d4edda{% elif message.tags == 'error' %}#f8d7da{% else %}#d1ecf1{% endif %}; border: 1px solid {% if message.tags == 'success' %}#c3e6cb{% elif message.tags == 'error' %}#f5c6cb{% else %}#bee5eb{% endif %}; border-radius: 6px; color: {% if message.tags == 'success' %}#155724{% elif message.tags == 'error' %}#721c24{% else %}#0c5460{% endif %};">
+        <strong>{{ message }}</strong>
+        <button type="button" onclick="this.parentElement.remove()" style="float: right; background: none; border: none; font-size: 18px; font-weight: bold; color: inherit; cursor: pointer; margin-left: 15px;">&times;</button>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+// Auto-hide messages after 5 seconds
+setTimeout(function() {
+    const messages = document.getElementById('messages');
+    if (messages) {
+        messages.style.opacity = '0';
+        setTimeout(() => messages.remove(), 300);
+    }
+}, 5000);
+</script>
+{% endif %}
+
+{% endblock %}

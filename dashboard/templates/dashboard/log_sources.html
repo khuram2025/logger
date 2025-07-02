@@ -608,6 +608,9 @@
                 </td>
                 <td>
                     <div class="source-actions">
+                        <button class="action-btn configure" onclick="window.location.href='{% url 'device_topology' source.id %}'" title="Network Topology">
+                            <i class="fas fa-network-wired"></i> Topology
+                        </button>
                         <button class="action-btn configure" onclick="editDevice('{{ source.ip_address }}')" title="Edit Device">
                             <i class="fas fa-edit"></i> Edit
                         </button>
