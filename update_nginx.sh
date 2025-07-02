@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# This script needs to be run with sudo to update Nginx configuration
+
+echo "Updating Nginx configuration for analyzer..."
+
+# Backup the current configuration
+sudo cp /etc/nginx/sites-available/analyzer /etc/nginx/sites-available/analyzer.backup
+
+# Create the new configuration
+sudo tee /etc/nginx/sites-available/analyzer > /dev/null << 'EOF'
+server {
+    listen 80;
+    server_name 10.12.50.61;
+    
+    # Security headers
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    
+    # Disable logging for favicon
+    location = /favicon.ico { 
+        access_log off; 
+        log_not_found off; 
+    }
+    
+    # Serve static files directly with caching
+    location /static/ {
+        alias /home/net/analyzer/staticfiles/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+        access_log off;
+    }
+    
+    # Serve media files
+    location /media/ {
+        alias /home/net/analyzer/media/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+    
+    # Main application proxy
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_redirect off;
+        
+        # Timeouts for long-running queries
+        proxy_read_timeout 300;
+        proxy_connect_timeout 75;
+        proxy_send_timeout 300;
+        
+        # Buffer settings for better performance
+        proxy_buffering on;
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
+    }
+    
+    # Health check endpoint
+    location /health/ {
+        access_log off;
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $http_host;
+    }
+}
+EOF
+
+# Test nginx configuration
+sudo nginx -t
+
+if [ $? -eq 0 ]; then
+    echo "Nginx configuration is valid. Reloading nginx..."
+    sudo systemctl reload nginx
+    echo "Nginx reloaded successfully!"
+else
+    echo "Nginx configuration has errors. Restoring backup..."
+    sudo cp /etc/nginx/sites-available/analyzer.backup /etc/nginx/sites-available/analyzer
+fi

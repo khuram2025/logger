@@ -18,6 +18,7 @@ from datetime import datetime, timedelta, timezone
 import os
 from collections import defaultdict
 import ipaddress
+import ipaddress
 import json # For serializing log data for JS if needed
 
 # ClickHouse connection settings
@@ -625,24 +626,64 @@ def clickhouse_logs_view(request):
             until_str = until.strftime('%Y-%m-%d %H:%M:%S')
             where_clauses.append(f"timestamp <= parseDateTimeBestEffort('{until_str}')") 
     
-    if srcip_filter:
-        if srcip_filter == 'external_only':
-            # Filter for external IPs (not private networks)
-            where_clauses.append("""
+    def _get_ip_filter_clause(ip_filter, ip_field_name):
+        if not ip_filter:
+            return None
+        
+        if ip_filter == 'external_only':
+            return f"""
                 NOT (
-                    srcip LIKE '10.%' OR 
-                    srcip LIKE '192.168.%' OR 
-                    srcip LIKE '172.16.%' OR srcip LIKE '172.17.%' OR srcip LIKE '172.18.%' OR srcip LIKE '172.19.%' OR
-                    srcip LIKE '172.20.%' OR srcip LIKE '172.21.%' OR srcip LIKE '172.22.%' OR srcip LIKE '172.23.%' OR
-                    srcip LIKE '172.24.%' OR srcip LIKE '172.25.%' OR srcip LIKE '172.26.%' OR srcip LIKE '172.27.%' OR
-                    srcip LIKE '172.28.%' OR srcip LIKE '172.29.%' OR srcip LIKE '172.30.%' OR srcip LIKE '172.31.%' OR
-                    srcip = '127.0.0.1' OR srcip LIKE '169.254.%'
+                    {ip_field_name} LIKE '10.%' OR 
+                    {ip_field_name} LIKE '192.168.%' OR 
+                    {ip_field_name} LIKE '172.16.%' OR {ip_field_name} LIKE '172.17.%' OR {ip_field_name} LIKE '172.18.%' OR {ip_field_name} LIKE '172.19.%' OR
+                    {ip_field_name} LIKE '172.20.%' OR {ip_field_name} LIKE '172.21.%' OR {ip_field_name} LIKE '172.22.%' OR {ip_field_name} LIKE '172.23.%' OR
+                    {ip_field_name} LIKE '172.24.%' OR {ip_field_name} LIKE '172.25.%' OR {ip_field_name} LIKE '172.26.%' OR {ip_field_name} LIKE '172.27.%' OR
+                    {ip_field_name} LIKE '172.28.%' OR {ip_field_name} LIKE '172.29.%' OR {ip_field_name} LIKE '172.30.%' OR {ip_field_name} LIKE '172.31.%' OR
+                    {ip_field_name} = '127.0.0.1' OR {ip_field_name} LIKE '169.254.%'
                 )
-            """.strip())
-        else:
-            where_clauses.append(f"srcip = '{srcip_filter}'")
-    if dstip_filter:
-        where_clauses.append(f"dstip = '{dstip_filter}'")
+            """.strip()
+        
+        try:
+            # Check if it's a CIDR notation
+            network = ipaddress.ip_network(ip_filter, strict=False)
+            if network.num_addresses == 1:
+                # It's a single IP, treat as exact match
+                return f"{ip_field_name} = '{str(network.network_address)}'"
+            else:
+                # It's a subnet, use IPv4NumToStringClassC or similar for ClickHouse
+                # ClickHouse has functions like IPv4CIDRToIPv4Range, or we can use bitwise operations
+                # For simplicity and broad compatibility, we'll use a range check
+                # This assumes IPv4. For IPv6, more complex logic would be needed.
+                
+                # Convert network address and broadcast address to integers for range comparison
+                # ClickHouse IP functions are more efficient, but this is a generic Python approach
+                # For ClickHouse, `IPv4StringToNum(ip_field_name) BETWEEN IPv4StringToNum('start_ip') AND IPv4StringToNum('end_ip')`
+                # or `IPv4ToIPv4Num(ip_field_name) IN (SELECT IPv4ToIPv4Num(ip) FROM ip_addresses_in_cidr_table)`
+                # Given the current setup, string LIKE is often used, but for CIDR, BETWEEN is better.
+                
+                # Let's use ClickHouse's built-in IPv4CIDRToRange for better performance
+                # This requires the IP field to be of type IPv4 in ClickHouse, or converted.
+                # Assuming the IP fields are strings in ClickHouse, we'll use `IPv4StringToNum`
+                
+                # Example: 10.10.201.0/24
+                # ClickHouse: IPv4StringToNum(srcip) >= IPv4StringToNum('10.10.201.0') AND IPv4StringToNum(srcip) <= IPv4StringToNum('10.10.201.255')
+                
+                # Get the first and last IP in the network
+                first_ip = str(network.network_address)
+                last_ip = str(network.broadcast_address)
+                
+                return f"IPv4StringToNum({ip_field_name}) >= IPv4StringToNum('{first_ip}') AND IPv4StringToNum({ip_field_name}) <= IPv4StringToNum('{last_ip}')"
+        except ValueError:
+            # Not a valid IP or CIDR, treat as exact match for now
+            return f"{ip_field_name} = '{ip_filter}'"
+
+    srcip_clause = _get_ip_filter_clause(srcip_filter, 'srcip')
+    if srcip_clause:
+        where_clauses.append(srcip_clause)
+        
+    dstip_clause = _get_ip_filter_clause(dstip_filter, 'dstip')
+    if dstip_clause:
+        where_clauses.append(dstip_clause)
     if srcport_filter:
         # Handle range if provided (e.g., 1000-2000)
         if '-' in srcport_filter:
@@ -3067,6 +3108,7 @@ def pa_url_logs_view(request):
     
     # Time filter - use ClickHouse native time to avoid timezone issues
     time_range = request.GET.get('time_range', 'last_hour')
+    use_custom_time = False # Initialize here
     
     if time_range == 'last_6_hours':
         since_interval = '6 HOUR'
@@ -3113,6 +3155,7 @@ def pa_url_logs_view(request):
     severity_filter = request.GET.get('severity', '').strip()
     device_filter = request.GET.get('device', '').strip()
     user_filter = request.GET.get('user', '').strip()
+    rule_filter = request.GET.get('rule', '').strip()
     
     # Build WHERE clause
     if use_custom_time:
@@ -3136,6 +3179,8 @@ def pa_url_logs_view(request):
         where_conditions.append(f"device_name ILIKE '%{device_filter}%'")
     if user_filter:
         where_conditions.append(f"source_user ILIKE '%{user_filter}%'")
+    if rule_filter:
+        where_conditions.append(f"rule_name ILIKE '%{rule_filter}%'")
     
     where_clause = " AND ".join(where_conditions)
     
@@ -3258,6 +3303,7 @@ def pa_url_logs_view(request):
         'severity_filter': severity_filter,
         'device_filter': device_filter,
         'user_filter': user_filter,
+        'rule_filter': rule_filter,
         'categories': [row[0] for row in categories],
         'actions': [row[0] for row in actions],
         'severities': [row[0] for row in severities],

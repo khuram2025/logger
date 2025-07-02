@@ -1,0 +1,277 @@
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Starting gunicorn 21.2.0
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Listening at: http://127.0.0.1:8000 (82539)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Using worker: sync
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Server is ready. Spawning workers
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82552] [INFO] Booting worker with pid: 82552
+[2025-07-02 11:27:38 +0000] [82552] [INFO] Worker spawned (pid: 82552)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82553] [INFO] Booting worker with pid: 82553
+[2025-07-02 11:27:38 +0000] [82553] [INFO] Worker spawned (pid: 82553)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82554] [INFO] Booting worker with pid: 82554
+[2025-07-02 11:27:38 +0000] [82554] [INFO] Worker spawned (pid: 82554)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82555] [INFO] Booting worker with pid: 82555
+[2025-07-02 11:27:38 +0000] [82555] [INFO] Worker spawned (pid: 82555)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82556] [INFO] Booting worker with pid: 82556
+[2025-07-02 11:27:38 +0000] [82556] [INFO] Worker spawned (pid: 82556)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82557] [INFO] Booting worker with pid: 82557
+[2025-07-02 11:27:38 +0000] [82557] [INFO] Worker spawned (pid: 82557)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82558] [INFO] Booting worker with pid: 82558
+[2025-07-02 11:27:38 +0000] [82558] [INFO] Worker spawned (pid: 82558)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82559] [INFO] Booting worker with pid: 82559
+[2025-07-02 11:27:38 +0000] [82559] [INFO] Worker spawned (pid: 82559)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82560] [INFO] Booting worker with pid: 82560
+[2025-07-02 11:27:38 +0000] [82560] [INFO] Worker spawned (pid: 82560)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82561] [INFO] Booting worker with pid: 82561
+[2025-07-02 11:27:38 +0000] [82561] [INFO] Worker spawned (pid: 82561)
+[2025-07-02 11:27:38 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:38 +0000] [82562] [INFO] Booting worker with pid: 82562
+[2025-07-02 11:27:38 +0000] [82562] [INFO] Worker spawned (pid: 82562)
+[2025-07-02 11:27:39 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:39 +0000] [82578] [INFO] Booting worker with pid: 82578
+[2025-07-02 11:27:39 +0000] [82578] [INFO] Worker spawned (pid: 82578)
+[2025-07-02 11:27:39 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:39 +0000] [82581] [INFO] Booting worker with pid: 82581
+[2025-07-02 11:27:39 +0000] [82581] [INFO] Worker spawned (pid: 82581)
+[2025-07-02 11:27:39 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:39 +0000] [82592] [INFO] Booting worker with pid: 82592
+[2025-07-02 11:27:39 +0000] [82592] [INFO] Worker spawned (pid: 82592)
+[2025-07-02 11:27:39 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:39 +0000] [82593] [INFO] Booting worker with pid: 82593
+[2025-07-02 11:27:39 +0000] [82593] [INFO] Worker spawned (pid: 82593)
+[2025-07-02 11:27:39 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:39 +0000] [82594] [INFO] Booting worker with pid: 82594
+[2025-07-02 11:27:39 +0000] [82594] [INFO] Worker spawned (pid: 82594)
+[2025-07-02 11:27:39 +0000] [82539] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:27:39 +0000] [82595] [INFO] Booting worker with pid: 82595
+[2025-07-02 11:27:39 +0000] [82595] [INFO] Worker spawned (pid: 82595)
+[2025-07-02 11:27:57 +0000] [82553] [INFO] Worker exiting (pid: 82553)
+[2025-07-02 11:27:57 +0000] [82562] [INFO] Worker exiting (pid: 82562)
+[2025-07-02 11:27:57 +0000] [82552] [INFO] Worker exiting (pid: 82552)
+[2025-07-02 11:27:57 +0000] [82560] [INFO] Worker exiting (pid: 82560)
+[2025-07-02 11:27:57 +0000] [82554] [INFO] Worker exiting (pid: 82554)
+[2025-07-02 11:27:57 +0000] [82539] [INFO] Handling signal: term
+[2025-07-02 11:27:57 +0000] [82555] [INFO] Worker exiting (pid: 82555)
+[2025-07-02 11:27:57 +0000] [82556] [INFO] Worker exiting (pid: 82556)
+[2025-07-02 11:27:57 +0000] [82557] [INFO] Worker exiting (pid: 82557)
+[2025-07-02 11:27:57 +0000] [82558] [INFO] Worker exiting (pid: 82558)
+[2025-07-02 11:27:57 +0000] [82559] [INFO] Worker exiting (pid: 82559)
+[2025-07-02 11:27:57 +0000] [82561] [INFO] Worker exiting (pid: 82561)
+[2025-07-02 11:27:57 +0000] [82594] [INFO] Worker exiting (pid: 82594)
+[2025-07-02 11:27:57 +0000] [82578] [INFO] Worker exiting (pid: 82578)
+[2025-07-02 11:27:57 +0000] [82592] [INFO] Worker exiting (pid: 82592)
+[2025-07-02 11:27:57 +0000] [82593] [INFO] Worker exiting (pid: 82593)
+[2025-07-02 11:27:57 +0000] [82595] [INFO] Worker exiting (pid: 82595)
+[2025-07-02 11:27:57 +0000] [82581] [INFO] Worker exiting (pid: 82581)
+[2025-07-02 11:27:57 +0000] [82539] [INFO] Shutting down: Master
+[2025-07-02 11:29:47 +0000] [84643] [INFO] Starting gunicorn 21.2.0
+[2025-07-02 11:29:47 +0000] [84643] [INFO] Listening at: http://127.0.0.1:8000 (84643)
+[2025-07-02 11:29:47 +0000] [84643] [INFO] Using worker: sync
+[2025-07-02 11:29:47 +0000] [84643] [INFO] Server is ready. Spawning workers
+[2025-07-02 11:29:47 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:47 +0000] [84644] [INFO] Booting worker with pid: 84644
+[2025-07-02 11:29:47 +0000] [84644] [INFO] Worker spawned (pid: 84644)
+[2025-07-02 11:29:47 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:47 +0000] [84645] [INFO] Booting worker with pid: 84645
+[2025-07-02 11:29:47 +0000] [84645] [INFO] Worker spawned (pid: 84645)
+[2025-07-02 11:29:47 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:47 +0000] [84646] [INFO] Booting worker with pid: 84646
+[2025-07-02 11:29:47 +0000] [84646] [INFO] Worker spawned (pid: 84646)
+[2025-07-02 11:29:47 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:47 +0000] [84647] [INFO] Booting worker with pid: 84647
+[2025-07-02 11:29:47 +0000] [84647] [INFO] Worker spawned (pid: 84647)
+[2025-07-02 11:29:47 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:47 +0000] [84648] [INFO] Booting worker with pid: 84648
+[2025-07-02 11:29:47 +0000] [84648] [INFO] Worker spawned (pid: 84648)
+[2025-07-02 11:29:47 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:47 +0000] [84653] [INFO] Booting worker with pid: 84653
+[2025-07-02 11:29:47 +0000] [84653] [INFO] Worker spawned (pid: 84653)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84671] [INFO] Booting worker with pid: 84671
+[2025-07-02 11:29:48 +0000] [84671] [INFO] Worker spawned (pid: 84671)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84672] [INFO] Booting worker with pid: 84672
+[2025-07-02 11:29:48 +0000] [84672] [INFO] Worker spawned (pid: 84672)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84673] [INFO] Booting worker with pid: 84673
+[2025-07-02 11:29:48 +0000] [84673] [INFO] Worker spawned (pid: 84673)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84674] [INFO] Booting worker with pid: 84674
+[2025-07-02 11:29:48 +0000] [84674] [INFO] Worker spawned (pid: 84674)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84675] [INFO] Booting worker with pid: 84675
+[2025-07-02 11:29:48 +0000] [84675] [INFO] Worker spawned (pid: 84675)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84676] [INFO] Booting worker with pid: 84676
+[2025-07-02 11:29:48 +0000] [84676] [INFO] Worker spawned (pid: 84676)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84677] [INFO] Booting worker with pid: 84677
+[2025-07-02 11:29:48 +0000] [84677] [INFO] Worker spawned (pid: 84677)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84678] [INFO] Booting worker with pid: 84678
+[2025-07-02 11:29:48 +0000] [84678] [INFO] Worker spawned (pid: 84678)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84679] [INFO] Booting worker with pid: 84679
+[2025-07-02 11:29:48 +0000] [84679] [INFO] Worker spawned (pid: 84679)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84680] [INFO] Booting worker with pid: 84680
+[2025-07-02 11:29:48 +0000] [84680] [INFO] Worker spawned (pid: 84680)
+[2025-07-02 11:29:48 +0000] [84643] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:29:48 +0000] [84681] [INFO] Booting worker with pid: 84681
+[2025-07-02 11:29:48 +0000] [84681] [INFO] Worker spawned (pid: 84681)
+[2025-07-02 11:35:31 +0000] [84643] [INFO] Handling signal: term
+[2025-07-02 11:35:31 +0000] [84646] [INFO] Worker exiting (pid: 84646)
+[2025-07-02 11:35:31 +0000] [84644] [INFO] Worker exiting (pid: 84644)
+[2025-07-02 11:35:31 +0000] [84647] [INFO] Worker exiting (pid: 84647)
+[2025-07-02 11:35:31 +0000] [84648] [INFO] Worker exiting (pid: 84648)
+[2025-07-02 11:35:31 +0000] [84653] [INFO] Worker exiting (pid: 84653)
+[2025-07-02 11:35:31 +0000] [84645] [INFO] Worker exiting (pid: 84645)
+[2025-07-02 11:35:31 +0000] [84679] [INFO] Worker exiting (pid: 84679)
+[2025-07-02 11:35:31 +0000] [84671] [INFO] Worker exiting (pid: 84671)
+[2025-07-02 11:35:31 +0000] [84672] [INFO] Worker exiting (pid: 84672)
+[2025-07-02 11:35:31 +0000] [84674] [INFO] Worker exiting (pid: 84674)
+[2025-07-02 11:35:31 +0000] [84677] [INFO] Worker exiting (pid: 84677)
+[2025-07-02 11:35:31 +0000] [84680] [INFO] Worker exiting (pid: 84680)
+[2025-07-02 11:35:31 +0000] [84681] [INFO] Worker exiting (pid: 84681)
+[2025-07-02 11:35:31 +0000] [84673] [INFO] Worker exiting (pid: 84673)
+[2025-07-02 11:35:31 +0000] [84675] [INFO] Worker exiting (pid: 84675)
+[2025-07-02 11:35:31 +0000] [84678] [INFO] Worker exiting (pid: 84678)
+[2025-07-02 11:35:31 +0000] [84676] [INFO] Worker exiting (pid: 84676)
+[2025-07-02 11:35:31 +0000] [84643] [INFO] Shutting down: Master
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Starting gunicorn 21.2.0
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Listening at: http://127.0.0.1:8000 (86983)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Using worker: sync
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Server is ready. Spawning workers
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87000] [INFO] Booting worker with pid: 87000
+[2025-07-02 11:35:57 +0000] [87000] [INFO] Worker spawned (pid: 87000)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87001] [INFO] Booting worker with pid: 87001
+[2025-07-02 11:35:57 +0000] [87001] [INFO] Worker spawned (pid: 87001)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87002] [INFO] Booting worker with pid: 87002
+[2025-07-02 11:35:57 +0000] [87002] [INFO] Worker spawned (pid: 87002)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87003] [INFO] Booting worker with pid: 87003
+[2025-07-02 11:35:57 +0000] [87003] [INFO] Worker spawned (pid: 87003)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87004] [INFO] Booting worker with pid: 87004
+[2025-07-02 11:35:57 +0000] [87004] [INFO] Worker spawned (pid: 87004)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87005] [INFO] Booting worker with pid: 87005
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87005] [INFO] Worker spawned (pid: 87005)
+[2025-07-02 11:35:57 +0000] [87006] [INFO] Booting worker with pid: 87006
+[2025-07-02 11:35:57 +0000] [87006] [INFO] Worker spawned (pid: 87006)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87007] [INFO] Booting worker with pid: 87007
+[2025-07-02 11:35:57 +0000] [87007] [INFO] Worker spawned (pid: 87007)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87008] [INFO] Booting worker with pid: 87008
+[2025-07-02 11:35:57 +0000] [87008] [INFO] Worker spawned (pid: 87008)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87010] [INFO] Booting worker with pid: 87010
+[2025-07-02 11:35:57 +0000] [87010] [INFO] Worker spawned (pid: 87010)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87033] [INFO] Booting worker with pid: 87033
+[2025-07-02 11:35:57 +0000] [87033] [INFO] Worker spawned (pid: 87033)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87035] [INFO] Booting worker with pid: 87035
+[2025-07-02 11:35:57 +0000] [87035] [INFO] Worker spawned (pid: 87035)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87036] [INFO] Booting worker with pid: 87036
+[2025-07-02 11:35:57 +0000] [87036] [INFO] Worker spawned (pid: 87036)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87037] [INFO] Booting worker with pid: 87037
+[2025-07-02 11:35:57 +0000] [87037] [INFO] Worker spawned (pid: 87037)
+[2025-07-02 11:35:57 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:57 +0000] [87038] [INFO] Booting worker with pid: 87038
+[2025-07-02 11:35:57 +0000] [87038] [INFO] Worker spawned (pid: 87038)
+[2025-07-02 11:35:58 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:58 +0000] [87039] [INFO] Booting worker with pid: 87039
+[2025-07-02 11:35:58 +0000] [87039] [INFO] Worker spawned (pid: 87039)
+[2025-07-02 11:35:58 +0000] [86983] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:35:58 +0000] [87040] [INFO] Booting worker with pid: 87040
+[2025-07-02 11:35:58 +0000] [87040] [INFO] Worker spawned (pid: 87040)
+[2025-07-02 11:37:55 +0000] [87002] [INFO] Worker exiting (pid: 87002)
+[2025-07-02 11:37:55 +0000] [87006] [INFO] Worker exiting (pid: 87006)
+[2025-07-02 11:37:55 +0000] [86983] [INFO] Handling signal: term
+[2025-07-02 11:37:55 +0000] [87035] [INFO] Worker exiting (pid: 87035)
+[2025-07-02 11:37:55 +0000] [87005] [INFO] Worker exiting (pid: 87005)
+[2025-07-02 11:37:55 +0000] [87001] [INFO] Worker exiting (pid: 87001)
+[2025-07-02 11:37:55 +0000] [87004] [INFO] Worker exiting (pid: 87004)
+[2025-07-02 11:37:55 +0000] [87038] [INFO] Worker exiting (pid: 87038)
+[2025-07-02 11:37:55 +0000] [87008] [INFO] Worker exiting (pid: 87008)
+[2025-07-02 11:37:55 +0000] [87003] [INFO] Worker exiting (pid: 87003)
+[2025-07-02 11:37:55 +0000] [87000] [INFO] Worker exiting (pid: 87000)
+[2025-07-02 11:37:55 +0000] [87037] [INFO] Worker exiting (pid: 87037)
+[2025-07-02 11:37:55 +0000] [87040] [INFO] Worker exiting (pid: 87040)
+[2025-07-02 11:37:55 +0000] [87036] [INFO] Worker exiting (pid: 87036)
+[2025-07-02 11:37:55 +0000] [87007] [INFO] Worker exiting (pid: 87007)
+[2025-07-02 11:37:55 +0000] [87033] [INFO] Worker exiting (pid: 87033)
+[2025-07-02 11:37:55 +0000] [87039] [INFO] Worker exiting (pid: 87039)
+[2025-07-02 11:37:55 +0000] [87010] [INFO] Worker exiting (pid: 87010)
+[2025-07-02 11:37:55 +0000] [86983] [INFO] Shutting down: Master
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Starting gunicorn 21.2.0
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Listening at: http://127.0.0.1:8000 (88453)
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Using worker: sync
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Server is ready. Spawning workers
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:56 +0000] [88460] [INFO] Booting worker with pid: 88460
+[2025-07-02 11:37:56 +0000] [88460] [INFO] Worker spawned (pid: 88460)
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:56 +0000] [88478] [INFO] Booting worker with pid: 88478
+[2025-07-02 11:37:56 +0000] [88478] [INFO] Worker spawned (pid: 88478)
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:56 +0000] [88479] [INFO] Booting worker with pid: 88479
+[2025-07-02 11:37:56 +0000] [88479] [INFO] Worker spawned (pid: 88479)
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:56 +0000] [88480] [INFO] Booting worker with pid: 88480
+[2025-07-02 11:37:56 +0000] [88480] [INFO] Worker spawned (pid: 88480)
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:56 +0000] [88481] [INFO] Booting worker with pid: 88481
+[2025-07-02 11:37:56 +0000] [88481] [INFO] Worker spawned (pid: 88481)
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:56 +0000] [88482] [INFO] Booting worker with pid: 88482
+[2025-07-02 11:37:56 +0000] [88482] [INFO] Worker spawned (pid: 88482)
+[2025-07-02 11:37:56 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:56 +0000] [88483] [INFO] Booting worker with pid: 88483
+[2025-07-02 11:37:56 +0000] [88483] [INFO] Worker spawned (pid: 88483)
+[2025-07-02 11:37:57 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:57 +0000] [88484] [INFO] Booting worker with pid: 88484
+[2025-07-02 11:37:57 +0000] [88484] [INFO] Worker spawned (pid: 88484)
+[2025-07-02 11:37:57 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:57 +0000] [88485] [INFO] Booting worker with pid: 88485
+[2025-07-02 11:37:57 +0000] [88485] [INFO] Worker spawned (pid: 88485)
+[2025-07-02 11:37:57 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:57 +0000] [88486] [INFO] Booting worker with pid: 88486
+[2025-07-02 11:37:57 +0000] [88486] [INFO] Worker spawned (pid: 88486)
+[2025-07-02 11:37:57 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:57 +0000] [88487] [INFO] Booting worker with pid: 88487
+[2025-07-02 11:37:57 +0000] [88487] [INFO] Worker spawned (pid: 88487)
+[2025-07-02 11:37:57 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:57 +0000] [88488] [INFO] Booting worker with pid: 88488
+[2025-07-02 11:37:57 +0000] [88488] [INFO] Worker spawned (pid: 88488)
+[2025-07-02 11:37:57 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:57 +0000] [88489] [INFO] Booting worker with pid: 88489
+[2025-07-02 11:37:57 +0000] [88489] [INFO] Worker spawned (pid: 88489)
+[2025-07-02 11:37:57 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:57 +0000] [88490] [INFO] Booting worker with pid: 88490
+[2025-07-02 11:37:57 +0000] [88490] [INFO] Worker spawned (pid: 88490)
+[2025-07-02 11:37:57 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:57 +0000] [88491] [INFO] Booting worker with pid: 88491
+[2025-07-02 11:37:57 +0000] [88491] [INFO] Worker spawned (pid: 88491)
+[2025-07-02 11:37:57 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:57 +0000] [88492] [INFO] Booting worker with pid: 88492
+[2025-07-02 11:37:57 +0000] [88492] [INFO] Worker spawned (pid: 88492)
+[2025-07-02 11:37:57 +0000] [88453] [INFO] Worker spawned (pid: [booting])
+[2025-07-02 11:37:57 +0000] [88493] [INFO] Booting worker with pid: 88493
+[2025-07-02 11:37:57 +0000] [88493] [INFO] Worker spawned (pid: 88493)

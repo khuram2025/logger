@@ -1,0 +1,22 @@
+[Unit]
+Description=Django Analyzer Gunicorn daemon
+Requires=analyzer.socket
+After=network.target
+
+[Service]
+Type=notify
+User=net
+Group=net
+RuntimeDirectory=analyzer
+WorkingDirectory=/home/net/analyzer
+Environment=PATH=/home/net/analyzer/device-manager-env/bin
+ExecStart=/home/net/analyzer/device-manager-env/bin/gunicorn --config /home/net/analyzer/gunicorn.conf.py fwanalyzer.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -3,6 +3,7 @@ from . import views
 from .views_grouped_logs import grouped_logs_view
 
 urlpatterns = [
+    path('', views.clickhouse_logs_view, name='root_redirect_to_logs'),
     path('logs/', views.clickhouse_logs_view, name='clickhouse_logs'),
     path('top-summary/', views.top_summary_view, name='top_summary'),
     path('grouped-logs/', grouped_logs_view, name='grouped_logs'),
