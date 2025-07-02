@@ -63,6 +63,11 @@ impl SyslogReceiver {
                     // Get device information
                     let device_info = device_manager.get_device(&source_ip).await;
                     
+                    // Debug log for specific device
+                    if source_ip == "10.10.100.6" {
+                        debug!("Received packet from 10.10.100.6 - Device info: {:?}", device_info);
+                    }
+                    
                     // Convert bytes to string
                     let raw_message = match str::from_utf8(&buf[..len]) {
                         Ok(msg) => msg,
@@ -82,6 +87,11 @@ impl SyslogReceiver {
                     
                     // Remove syslog priority prefix if present (e.g., "<xxx>")
                     let clean_message = self.strip_syslog_priority(raw_message);
+                    
+                    // Debug log for specific device
+                    if source_ip == "10.10.100.6" {
+                        debug!("Received from 10.10.100.6 - Message preview: {}", clean_message.chars().take(200).collect::<String>());
+                    }
                     
                     // Parse log based on device parser type
                     let parser_type = device_info.as_ref().map(|d| d.parser_type.as_str()).unwrap_or("fortigate");
@@ -154,8 +164,13 @@ impl SyslogReceiver {
                                         }
                                     }
                                     Err(e) => {
-                                        warn!("Failed to parse Palo Alto URL log from {}: {} | Message: {}", 
-                                              addr.ip(), e, clean_message.chars().take(200).collect::<String>());
+                                        if source_ip == "10.10.100.6" {
+                                            warn!("Failed to parse Palo Alto URL log from 10.10.100.6: {} | Message: {}", 
+                                                  e, clean_message.chars().take(400).collect::<String>());
+                                        } else {
+                                            warn!("Failed to parse Palo Alto URL log from {}: {} | Message: {}", 
+                                                  addr.ip(), e, clean_message.chars().take(200).collect::<String>());
+                                        }
                                         packets_dropped += 1;
                                     }
                                 }

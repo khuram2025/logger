@@ -603,7 +603,7 @@
                             <th>Destination IP</th>
                             <th>Destination Port</th>
                             <th>Protocol</th>
-                            <th>Source</th>
+                            <th>Device</th>
                             <th>Received Bytes</th>
                             <th>Transmitted Bytes</th>
                             <th>Duration</th>
@@ -628,10 +628,7 @@
                             <td>{{ log_item.proto_str }}</td>
                             <td>
                                 <span class="source-badge source-{{ log_item.log_source|default:'unknown' }}">
-                                    {% if log_item.log_source == 'fortigate_traffic' %}FortiGate
-                                    {% elif log_item.log_source == 'pa_traffic' %}PaloAlto
-                                    {% elif log_item.log_source == 'threat_logs' %}Threat
-                                    {% else %}{{ log_item.log_source|default:'Unknown' }}{% endif %}
+                                    {{ log_item.device_name|default:'Unknown' }}
                                 </span>
                             </td>
                             <td>{{ log_item.rcvdbyte_display }}</td>
