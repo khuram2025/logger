@@ -19,6 +19,7 @@ sudo systemctl status paloalto_to_clickhouse.service
 
 sudo tcpdump -i any -A -n 'port 514' -c 5
 
+sudo tcpdump -i any -A host 10.10.100.2
 
 curl 'http://localhost:9200/_cat/indices?v'
 
@@ -149,3 +150,11 @@ python paloalto_Url_Clickhose.py
 
   These solutions will prevent future issues and provide automatic
   recovery when problems occur.
+
+ The system has two separate authorization mechanisms:
+  1. Database registration (via web interface) - stored in network_logs.registered_devices
+  2. Config file allowlist - hardcoded in /etc/fortigate-syslog-rust/config.toml
+
+  Both must be configured for a device to work, but the web interface only handles #1.
+
+  

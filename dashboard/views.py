@@ -1690,9 +1690,18 @@ def log_sources_view(request):
         
         # Convert to format expected by template
         log_sources_data = []
+
+        # Get corresponding LogSource objects from Django DB
+        device_ips = [d[0] for d in devices]
+        log_source_map = {
+            ls.ip_address: ls for ls in LogSource.objects.filter(ip_address__in=device_ips)
+        }
+
         for device in devices:
             device_ip, device_name, parser_type, enabled, created_at = device
             
+            log_source_obj = log_source_map.get(device_ip)
+
             # Map parser_type to device_type and determine status
             device_type = parser_type  # fortigate, paloalto, etc.
             status = 'approved' if enabled else 'inactive'
@@ -1706,7 +1715,7 @@ def log_sources_view(request):
                 log_template = 'generic'
             
             log_sources_data.append({
-                'id': f"ch_{device_ip.replace('.', '_')}",  # Create unique ID for ClickHouse devices
+                'id': log_source_obj.id if log_source_obj else None,
                 'name': device_name,
                 'description': f'Registered via ClickHouse integration - {parser_type.title()} parser',
                 'ip_address': device_ip,

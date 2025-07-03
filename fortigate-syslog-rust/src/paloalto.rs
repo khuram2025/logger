@@ -185,8 +185,11 @@ impl PaloAltoRecord {
         record.raw_message = line.trim().to_string();
         
         // Strip syslog header if present (format: <priority>timestamp hostname )
-        let csv_part = if let Some(start_pos) = line.find(char::is_numeric) {
-            // Find the start of CSV data (first digit after syslog header)
+        // Look for the start of CSV data which begins with "1," for Palo Alto logs
+        let csv_part = if let Some(csv_start) = line.find("1,") {
+            &line[csv_start..]
+        } else if let Some(start_pos) = line.find(char::is_numeric) {
+            // Fallback: Find the start of CSV data (first digit after syslog header)
             &line[start_pos..]
         } else {
             line
@@ -326,6 +329,8 @@ impl PaloAltoRecord {
     pub fn set_device_info(&mut self, device_name: &str, device_ip: &str) {
         self.device_name = device_name.to_string();
         self.device_ip = device_ip.to_string();
+        // Also set devname for validation
+        self.devname = device_name.to_string();
     }
 }
 

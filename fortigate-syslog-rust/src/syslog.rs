@@ -45,9 +45,18 @@ impl SyslogReceiver {
                 Ok((len, addr)) => {
                     packets_received += 1;
                     
+                    if addr.ip().to_string() == "10.10.100.2" {
+                        info!("RAW PACKET RECEIVED from 10.10.100.2 - length: {}, addr: {}", len, addr);
+                    }
+                    
                     // Check if source IP is allowed (legacy config check)
                     if !self.is_source_allowed(&addr) {
-                        debug!("Dropping packet from unauthorized source: {}", addr.ip());
+                        if addr.ip().to_string() == "10.10.100.2" {
+                            warn!("Dropping packet from unauthorized source: {} | Raw addr: {:?} | Allowed sources: {:?}", 
+                                  addr.ip(), addr, self.config.syslog.allowed_sources);
+                        } else {
+                            debug!("Dropping packet from unauthorized source: {}", addr.ip());
+                        }
                         packets_dropped += 1;
                         continue;
                     }
@@ -55,7 +64,11 @@ impl SyslogReceiver {
                     // Check if device is registered in database
                     let source_ip = addr.ip().to_string();
                     if !device_manager.is_device_registered(&source_ip).await {
-                        debug!("Dropping packet from unregistered device: {}", source_ip);
+                        if source_ip == "10.10.100.2" {
+                            warn!("Dropping packet from unregistered device: {}", source_ip);
+                        } else {
+                            debug!("Dropping packet from unregistered device: {}", source_ip);
+                        }
                         packets_dropped += 1;
                         continue;
                     }
@@ -64,8 +77,11 @@ impl SyslogReceiver {
                     let device_info = device_manager.get_device(&source_ip).await;
                     
                     // Debug log for specific device
-                    if source_ip == "10.10.100.6" {
-                        debug!("Received packet from 10.10.100.6 - Device info: {:?}", device_info);
+                    if source_ip == "10.10.100.2" {
+                        info!("Received packet from 10.10.100.2 - Device info: {:?}", device_info);
+                    }
+                    if source_ip == "10.10.100.4" {
+                        info!("Received packet from 10.10.100.4 - Device info: {:?}", device_info);
                     }
                     
                     // Convert bytes to string
@@ -88,13 +104,16 @@ impl SyslogReceiver {
                     // Remove syslog priority prefix if present (e.g., "<xxx>")
                     let clean_message = self.strip_syslog_priority(raw_message);
                     
-                    // Debug log for specific device
-                    if source_ip == "10.10.100.6" {
-                        debug!("Received from 10.10.100.6 - Message preview: {}", clean_message.chars().take(200).collect::<String>());
-                    }
-                    
                     // Parse log based on device parser type
                     let parser_type = device_info.as_ref().map(|d| d.parser_type.as_str()).unwrap_or("fortigate");
+                    
+                    // Debug log for specific device
+                    if source_ip == "10.10.100.2" {
+                        info!("Processing from 10.10.100.2 - Parser: {}, Message preview: {}", parser_type, clean_message.chars().take(200).collect::<String>());
+                    }
+                    if source_ip == "10.10.100.4" {
+                        info!("Processing from 10.10.100.4 - Parser: {}, Message preview: {}", parser_type, clean_message.chars().take(200).collect::<String>());
+                    }
                     
                     match parser_type {
                         "fortigate" => {
@@ -236,6 +255,10 @@ impl SyslogReceiver {
                                                 Ok(_) => {
                                                     packets_processed += 1;
                                                     
+                                                    if source_ip == "10.10.100.4" || source_ip == "10.10.100.2" {
+                                                        info!("Successfully processed Palo Alto record from {} - sent to ClickHouse queue", source_ip);
+                                                    }
+                                                    
                                                     // Log statistics every 1000 packets
                                                     if packets_received % 1000 == 0 {
                                                         info!("Statistics: received={}, processed={}, dropped={}", 
@@ -248,7 +271,11 @@ impl SyslogReceiver {
                                                 }
                                             }
                                         } else {
-                                            debug!("Dropping invalid Palo Alto record from {}", addr.ip());
+                                            if source_ip == "10.10.100.2" {
+                                                warn!("Dropping invalid Palo Alto record from {} - validation failed", addr.ip());
+                                            } else {
+                                                debug!("Dropping invalid Palo Alto record from {}", addr.ip());
+                                            }
                                             packets_dropped += 1;
                                         }
                                     }

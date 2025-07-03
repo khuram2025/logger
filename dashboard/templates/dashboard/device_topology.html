@@ -1,7 +1,8 @@
-{% extends 'dashboard/base.html' %}
+{% extends "base.html" %}
 {% load static %}
+{% load dashboard_extras %}
 
-{% block title %}{{ device.name }} - Network Topology{% endblock %}
+{% block title %}Device Topology - {{ device.name }}{% endblock %}
 
 {% block subheader %}
     {% with active_tab='log_sources' %}
