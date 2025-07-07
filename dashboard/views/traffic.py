@@ -405,6 +405,7 @@ def clickhouse_logs_view(request):
     hostname_filter = request.GET.get('hostname', '').strip()
     username_filter = request.GET.get('username', '').strip()
     dstcountry_filter = request.GET.get('dstcountry', '').strip()
+    policyname_filter = request.GET.get('policyname', '').strip()
     log_source_filter = request.GET.get('log_source', '').strip()
     
     # By default, exclude threat_logs unless specifically requested
@@ -513,6 +514,8 @@ def clickhouse_logs_view(request):
         where_clauses.append(f"username = '{username_filter}'")
     if dstcountry_filter:
         where_clauses.append(f"dstcountry = '{dstcountry_filter}'")
+    if policyname_filter:
+        where_clauses.append(f"policyname = '{policyname_filter}'")
     
     # New filter clauses
     if protocol_filter:
@@ -704,6 +707,7 @@ def clickhouse_logs_view(request):
         pa_where_clause = pa_where_clause.replace('proto', 'protocol')
         pa_where_clause = pa_where_clause.replace('sentbyte', 'bytes_sent')
         pa_where_clause = pa_where_clause.replace('rcvdbyte', 'bytes_received')
+        pa_where_clause = pa_where_clause.replace('policyname', 'rule_name')
         
         paloalto_query = f"""
             SELECT
@@ -752,6 +756,7 @@ def clickhouse_logs_view(request):
         threat_where_clause = threat_where_clause.replace('proto', 'protocol')
         threat_where_clause = threat_where_clause.replace('sentbyte', 'bytes_sent')
         threat_where_clause = threat_where_clause.replace('rcvdbyte', 'bytes_received')
+        threat_where_clause = threat_where_clause.replace('policyname', 'rule_name')
         
         threat_query = f"""
             SELECT
@@ -944,6 +949,7 @@ def clickhouse_logs_view(request):
         'hostname_filter': hostname_filter,
         'username_filter': username_filter,
         'dstcountry_filter': dstcountry_filter,
+        'policyname_filter': policyname_filter,
         'protocol_filter': protocol_filter,
         'search_filter': search_filter,
         'min_bytes_filter': min_bytes_filter,
