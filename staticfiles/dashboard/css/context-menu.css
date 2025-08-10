@@ -1,0 +1,128 @@
+/* Context Menu Styles */
+.context-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid #e0e6ed;
+    border-radius: 8px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    min-width: 180px;
+    display: none;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.context-menu-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #495057;
+    transition: background-color 0.2s ease;
+}
+
+.context-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.context-menu-item i {
+    width: 16px;
+    color: #667eea;
+    font-size: 12px;
+}
+
+.context-menu-item[data-action="exclude"] i {
+    color: #dc3545;
+}
+
+/* Subnet menu items */
+.context-menu-subtitle {
+    padding: 4px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background-color: #f8f9fa;
+}
+
+.subnet-item {
+    padding-left: 24px;
+    font-size: 12px;
+    background-color: #fafbfc;
+}
+
+.subnet-item:hover {
+    background-color: #e3f2fd;
+}
+
+.subnet-item i {
+    color: #28a745;
+    font-size: 11px;
+}
+
+.context-menu-divider {
+    height: 1px;
+    background-color: #e9ecef;
+    margin: 4px 0;
+}
+
+/* Table cell hover effect for right-click indication */
+.logs-table td:hover {
+    background-color: rgba(102, 126, 234, 0.05);
+    cursor: context-menu;
+}
+
+/* Searchable cells get a special cursor */
+.logs-table td:nth-child(3):hover, /* Source IP */
+.logs-table td:nth-child(4):hover, /* Destination IP */
+.logs-table td:nth-child(5):hover, /* Destination Port */
+.logs-table td:nth-child(6):hover { /* Protocol */
+    background-color: rgba(102, 126, 234, 0.1);
+    cursor: pointer;
+}
+
+/* Copy notification */
+.copy-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 10001;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.copy-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .context-menu {
+        min-width: 160px;
+        font-size: 12px;
+    }
+    
+    .context-menu-item {
+        padding: 10px 14px;
+    }
+    
+    .copy-notification {
+        right: 10px;
+        top: 10px;
+        font-size: 12px;
+        padding: 10px 14px;
+        max-width: 250px;
+    }
+}

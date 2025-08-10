@@ -3,6 +3,11 @@
 
 {% block title %}Logs{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'dashboard/css/tag-search.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/context-menu.css' %}">
+{% endblock %}
+
 {% block subheader %}
     {% with active_tab='logs' %}
         {% include 'dashboard/partials/sub_header.html' %}
@@ -17,7 +22,9 @@
                 <div class="logs-controls-group">
                     <div class="search-container">
                         <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Search logs..." id="globalSearch" />
+                        <div class="search-tags" id="searchTags"></div>
+                        <input type="text" placeholder="Type to search..." id="sourceIpSearch" name="srcip" autocomplete="off" />
+                        <div class="search-suggestions" id="searchSuggestions"></div>
                     </div>
                     <div class="log-summary">
                         Total: <span id="total-logs">{{ total_logs_count|default:"0" }}</span> Logs 
@@ -112,6 +119,8 @@
                         justify-content: flex-start;
                     }
                 }
+
+                /* Search styles moved to external CSS file */
 
                 /* Professional Filter Sidebar Styles */
                 .logs-page-container {
@@ -771,6 +780,7 @@
                                    placeholder="e.g., 192.168.1.1" 
                                    value="{{ srcip_filter|default:'' }}">
                         </div>
+                        <input type="hidden" name="external_only" id="external_only_filter" value="{{ request.GET.external_only|default:'' }}">
                         <div class="filter-group">
                             <label>Destination IP</label>
                             <input type="text" class="filter-input" name="dstip" 
@@ -990,15 +1000,11 @@
 
 {% block extra_scripts %}
 <script>
-// Filter Sidebar Functionality
-function toggleFilters() {
-    const sidebar = document.getElementById('filterSidebar');
-    const mainContent = document.querySelector('.logs-main-content');
-    
-    sidebar.classList.toggle('hidden');
-    mainContent.classList.toggle('sidebar-hidden');
-}
+// Filter Sidebar Functionality - moved to filters.js
+// function toggleFilters() - defined in filters.js
+// function applyFilters() - defined in filters.js
 
+/* Commented out - now in filters.js
 function applyFilters() {
     const form = document.createElement('form');
     form.method = 'GET';
@@ -1016,6 +1022,16 @@ function applyFilters() {
         }
     });
 
+    // Include external_only parameter if set
+    const externalOnlyValue = document.getElementById('external_only_filter')?.value;
+    if (externalOnlyValue && externalOnlyValue.trim()) {
+        const externalOnlyInput = document.createElement('input');
+        externalOnlyInput.type = 'hidden';
+        externalOnlyInput.name = 'external_only';
+        externalOnlyInput.value = externalOnlyValue.trim();
+        form.appendChild(externalOnlyInput);
+    }
+    
     // Always include time range parameter
     const timeRange = document.getElementById('timeRangeFilter').value;
     const timeRangeInput = document.createElement('input');
@@ -1058,7 +1074,9 @@ function applyFilters() {
     document.body.appendChild(form);
     form.submit();
 }
+*/
 
+/* Commented out - now in filters.js
 function resetFilters() {
     // Clear all filter inputs
     const filterInputs = document.querySelectorAll('.filter-input');
@@ -1070,10 +1088,18 @@ function resetFilters() {
         }
     });
     
+    // Clear quick filter buttons
+    document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    activeQuickFilters.clear();
+    
     // Redirect to clean URL
     window.location.href = window.location.pathname;
 }
+*/
 
+/* Commented out - now in filters.js
 function clearAllFilters() {
     if (confirm('Are you sure you want to clear all filters?')) {
         resetFilters();
@@ -1083,36 +1109,13 @@ function clearAllFilters() {
 function refreshLogs() {
     window.location.reload();
 }
+*/
 
-// Global search functionality
+// Global variable for quick filters - now in filters.js
+// let activeQuickFilters = new Set();
+
+// Wrap initialization code in DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function() {
-    const globalSearch = document.getElementById('globalSearch');
-    if (globalSearch) {
-        globalSearch.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const searchTerm = this.value.trim();
-                if (searchTerm) {
-                    // Add search term to URL and reload
-                    const url = new URL(window.location);
-                    url.searchParams.set('search', searchTerm);
-                    window.location.href = url.toString();
-                } else {
-                    // Remove search parameter if empty
-                    const url = new URL(window.location);
-                    url.searchParams.delete('search');
-                    window.location.href = url.toString();
-                }
-            }
-        });
-        
-        // Set current search value if exists
-        const urlParams = new URLSearchParams(window.location.search);
-        const currentSearch = urlParams.get('search');
-        if (currentSearch) {
-            globalSearch.value = currentSearch;
-        }
-    }
-
     // Initialize filter sidebar based on screen size
     const sidebar = document.getElementById('filterSidebar');
     const mainContent = document.querySelector('.logs-main-content');
@@ -1188,42 +1191,109 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Quick filters functionality
+    // Initialize quick filters based on current filter values
+    function initializeQuickFilters() {
+        const actionValue = document.querySelector('select[name="action"]')?.value;
+        const externalOnlyValue = document.getElementById('external_only_filter')?.value;
+        const minBytesValue = document.querySelector('input[name="min_bytes"]')?.value;
+        const minDurationValue = document.querySelector('input[name="min_duration"]')?.value;
+        
+        // Check and activate corresponding quick filters
+        if (actionValue === 'deny') {
+            const deniedBtn = document.querySelector("button[data-filter='denied']");
+            if (deniedBtn) {
+                deniedBtn.classList.add('active');
+                activeQuickFilters.add('denied');
+            }
+        }
+        
+        if (externalOnlyValue === 'true') {
+            const externalBtn = document.querySelector("button[data-filter='external']");
+            if (externalBtn) {
+                externalBtn.classList.add('active');
+                activeQuickFilters.add('external');
+            }
+        }
+        
+        if (minBytesValue === '1000000') {
+            const highTrafficBtn = document.querySelector("button[data-filter='high-traffic']");
+            if (highTrafficBtn) {
+                highTrafficBtn.classList.add('active');
+                activeQuickFilters.add('high-traffic');
+            }
+        }
+        
+        if (minDurationValue === '10000' && actionValue === 'deny') {
+            const suspiciousBtn = document.querySelector("button[data-filter='suspicious']");
+            if (suspiciousBtn) {
+                suspiciousBtn.classList.add('active');
+                activeQuickFilters.add('suspicious');
+            }
+        }
+    }
+    
+    // Call initialization
+    initializeQuickFilters();
+    
+    // Quick filters functionality - allows multiple selection
     const quickFilterBtns = document.querySelectorAll('.quick-filter-btn');
+    
     quickFilterBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             const filterType = this.dataset.filter;
             
-            // Clear existing filters
-            document.querySelectorAll('.filter-input').forEach(input => {
-                if (input.type === 'select-one') {
-                    input.selectedIndex = 0;
-                } else {
-                    input.value = '';
+            // Toggle active state
+            if (this.classList.contains('active')) {
+                this.classList.remove('active');
+                activeQuickFilters.delete(filterType);
+                
+                // Remove this specific filter
+                switch(filterType) {
+                    case 'denied':
+                        // Only clear action if no other filter requires it
+                        if (!activeQuickFilters.has('suspicious')) {
+                            document.querySelector('select[name="action"]').value = '';
+                        }
+                        break;
+                    case 'high-traffic':
+                        document.querySelector('input[name="min_bytes"]').value = '';
+                        break;
+                    case 'suspicious':
+                        document.querySelector('input[name="min_duration"]').value = '';
+                        // Only clear action if denied filter is not active
+                        if (!activeQuickFilters.has('denied')) {
+                            document.querySelector('select[name="action"]').value = '';
+                        }
+                        break;
+                    case 'external':
+                        document.getElementById('external_only_filter').value = '';
+                        break;
                 }
-            });
-            
-            // Apply quick filter presets
-            switch(filterType) {
-                case 'denied':
-                    document.querySelector('select[name="action"]').value = 'deny';
-                    break;
-                case 'high-traffic':
-                    document.querySelector('input[name="min_bytes"]').value = '1000000';
-                    break;
-                case 'suspicious':
-                    document.querySelector('input[name="min_duration"]').value = '10000';
-                    document.querySelector('select[name="action"]').value = 'deny';
-                    break;
-                case 'external':
-                    // Filter for external IPs - we'll set a special marker that backend can handle
-                    document.querySelector('input[name="srcip"]').value = 'external_only';
-                    break;
+            } else {
+                this.classList.add('active');
+                activeQuickFilters.add(filterType);
+                
+                // Apply this specific filter
+                switch(filterType) {
+                    case 'denied':
+                        document.querySelector('select[name="action"]').value = 'deny';
+                        break;
+                    case 'high-traffic':
+                        document.querySelector('input[name="min_bytes"]').value = '1000000';
+                        break;
+                    case 'suspicious':
+                        document.querySelector('input[name="min_duration"]').value = '10000';
+                        // Only set action to deny if it's not already set
+                        const actionSelect = document.querySelector('select[name="action"]');
+                        if (actionSelect.value === '') {
+                            actionSelect.value = 'deny';
+                        }
+                        break;
+                    case 'external':
+                        document.getElementById('external_only_filter').value = 'true';
+                        break;
+                }
             }
-            
-            // Mark button as active
-            quickFilterBtns.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
             
             // Apply filters
             applyFilters();
@@ -1310,7 +1380,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Update filter button with count
-        const filterBtn = document.querySelector('button[onclick="toggleFilters()"]');
+        const filterBtn = document.querySelector('button[onclick*="toggleFilters"]');
         if (filterBtn) {
             const existingBadge = filterBtn.querySelector('.filter-count-badge');
             if (existingBadge) {
@@ -1393,7 +1463,127 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-});
+        
+        function showSuggestions(input) {
+            const value = input.trim().toLowerCase();
+            
+            // Show "Source IP" suggestion when user types 's' or 'S'
+            if (value === 's' || value === 'source' || value === 'source ' || value === 'source i' || value === 'source ip') {
+                suggestionsDiv.innerHTML = `
+                    <div class="search-suggestion-item" data-index="0">
+                        <i class="fas fa-network-wired" style="color: #667eea; margin-right: 8px;"></i>
+                        <span><strong>Source IP</strong> - Filter by source IP address</span>
+                    </div>
+                `;
+                suggestionsDiv.style.display = 'block';
+                selectedIndex = -1;
+            } else {
+                hideSuggestions();
+            }
+        }
+        
+        function hideSuggestions() {
+            suggestionsDiv.style.display = 'none';
+            selectedIndex = -1;
+        }
+        
+        function selectSuggestion(index) {
+            const items = suggestionsDiv.querySelectorAll('.search-suggestion-item');
+            if (index >= 0 && index < items.length) {
+                items.forEach(item => item.classList.remove('selected'));
+                items[index].classList.add('selected');
+                selectedIndex = index;
+            }
+        }
+        
+        function applySuggestion() {
+            // When "Source IP" is selected, clear the field and update placeholder
+            sourceIpSearch.value = '';
+            sourceIpSearch.placeholder = 'Enter Source IP (e.g., 192.168.1.1)';
+            hideSuggestions();
+            sourceIpSearch.focus();
+        }
+        
+        function applySourceIpFilter() {
+            const value = sourceIpSearch.value.trim();
+            if (value) {
+                const url = new URL(window.location);
+                url.searchParams.set('srcip', value);
+                window.location.href = url.toString();
+            }
+        }
+        
+        // Event listeners
+        sourceIpSearch.addEventListener('input', function(e) {
+            showSuggestions(this.value);
+        });
+        
+        sourceIpSearch.addEventListener('focus', function(e) {
+            showSuggestions(this.value);
+        });
+        
+        sourceIpSearch.addEventListener('keydown', function(e) {
+            const items = suggestionsDiv.querySelectorAll('.search-suggestion-item');
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (items.length > 0) {
+                        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                        selectSuggestion(selectedIndex);
+                    }
+                    break;
+                    
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (items.length > 0) {
+                        selectedIndex = Math.max(selectedIndex - 1, 0);
+                        selectSuggestion(selectedIndex);
+                    }
+                    break;
+                    
+                case 'Tab':
+                case 'Enter':
+                    if (items.length > 0 && selectedIndex >= 0) {
+                        e.preventDefault();
+                        applySuggestion();
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        applySourceIpFilter();
+                    }
+                    break;
+                    
+                case 'Escape':
+                    hideSuggestions();
+                    break;
+            }
+        });
+        
+        sourceIpSearch.addEventListener('blur', function() {
+            // Delay hiding to allow clicking
+            setTimeout(hideSuggestions, 200);
+        });
+        
+        // Handle suggestion clicks
+        suggestionsDiv.addEventListener('click', function(e) {
+            const item = e.target.closest('.search-suggestion-item');
+            if (item) {
+                applySuggestion();
+            }
+        });
+        
+        // Set initial value from URL if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const srcipParam = urlParams.get('srcip');
+        if (srcipParam) {
+            sourceIpSearch.value = srcipParam;
+        }
+    }
+    
+    // Initialize on page load (handled by external tag-search.js)
+
+// Remove premature global init to avoid ReferenceError before function definition
+
 </script>
     <div id="wafRulesModal" class="modal">
         <div class="modal-content">
@@ -1659,4 +1849,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     </script>
+    
+    <!-- Include filter functions JavaScript -->
+    <script src="{% static 'dashboard/js/filters.js' %}"></script>
+    <!-- Include external tag search JavaScript -->
+    <script src="{% static 'dashboard/js/tag-search.js' %}"></script>
+    <!-- Include context menu JavaScript -->
+    <script src="{% static 'dashboard/js/context-menu.js' %}"></script>
 {% endblock %}

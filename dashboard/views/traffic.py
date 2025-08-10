@@ -419,6 +419,7 @@ def clickhouse_logs_view(request):
     max_bytes_filter = request.GET.get('max_bytes', '').strip()
     min_duration_filter = request.GET.get('min_duration', '').strip()
     max_duration_filter = request.GET.get('max_duration', '').strip()
+    external_only_filter = request.GET.get('external_only', '').strip()
     
     # Build WHERE clauses based on filter inputs
     if use_clickhouse_time:
@@ -481,10 +482,40 @@ def clickhouse_logs_view(request):
             # Not a valid IP or CIDR, treat as exact match for now
             return f"{ip_field_name} = '{ip_filter}'"
 
+    # Handle external_only filter separately
+    if external_only_filter == 'true':
+        # When external_only is specified, show logs where EITHER source OR destination is external
+        external_check = """
+            (
+                NOT (
+                    srcip LIKE '10.%' OR 
+                    srcip LIKE '192.168.%' OR 
+                    srcip LIKE '172.16.%' OR srcip LIKE '172.17.%' OR srcip LIKE '172.18.%' OR srcip LIKE '172.19.%' OR
+                    srcip LIKE '172.20.%' OR srcip LIKE '172.21.%' OR srcip LIKE '172.22.%' OR srcip LIKE '172.23.%' OR
+                    srcip LIKE '172.24.%' OR srcip LIKE '172.25.%' OR srcip LIKE '172.26.%' OR srcip LIKE '172.27.%' OR
+                    srcip LIKE '172.28.%' OR srcip LIKE '172.29.%' OR srcip LIKE '172.30.%' OR srcip LIKE '172.31.%' OR
+                    srcip = '127.0.0.1' OR srcip LIKE '169.254.%'
+                )
+                OR
+                NOT (
+                    dstip LIKE '10.%' OR 
+                    dstip LIKE '192.168.%' OR 
+                    dstip LIKE '172.16.%' OR dstip LIKE '172.17.%' OR dstip LIKE '172.18.%' OR dstip LIKE '172.19.%' OR
+                    dstip LIKE '172.20.%' OR dstip LIKE '172.21.%' OR dstip LIKE '172.22.%' OR dstip LIKE '172.23.%' OR
+                    dstip LIKE '172.24.%' OR dstip LIKE '172.25.%' OR dstip LIKE '172.26.%' OR dstip LIKE '172.27.%' OR
+                    dstip LIKE '172.28.%' OR dstip LIKE '172.29.%' OR dstip LIKE '172.30.%' OR dstip LIKE '172.31.%' OR
+                    dstip = '127.0.0.1' OR dstip LIKE '169.254.%'
+                )
+            )
+        """.strip()
+        where_clauses.append(external_check)
+    
+    # Process source IP filter (now independent of external_only)
     srcip_clause = _get_ip_filter_clause(srcip_filter, 'srcip')
     if srcip_clause:
         where_clauses.append(srcip_clause)
-        
+    
+    # Process destination IP filter
     dstip_clause = _get_ip_filter_clause(dstip_filter, 'dstip')
     if dstip_clause:
         where_clauses.append(dstip_clause)
@@ -505,7 +536,30 @@ def clickhouse_logs_view(request):
     if action_filter:
         where_clauses.append(f"action = '{action_filter}'")
     if devname_filter:
-        where_clauses.append(f"device_name = '{devname_filter}'")
+        # Map registered device names to actual device names used in logs
+        actual_devname = devname_filter
+        try:
+            # Check if this is a registered device name that needs mapping
+            device_mapping_query = "SELECT device_ip FROM registered_devices WHERE device_name = %(device_name)s AND enabled = 1"
+            device_ip_result = client.execute(device_mapping_query, {'device_name': devname_filter})
+            if device_ip_result:
+                device_ip = device_ip_result[0][0]
+                # Try to find actual device name in fortigate_traffic for this IP
+                actual_name_query = "SELECT DISTINCT devname FROM fortigate_traffic WHERE devname IS NOT NULL AND devname <> '' AND (devname LIKE %(pattern1)s OR devname LIKE %(pattern2)s) LIMIT 1"
+                actual_name_result = client.execute(actual_name_query, {
+                    'pattern1': f'%{devname_filter.split("-")[-1]}%',  # Extract FW02 part
+                    'pattern2': f'%FGT-{devname_filter.split("-")[-1]}%'  # Try FGT-FW02 pattern
+                })
+                if actual_name_result:
+                    actual_devname = actual_name_result[0][0]
+                    logging.info(f"Mapped device name '{devname_filter}' to '{actual_devname}'")
+        except Exception as e:
+            logging.warning(f"Error mapping device name {devname_filter}: {e}")
+            # Fall back to original name
+        
+        # Use FortiGate field name in base clause; per-table clauses below
+        # will map 'devname' to the appropriate device field (e.g., device_name)
+        where_clauses.append(f"devname = '{actual_devname}'")
     if appcategory_filter:
         where_clauses.append(f"appcategory = '{appcategory_filter}'")
     if hostname_filter:
@@ -606,10 +660,38 @@ def clickhouse_logs_view(request):
     if has_fortigate_traffic:
         count_queries.append(f"SELECT count() FROM fortigate_traffic WHERE {where_clause}")
     if has_pa_traffic:
-        pa_where_clause = where_clause.replace('srcip', 'src_ip').replace('dstip', 'dst_ip').replace('srcport', 'src_port').replace('dstport', 'dst_port').replace('appcategory', 'app_category').replace('hostname', 'application').replace('username', 'src_user').replace('dstcountry', 'dst_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
+        pa_where_clause = (
+            where_clause
+            .replace('srcip', 'src_ip')
+            .replace('dstip', 'dst_ip')
+            .replace('srcport', 'src_port')
+            .replace('dstport', 'dst_port')
+            .replace('devname', 'device_name')
+            .replace('appcategory', 'app_category')
+            .replace('hostname', 'application')
+            .replace('username', 'src_user')
+            .replace('dstcountry', 'dst_country')
+            .replace('proto', 'protocol')
+            .replace('sentbyte', 'bytes_sent')
+            .replace('rcvdbyte', 'bytes_received')
+        )
         count_queries.append(f"SELECT count() FROM pa_traffic WHERE {pa_where_clause}")
     if has_threat_logs:
-        threat_where_clause = where_clause.replace('srcip', 'source_address').replace('dstip', 'destination_address').replace('srcport', 'source_port').replace('dstport', 'destination_port').replace('appcategory', 'application_category').replace('hostname', 'application').replace('username', 'source_user').replace('dstcountry', 'destination_country').replace('proto', 'protocol').replace('sentbyte', 'bytes_sent').replace('rcvdbyte', 'bytes_received')
+        threat_where_clause = (
+            where_clause
+            .replace('srcip', 'source_address')
+            .replace('dstip', 'destination_address')
+            .replace('srcport', 'source_port')
+            .replace('dstport', 'destination_port')
+            .replace('devname', 'device_name')
+            .replace('appcategory', 'application_category')
+            .replace('hostname', 'application')
+            .replace('username', 'source_user')
+            .replace('dstcountry', 'destination_country')
+            .replace('proto', 'protocol')
+            .replace('sentbyte', 'bytes_sent')
+            .replace('rcvdbyte', 'bytes_received')
+        )
         count_queries.append(f"SELECT count() FROM threat_logs WHERE {threat_where_clause}")
     
     if count_queries:
@@ -682,7 +764,7 @@ def clickhouse_logs_view(request):
                 srccountry as src_country,
                 dstcountry as dst_country,
                 'fortigate_traffic' as log_source,
-                device_name,
+                devname as device_name,
                 '' as application,
                 '' as threat_id,
                 '' as severity
@@ -694,20 +776,22 @@ def clickhouse_logs_view(request):
     # PaloAlto traffic logs
     if has_pa_traffic:
         # Adjust where clause for pa_traffic table field names
-        pa_where_clause = where_clause
-        pa_where_clause = pa_where_clause.replace('srcip', 'src_ip')
-        pa_where_clause = pa_where_clause.replace('dstip', 'dst_ip')
-        pa_where_clause = pa_where_clause.replace('srcport', 'src_port')
-        pa_where_clause = pa_where_clause.replace('dstport', 'dst_port')
-        pa_where_clause = pa_where_clause.replace('devname', 'device_name')
-        pa_where_clause = pa_where_clause.replace('appcategory', 'app_category')
-        pa_where_clause = pa_where_clause.replace('hostname', 'application')
-        pa_where_clause = pa_where_clause.replace('username', 'src_user')
-        pa_where_clause = pa_where_clause.replace('dstcountry', 'dst_country')
-        pa_where_clause = pa_where_clause.replace('proto', 'protocol')
-        pa_where_clause = pa_where_clause.replace('sentbyte', 'bytes_sent')
-        pa_where_clause = pa_where_clause.replace('rcvdbyte', 'bytes_received')
-        pa_where_clause = pa_where_clause.replace('policyname', 'rule_name')
+        pa_where_clause = (
+            where_clause
+            .replace('srcip', 'src_ip')
+            .replace('dstip', 'dst_ip')
+            .replace('srcport', 'src_port')
+            .replace('dstport', 'dst_port')
+            .replace('devname', 'device_name')
+            .replace('appcategory', 'app_category')
+            .replace('hostname', 'application')
+            .replace('username', 'src_user')
+            .replace('dstcountry', 'dst_country')
+            .replace('proto', 'protocol')
+            .replace('sentbyte', 'bytes_sent')
+            .replace('rcvdbyte', 'bytes_received')
+            .replace('policyname', 'rule_name')
+        )
         
         paloalto_query = f"""
             SELECT
@@ -743,20 +827,22 @@ def clickhouse_logs_view(request):
     # Threat logs
     if has_threat_logs:
         # Adjust where clause for threat_logs table field names
-        threat_where_clause = where_clause
-        threat_where_clause = threat_where_clause.replace('srcip', 'source_address')
-        threat_where_clause = threat_where_clause.replace('dstip', 'destination_address')
-        threat_where_clause = threat_where_clause.replace('srcport', 'source_port')
-        threat_where_clause = threat_where_clause.replace('dstport', 'destination_port')
-        threat_where_clause = threat_where_clause.replace('devname', 'device_name')
-        threat_where_clause = threat_where_clause.replace('appcategory', 'application_category')
-        threat_where_clause = threat_where_clause.replace('hostname', 'application')
-        threat_where_clause = threat_where_clause.replace('username', 'source_user')
-        threat_where_clause = threat_where_clause.replace('dstcountry', 'destination_country')
-        threat_where_clause = threat_where_clause.replace('proto', 'protocol')
-        threat_where_clause = threat_where_clause.replace('sentbyte', 'bytes_sent')
-        threat_where_clause = threat_where_clause.replace('rcvdbyte', 'bytes_received')
-        threat_where_clause = threat_where_clause.replace('policyname', 'rule_name')
+        threat_where_clause = (
+            where_clause
+            .replace('srcip', 'source_address')
+            .replace('dstip', 'destination_address')
+            .replace('srcport', 'source_port')
+            .replace('dstport', 'destination_port')
+            .replace('devname', 'device_name')
+            .replace('appcategory', 'application_category')
+            .replace('hostname', 'application')
+            .replace('username', 'source_user')
+            .replace('dstcountry', 'destination_country')
+            .replace('proto', 'protocol')
+            .replace('sentbyte', 'bytes_sent')
+            .replace('rcvdbyte', 'bytes_received')
+            .replace('policyname', 'rule_name')
+        )
         
         threat_query = f"""
             SELECT
