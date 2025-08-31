@@ -9,6 +9,7 @@ This module contains views for managing system configuration including:
 
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
 import subprocess
 import json
 import os
@@ -16,7 +17,10 @@ import glob
 import socket
 from datetime import datetime
 
+from dashboard.auth.decorators import require_permission, admin_required
 
+
+@require_permission('system_config')
 def system_config_view(request):
     """System Configuration view with service status dashboard"""
     
@@ -135,6 +139,7 @@ def system_config_view(request):
     return render(request, 'dashboard/system_config.html', context)
 
 
+@require_permission('system_config')
 def service_action_view(request):
     """Handle service start/stop/restart actions via AJAX"""
     if request.method != 'POST':
@@ -171,6 +176,7 @@ def service_action_view(request):
         return JsonResponse({'success': False, 'error': f'Unexpected error: {str(e)}'})
 
 
+@require_permission('configure_sources')
 def logs_config_view(request):
     """Logs Configuration view for managing firewall log settings"""
     
@@ -295,6 +301,7 @@ def logs_config_view(request):
     return render(request, 'dashboard/logs_config.html', context)
 
 
+@require_permission('configure_sources')
 def logs_config_save_view(request):
     """Save logs configuration changes"""
     if request.method != 'POST':
@@ -400,6 +407,7 @@ if ({ip_condition}) then {{
         return JsonResponse({'success': False, 'error': f'Configuration save failed: {str(e)}'})
 
 
+@require_permission('configure_sources')
 def logs_config_test_view(request):
     """Test log configuration and connectivity"""
     if request.method != 'POST':

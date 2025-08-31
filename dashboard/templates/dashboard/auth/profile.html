@@ -1,0 +1,782 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}My Profile - Network Analyzer{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+<style>
+    .profile-section {
+        @apply bg-base-100 rounded-lg shadow-sm border border-base-300 p-6 mb-6;
+    }
+    
+    .section-title {
+        @apply text-lg font-semibold text-base-content mb-4 flex items-center;
+    }
+    
+    .session-item {
+        @apply flex items-start justify-between p-4 border border-base-300 rounded-lg mb-3;
+        transition: all 0.2s ease;
+    }
+    
+    .session-item:hover {
+        @apply shadow-md transform translate-y-[-1px];
+    }
+    
+    .session-current {
+        @apply border-primary bg-primary/5;
+    }
+    
+    .password-strength {
+        height: 4px;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+    }
+    
+    .strength-weak { background-color: #ef4444; width: 25%; }
+    .strength-fair { background-color: #f59e0b; width: 50%; }
+    .strength-good { background-color: #10b981; width: 75%; }
+    .strength-strong { background-color: #059669; width: 100%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 max-w-6xl">
+    <!-- Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div class="flex items-center space-x-4">
+            <div class="avatar">
+                <div class="w-20 rounded-full bg-primary text-primary-content">
+                    <div class="flex items-center justify-center h-full">
+                        <i class="fas fa-user text-3xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">My Profile</h1>
+                <p class="text-gray-600 mt-1">Manage your account settings and preferences</p>
+                <div class="flex items-center space-x-2 mt-2">
+                    <span class="badge badge-primary">{{ user.role.display_name }}</span>
+                    <span class="badge badge-success">Active</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4 lg:mt-0">
+            <button class="btn btn-outline btn-sm" onclick="exportProfile()">
+                <i class="fas fa-download mr-2"></i>Export Data
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column - Profile Settings -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Personal Information -->
+            <div class="profile-section">
+                <h2 class="section-title">
+                    <i class="fas fa-user mr-2 text-primary"></i>Personal Information
+                </h2>
+                
+                <form method="post" action="{% url 'auth:user_profile' %}" id="profile-form">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-medium">
+                                    <i class="fas fa-at mr-2"></i>Username
+                                </span>
+                            </label>
+                            <input type="text" class="input input-bordered" value="{{ user.username }}" disabled>
+                            <label class="label">
+                                <span class="label-text-alt">Username cannot be changed</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-medium">
+                                    <i class="fas fa-envelope mr-2"></i>Email Address
+                                </span>
+                            </label>
+                            <input type="email" class="input input-bordered" name="email" value="{{ user.email }}" required>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-medium">
+                                    <i class="fas fa-user mr-2"></i>First Name
+                                </span>
+                            </label>
+                            <input type="text" class="input input-bordered" name="first_name" value="{{ user.first_name }}">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-medium">
+                                    <i class="fas fa-user mr-2"></i>Last Name
+                                </span>
+                            </label>
+                            <input type="text" class="input input-bordered" name="last_name" value="{{ user.last_name }}">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end mt-6">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save mr-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Password Change -->
+            <div class="profile-section">
+                <h2 class="section-title">
+                    <i class="fas fa-lock mr-2 text-primary"></i>Change Password
+                </h2>
+                
+                <form method="post" action="{% url 'auth:password_change_required' %}" id="password-form">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-medium">Current Password</span>
+                            </label>
+                            <div class="relative">
+                                <input type="password" class="input input-bordered pr-12" name="old_password" required id="current-password">
+                                <button type="button" class="btn btn-ghost btn-sm absolute inset-y-0 right-0 pr-3" onclick="togglePassword('current-password', 'current-eye')">
+                                    <i class="fas fa-eye" id="current-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-medium">New Password</span>
+                            </label>
+                            <div class="relative">
+                                <input type="password" class="input input-bordered pr-12" name="new_password1" required id="new-password">
+                                <button type="button" class="btn btn-ghost btn-sm absolute inset-y-0 right-0 pr-3" onclick="togglePassword('new-password', 'new-eye')">
+                                    <i class="fas fa-eye" id="new-eye"></i>
+                                </button>
+                            </div>
+                            <!-- Password Strength Indicator -->
+                            <div class="mt-2">
+                                <div class="password-strength" id="password-strength"></div>
+                                <div class="text-sm text-gray-600 mt-1" id="password-strength-text">
+                                    Enter a password to see strength
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-medium">Confirm New Password</span>
+                            </label>
+                            <div class="relative">
+                                <input type="password" class="input input-bordered pr-16" name="new_password2" required id="confirm-password">
+                                <button type="button" class="btn btn-ghost btn-sm absolute inset-y-0 right-0 pr-3" onclick="togglePassword('confirm-password', 'confirm-eye')">
+                                    <i class="fas fa-eye" id="confirm-eye"></i>
+                                </button>
+                                <div class="absolute inset-y-0 right-12 pr-3 flex items-center" id="password-match-icon">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Password Requirements -->
+                    <div class="alert alert-info mt-4">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <h3 class="font-bold">Password Requirements:</h3>
+                            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                                <li>At least 8 characters long</li>
+                                <li>Must contain uppercase and lowercase letters</li>
+                                <li>Must contain at least one number</li>
+                                <li>Must contain at least one special character</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end mt-6">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-key mr-2"></i>Update Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Preferences -->
+            <div class="profile-section">
+                <h2 class="section-title">
+                    <i class="fas fa-cog mr-2 text-primary"></i>Preferences
+                </h2>
+                
+                <form method="post" action="{% url 'auth:user_profile' %}" id="preferences-form">
+                    {% csrf_token %}
+                    <div class="space-y-6">
+                        <!-- Interface Preferences -->
+                        <div>
+                            <h3 class="font-medium text-gray-900 mb-3">Interface</h3>
+                            <div class="space-y-3">
+                                <label class="cursor-pointer label justify-start">
+                                    <input type="checkbox" class="checkbox checkbox-primary" name="dark_mode" {% if user.preferences.dark_mode %}checked{% endif %}>
+                                    <span class="label-text ml-3">
+                                        <i class="fas fa-moon mr-2"></i>Dark Mode
+                                    </span>
+                                </label>
+                                
+                                <label class="cursor-pointer label justify-start">
+                                    <input type="checkbox" class="checkbox checkbox-primary" name="compact_view" {% if user.preferences.compact_view %}checked{% endif %}>
+                                    <span class="label-text ml-3">
+                                        <i class="fas fa-compress-alt mr-2"></i>Compact View
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Notification Preferences -->
+                        <div>
+                            <h3 class="font-medium text-gray-900 mb-3">Notifications</h3>
+                            <div class="space-y-3">
+                                <label class="cursor-pointer label justify-start">
+                                    <input type="checkbox" class="checkbox checkbox-primary" name="email_notifications" {% if user.preferences.email_notifications %}checked{% endif %}>
+                                    <span class="label-text ml-3">
+                                        <i class="fas fa-envelope mr-2"></i>Email Notifications
+                                    </span>
+                                </label>
+                                
+                                <label class="cursor-pointer label justify-start">
+                                    <input type="checkbox" class="checkbox checkbox-primary" name="security_alerts" {% if user.preferences.security_alerts %}checked{% endif %}>
+                                    <span class="label-text ml-3">
+                                        <i class="fas fa-shield-alt mr-2"></i>Security Alerts
+                                    </span>
+                                </label>
+                                
+                                <label class="cursor-pointer label justify-start">
+                                    <input type="checkbox" class="checkbox checkbox-primary" name="system_updates" {% if user.preferences.system_updates %}checked{% endif %}>
+                                    <span class="label-text ml-3">
+                                        <i class="fas fa-bell mr-2"></i>System Updates
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Time Zone -->
+                        <div>
+                            <h3 class="font-medium text-gray-900 mb-3">Localization</h3>
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text">
+                                        <i class="fas fa-globe mr-2"></i>Time Zone
+                                    </span>
+                                </label>
+                                <select class="select select-bordered" name="timezone">
+                                    <option value="UTC" {% if user.preferences.timezone == 'UTC' %}selected{% endif %}>UTC</option>
+                                    <option value="America/New_York" {% if user.preferences.timezone == 'America/New_York' %}selected{% endif %}>Eastern Time</option>
+                                    <option value="America/Chicago" {% if user.preferences.timezone == 'America/Chicago' %}selected{% endif %}>Central Time</option>
+                                    <option value="America/Denver" {% if user.preferences.timezone == 'America/Denver' %}selected{% endif %}>Mountain Time</option>
+                                    <option value="America/Los_Angeles" {% if user.preferences.timezone == 'America/Los_Angeles' %}selected{% endif %}>Pacific Time</option>
+                                    <option value="Europe/London" {% if user.preferences.timezone == 'Europe/London' %}selected{% endif %}>London</option>
+                                    <option value="Europe/Paris" {% if user.preferences.timezone == 'Europe/Paris' %}selected{% endif %}>Paris</option>
+                                    <option value="Asia/Tokyo" {% if user.preferences.timezone == 'Asia/Tokyo' %}selected{% endif %}>Tokyo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end mt-6">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save mr-2"></i>Save Preferences
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column - Account Info & Sessions -->
+        <div class="space-y-6">
+            <!-- Account Information -->
+            <div class="profile-section">
+                <h2 class="section-title">
+                    <i class="fas fa-info-circle mr-2 text-primary"></i>Account Info
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">User ID</label>
+                        <p class="text-lg font-mono">#{{ user.id }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Member Since</label>
+                        <p class="text-lg">{{ user.date_joined|date:"F j, Y" }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Last Login</label>
+                        <p class="text-lg">
+                            {% if user.last_login %}
+                                {{ user.last_login|timesince }} ago
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Role</label>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="badge badge-primary">
+                                <i class="fas fa-{{ user.role.icon|default:'user' }} mr-1"></i>
+                                {{ user.role.display_name }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Sessions -->
+            <div class="profile-section">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="section-title mb-0">
+                        <i class="fas fa-desktop mr-2 text-primary"></i>Active Sessions
+                    </h2>
+                    <span class="badge badge-info">{{ active_sessions.count }}</span>
+                </div>
+                
+                <div class="space-y-3">
+                    {% for session in active_sessions %}
+                    <div class="session-item {% if session.is_current %}session-current{% endif %}">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <i class="fas fa-{{ session.device_type|default:'desktop' }} text-gray-500"></i>
+                                <span class="font-medium">{{ session.device_name|default:"Unknown Device" }}</span>
+                                {% if session.is_current %}
+                                    <span class="badge badge-primary badge-sm">Current</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="text-sm text-gray-600 space-y-1">
+                                <p>
+                                    <i class="fas fa-map-marker-alt mr-1"></i>
+                                    {{ session.ip_address }} - {{ session.location|default:"Unknown location" }}
+                                </p>
+                                <p>
+                                    <i class="fas fa-clock mr-1"></i>
+                                    Started {{ session.created_at|timesince }} ago
+                                </p>
+                                <p>
+                                    <i class="fas fa-heart-pulse mr-1"></i>
+                                    Last seen {{ session.last_activity|timesince }} ago
+                                </p>
+                            </div>
+                        </div>
+                        
+                        {% if not session.is_current %}
+                        <button class="btn btn-ghost btn-sm text-error" onclick="terminateSession('{{ session.id }}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-6">
+                        <i class="fas fa-desktop text-3xl text-gray-300 mb-2"></i>
+                        <p class="text-gray-500">No active sessions</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if active_sessions.count > 1 %}
+                <div class="mt-4">
+                    <button class="btn btn-outline btn-sm w-full" onclick="terminateAllOtherSessions()">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Terminate All Other Sessions
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Security Summary -->
+            <div class="profile-section">
+                <h2 class="section-title">
+                    <i class="fas fa-shield-alt mr-2 text-primary"></i>Security
+                </h2>
+                
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Password Strength</span>
+                        <span class="badge badge-success badge-sm">Strong</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Two-Factor Auth</span>
+                        <span class="badge badge-warning badge-sm">Not Enabled</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Failed Logins (30d)</span>
+                        <span class="badge badge-info badge-sm">{{ user.failed_login_attempts }}</span>
+                    </div>
+                </div>
+                
+                <div class="mt-4 space-y-2">
+                    <button class="btn btn-outline btn-sm w-full" onclick="downloadSecurityReport()">
+                        <i class="fas fa-download mr-2"></i>Security Report
+                    </button>
+                    <button class="btn btn-outline btn-sm w-full" onclick="enable2FA()">
+                        <i class="fas fa-mobile-alt mr-2"></i>Enable 2FA
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="profile-section">
+                <h2 class="section-title">
+                    <i class="fas fa-bolt mr-2 text-primary"></i>Quick Actions
+                </h2>
+                
+                <div class="space-y-2">
+                    <button class="btn btn-outline btn-sm w-full" onclick="clearCache()">
+                        <i class="fas fa-broom mr-2"></i>Clear Cache
+                    </button>
+                    <button class="btn btn-outline btn-sm w-full" onclick="exportProfile()">
+                        <i class="fas fa-download mr-2"></i>Export Profile Data
+                    </button>
+                    <button class="btn btn-outline btn-sm w-full text-warning" onclick="deleteAccount()">
+                        <i class="fas fa-user-times mr-2"></i>Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<dialog id="confirmation-modal" class="modal">
+    <form method="dialog" class="modal-box">
+        <h3 class="font-bold text-lg" id="modal-title">Confirm Action</h3>
+        <p class="py-4" id="modal-message">Are you sure you want to perform this action?</p>
+        <div class="modal-action">
+            <button class="btn" type="button" onclick="document.getElementById('confirmation-modal').close()">Cancel</button>
+            <button class="btn btn-primary" id="modal-confirm" type="button">Confirm</button>
+        </div>
+    </form>
+</dialog>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializePasswordValidation();
+    initializeFormHandlers();
+});
+
+function initializePasswordValidation() {
+    const newPassword = document.getElementById('new-password');
+    const confirmPassword = document.getElementById('confirm-password');
+    const strengthBar = document.getElementById('password-strength');
+    const strengthText = document.getElementById('password-strength-text');
+    const matchIcon = document.getElementById('password-match-icon');
+    
+    if (!newPassword) return; // Exit if elements don't exist
+    
+    newPassword.addEventListener('input', function() {
+        const password = this.value;
+        const strength = calculatePasswordStrength(password);
+        updatePasswordStrength(strength, strengthBar, strengthText);
+        checkPasswordMatch();
+    });
+    
+    confirmPassword.addEventListener('input', checkPasswordMatch);
+    
+    function calculatePasswordStrength(password) {
+        let score = 0;
+        const checks = {
+            length: password.length >= 8,
+            lowercase: /[a-z]/.test(password),
+            uppercase: /[A-Z]/.test(password),
+            numbers: /\d/.test(password),
+            symbols: /[^A-Za-z0-9]/.test(password)
+        };
+        
+        score = Object.values(checks).filter(check => check).length;
+        
+        if (score < 3) return { level: 'weak', score };
+        if (score < 4) return { level: 'fair', score };
+        if (score < 5) return { level: 'good', score };
+        return { level: 'strong', score };
+    }
+    
+    function updatePasswordStrength(strength, bar, text) {
+        bar.className = `password-strength strength-${strength.level}`;
+        
+        const messages = {
+            weak: 'Weak password - add more variety',
+            fair: 'Fair password - consider adding symbols',
+            good: 'Good password - very secure',
+            strong: 'Strong password - excellent!'
+        };
+        
+        text.textContent = messages[strength.level];
+        text.className = `text-sm mt-1 ${strength.level === 'weak' ? 'text-error' : strength.level === 'fair' ? 'text-warning' : 'text-success'}`;
+    }
+    
+    function checkPasswordMatch() {
+        const match = newPassword.value && confirmPassword.value && newPassword.value === confirmPassword.value;
+        
+        if (confirmPassword.value) {
+            matchIcon.innerHTML = match
+                ? '<i class="fas fa-check text-success"></i>'
+                : '<i class="fas fa-times text-error"></i>';
+        } else {
+            matchIcon.innerHTML = '';
+        }
+    }
+}
+
+function togglePassword(fieldId, eyeId) {
+    const field = document.getElementById(fieldId);
+    const icon = document.getElementById(eyeId);
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        field.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+function initializeFormHandlers() {
+    // Profile form handler
+    document.getElementById('profile-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitForm(this, 'Profile updated successfully');
+    });
+    
+    // Password form handler
+    const passwordForm = document.getElementById('password-form');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (newPassword !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+            
+            submitForm(this, 'Password updated successfully');
+        });
+    }
+    
+    // Preferences form handler
+    document.getElementById('preferences-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitForm(this, 'Preferences updated successfully');
+    });
+}
+
+function submitForm(form, successMessage) {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>Saving...';
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+            'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(successMessage, 'success');
+            if (form.id === 'password-form') {
+                form.reset(); // Clear password form after successful change
+            }
+        } else {
+            showToast(data.error || 'Update failed', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Network error occurred', 'error');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+}
+
+// Session management
+function terminateSession(sessionId) {
+    showConfirmModal(
+        'Terminate Session',
+        'Are you sure you want to terminate this session? You will be logged out from that device.',
+        () => performSessionAction('terminate', sessionId)
+    );
+}
+
+function terminateAllOtherSessions() {
+    showConfirmModal(
+        'Terminate All Other Sessions',
+        'Are you sure you want to terminate all other sessions? You will be logged out from all other devices.',
+        () => performSessionAction('terminate-all')
+    );
+}
+
+function performSessionAction(action, sessionId = null) {
+    const url = sessionId 
+        ? `/auth/sessions/${sessionId}/${action}/`
+        : `/auth/sessions/${action}/`;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message || 'Session action completed', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(data.error || 'Session action failed', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Network error occurred', 'error');
+    });
+}
+
+// Quick actions
+function clearCache() {
+    showConfirmModal(
+        'Clear Cache',
+        'This will clear your browser cache and preferences. Continue?',
+        () => {
+            localStorage.clear();
+            sessionStorage.clear();
+            showToast('Cache cleared successfully', 'success');
+        }
+    );
+}
+
+function exportProfile() {
+    fetch('/auth/profile/export/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'profile-data.json';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        showToast('Profile data exported', 'success');
+    })
+    .catch(error => {
+        showToast('Export failed', 'error');
+    });
+}
+
+function downloadSecurityReport() {
+    window.open('/auth/security-report/', '_blank');
+}
+
+function enable2FA() {
+    // Redirect to 2FA setup page
+    window.location.href = '/auth/2fa/setup/';
+}
+
+function deleteAccount() {
+    showConfirmModal(
+        'Delete Account',
+        'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
+        () => {
+            fetch('/auth/profile/delete/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Account deletion initiated. You will receive an email confirmation.', 'info');
+                } else {
+                    showToast(data.error || 'Deletion failed', 'error');
+                }
+            });
+        },
+        'btn-error'
+    );
+}
+
+// Helper functions
+function showConfirmModal(title, message, onConfirm, buttonClass = 'btn-primary') {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-message').textContent = message;
+    
+    const confirmBtn = document.getElementById('modal-confirm');
+    confirmBtn.className = `btn ${buttonClass}`;
+    confirmBtn.onclick = () => {
+        onConfirm();
+        document.getElementById('confirmation-modal').close();
+    };
+    
+    document.getElementById('confirmation-modal').showModal();
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-end';
+    toast.innerHTML = `
+        <div class="alert alert-${type}">
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Auto-save preferences
+function initializeAutoSave() {
+    const preferenceInputs = document.querySelectorAll('#preferences-form input, #preferences-form select');
+    let autoSaveTimeout;
+    
+    preferenceInputs.forEach(input => {
+        input.addEventListener('change', () => {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                document.getElementById('preferences-form').dispatchEvent(new Event('submit'));
+            }, 2000);
+        });
+    });
+}
+
+// Initialize auto-save after DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeAutoSave);
+</script>
+{% endblock %}

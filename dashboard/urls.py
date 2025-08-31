@@ -1,9 +1,14 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 from .views_grouped_logs import grouped_logs_view
+from .views import auth
+
+app_name = 'dashboard'
 
 urlpatterns = [
-    path('', views.clickhouse_logs_view, name='root_redirect_to_logs'),
+    # Main dashboard
+    path('', views.clickhouse_logs_view, name='index'),
+    path('uitest/', views.uitest_view, name='uitest'),
     path('logs/', views.clickhouse_logs_view, name='clickhouse_logs'),
     path('top-summary/', views.top_summary_view, name='top_summary'),
     path('grouped-logs/', grouped_logs_view, name='grouped_logs'),

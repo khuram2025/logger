@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Header Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .navbar {
+            background-color: #343a40 !important;
+            color: #f8f9fa !important;
+            min-height: 50px;
+            height: 50px;
+            padding: 0 20px;
+        }
+
+        .navbar .menu li > a.active {
+            background-color: #ff7f0e !important;
+            color: #fff !important;
+        }
+
+        .navbar .menu li > a:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: #fff !important;
+        }
+
+        .navbar .btn-ghost {
+            color: #adb5bd !important;
+        }
+
+        .navbar .btn-ghost:hover {
+            color: #fff !important;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .navbar .dropdown-content.menu {
+            background: #fff !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e5e7eb;
+        }
+
+        .navbar .dropdown-content.menu li a {
+            color: #374151 !important;
+            padding: 12px 16px;
+        }
+
+        .navbar .dropdown-content.menu li a:hover {
+            background-color: #f3f4f6 !important;
+            color: #667eea !important;
+        }
+
+        .navbar .dropdown-content.menu .text-error {
+            color: #dc2626 !important;
+        }
+
+        .navbar .dropdown-content.menu .text-error:hover {
+            background-color: #fef2f2 !important;
+            color: #dc2626 !important;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar bg-base-300 shadow-lg">
+        <div class="navbar-start">
+            <div class="hidden lg:flex">
+                <ul class="menu menu-horizontal px-1">
+                    <li><a href="#" class="active">Top Summary</a></li>
+                    <li><a href="#">URL Summary</a></li>
+                    <li><a href="#">Logs</a></li>
+                    <li><a href="#">PA URL Logs</a></li>
+                    <li><a href="#">Grouped Logs</a></li>
+                    <li><a href="#">System Config</a></li>
+                    <li><a href="#">Log Sources</a></li>
+                    <li><a href="#">Log Management</a></li>
+                    
+                    <li>
+                        <details class="dropdown">
+                            <summary class="m-1 btn btn-sm btn-ghost">
+                                <i class="fas fa-users mr-1"></i>Users
+                                <i class="fas fa-chevron-down ml-1"></i>
+                            </summary>
+                            <ul class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                                <li><a href="#">
+                                    <i class="fas fa-list mr-2"></i>User List
+                                </a></li>
+                                <li><a href="#">
+                                    <i class="fas fa-user-plus mr-2"></i>Add User
+                                </a></li>
+                                <li><a href="#">
+                                    <i class="fas fa-history mr-2"></i>Audit Logs
+                                </a></li>
+                            </ul>
+                        </details>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Mobile menu button -->
+            <div class="dropdown lg:hidden">
+                <div tabindex="0" role="button" class="btn btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+                    </svg>
+                </div>
+                <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+                    <li><a href="#">Top Summary</a></li>
+                    <li><a href="#">URL Summary</a></li>
+                    <li><a href="#">Logs</a></li>
+                    <li><a href="#">PA URL Logs</a></li>
+                    <li><a href="#">Grouped Logs</a></li>
+                    <li><a href="#">System Config</a></li>
+                    <li><a href="#">Log Sources</a></li>
+                    <li><a href="#">Log Management</a></li>
+                    <li>
+                        <details>
+                            <summary>Users</summary>
+                            <ul>
+                                <li><a href="#">User List</a></li>
+                                <li><a href="#">Add User</a></li>
+                                <li><a href="#">Audit Logs</a></li>
+                            </ul>
+                        </details>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="navbar-end">
+            <div class="flex items-center space-x-2">
+                <!-- Notifications -->
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-circle" id="notifications-btn">
+                        <div class="indicator">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge badge-sm badge-primary indicator-item">3</span>
+                        </div>
+                    </div>
+                    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-80">
+                        <li class="menu-title">
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <h3 class="text-lg font-semibold">Notifications</h3>
+                                <button class="btn btn-ghost btn-xs text-primary">Mark all read</button>
+                            </div>
+                        </li>
+                        <div class="divider my-0"></div>
+                        <li>
+                            <div class="text-center py-8">
+                                <i class="fas fa-bell-slash text-3xl opacity-30 mb-2"></i>
+                                <p class="opacity-60">No notifications</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Help -->
+                <div class="tooltip tooltip-bottom" data-tip="Help & Shortcuts">
+                    <button class="btn btn-ghost btn-circle">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                </div>
+                
+                <!-- Settings -->
+                <div class="tooltip tooltip-bottom" data-tip="System Settings">
+                    <button class="btn btn-ghost btn-circle">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+                
+                <!-- User Menu Dropdown -->
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost" id="user-menu-toggle">
+                        <div class="flex items-center space-x-2">
+                            <div class="avatar">
+                                <div class="w-8 rounded-full bg-primary text-primary-content">
+                                    <div class="flex items-center justify-center h-full">
+                                        <i class="fas fa-user text-sm"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="hidden md:block">
+                                <div class="text-sm font-medium">John Doe</div>
+                                <div class="text-xs opacity-75">Administrator</div>
+                            </div>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <ul tabindex="0" class="dropdown-content z-[1] menu p-0 shadow-lg bg-base-100 rounded-box w-80">
+                        <!-- User Profile Section -->
+                        <li class="menu-title">
+                            <div class="flex items-center space-x-3 px-4 py-3">
+                                <div class="avatar">
+                                    <div class="w-10 rounded-full bg-primary text-primary-content">
+                                        <div class="flex items-center justify-center h-full">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium">John Doe</div>
+                                    <div class="text-sm opacity-60">john.doe@example.com</div>
+                                    <div class="flex items-center space-x-2 mt-1">
+                                        <div class="badge badge-primary badge-xs">Administrator</div>
+                                        <div class="badge badge-success badge-xs">
+                                            <div class="w-1 h-1 bg-white rounded-full mr-1"></div>
+                                            Online
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <div class="divider my-0"></div>
+                        
+                        <!-- Menu Items -->
+                        <li><a href="#"><i class="fas fa-user"></i>My Profile</a></li>
+                        <li><a href="#"><i class="fas fa-cog"></i>Account Settings</a></li>
+                        <li><a href="#"><i class="fas fa-desktop"></i>Active Sessions<div class="badge badge-info badge-sm ml-auto">2</div></a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i>Security Activity</a></li>
+                        
+                        <div class="divider my-0"></div>
+                        
+                        <li><a href="#"><i class="fas fa-users"></i>Manage Users</a></li>
+                        <li><a href="#"><i class="fas fa-server"></i>System Status</a></li>
+                        <li><a href="#"><i class="fas fa-history"></i>Audit Logs</a></li>
+                        
+                        <div class="divider my-0"></div>
+                        
+                        <!-- Theme Toggle -->
+                        <li><button class="justify-start"><i class="fas fa-moon"></i>Dark Mode</button></li>
+                        <li><button class="justify-start"><i class="fas fa-keyboard"></i>Keyboard Shortcuts</button></li>
+                        <li><button class="justify-start"><i class="fas fa-info-circle"></i>About</button></li>
+                        
+                        <div class="divider my-0"></div>
+                        
+                        <!-- Logout -->
+                        <li><a href="#" class="text-error"><i class="fas fa-sign-out-alt"></i>Sign Out</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="p-8">
+        <h1 class="text-2xl font-bold mb-4">Network Analyzer Dashboard</h1>
+        <p>This is a test of the updated header with proper Daisy UI components and user information display.</p>
+        <div class="mt-8">
+            <h2 class="text-lg font-semibold mb-2">Features Implemented:</h2>
+            <ul class="list-disc list-inside space-y-1">
+                <li>✅ Modern Daisy UI navbar structure</li>
+                <li>✅ Responsive design with mobile menu</li>
+                <li>✅ User dropdown with profile information</li>
+                <li>✅ Notification indicator with dropdown</li>
+                <li>✅ Help and settings tooltips</li>
+                <li>✅ Proper role and status display</li>
+                <li>✅ Admin-only sections for user management</li>
+                <li>✅ Clean logout and theme toggle</li>
+            </ul>
+        </div>
+    </main>
+</body>
+</html>

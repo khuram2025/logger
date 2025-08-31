@@ -1,23 +1,275 @@
-<header class="main-header">
-    <div class="main-nav-links">
-        <a href="{% url 'top_summary' %}" {% if request.resolver_match.url_name == 'top_summary' %}class="active"{% endif %}>Top Summary</a>
-        <a href="{% url 'url_summary' %}" {% if request.resolver_match.url_name == 'url_summary' %}class="active"{% endif %}>URL Summary</a>
-        <a href="{% url 'clickhouse_logs' %}" {% if request.resolver_match.url_name == 'clickhouse_logs' %}class="active"{% endif %}>Logs</a>
-        <a href="{% url 'pa_url_logs' %}" {% if request.resolver_match.url_name == 'pa_url_logs' %}class="active"{% endif %}>PA URL Logs</a>
-        <a href="{% url 'grouped_logs' %}" {% if request.resolver_match.url_name == 'grouped_logs' %}class="active"{% endif %}>Grouped Logs</a>
-        <a href="{% url 'system_config' %}" {% if request.resolver_match.url_name == 'system_config' %}class="active"{% endif %}>System Config</a>
-        <a href="{% url 'log_sources' %}" {% if request.resolver_match.url_name == 'log_sources' %}class="active"{% endif %}>Log Sources</a>
-        <a href="{% url 'log_management' %}" {% if request.resolver_match.url_name == 'log_management' %}class="active"{% endif %}>Log Management</a>
-    </div>
-    <div class="user-actions">
-        <button class="icon-button">
-            <i class="fas fa-bell"></i>
-            <span class="badge">100</span>
-        </button>
-        <button class="icon-button"><i class="fas fa-question-circle"></i></button>
-        <button class="icon-button"><i class="fas fa-cog"></i></button>
-        <div class="user-menu">
-            admin (admin) <i class="fas fa-caret-down"></i>
+{% load static %}
+<header class="navbar bg-base-300 shadow-lg min-h-16 px-4">
+    <div class="navbar-start">
+        <div class="hidden lg:flex">
+            <ul class="menu menu-horizontal px-1">
+                <li><a href="{% url 'top_summary' %}" class="{% if request.resolver_match.url_name == 'top_summary' %}active{% endif %}">Top Summary</a></li>
+                <li><a href="{% url 'url_summary' %}" class="{% if request.resolver_match.url_name == 'url_summary' %}active{% endif %}">URL Summary</a></li>
+                <li><a href="{% url 'clickhouse_logs' %}" class="{% if request.resolver_match.url_name == 'clickhouse_logs' %}active{% endif %}">Logs</a></li>
+                <li><a href="{% url 'pa_url_logs' %}" class="{% if request.resolver_match.url_name == 'pa_url_logs' %}active{% endif %}">PA URL Logs</a></li>
+                <li><a href="{% url 'grouped_logs' %}" class="{% if request.resolver_match.url_name == 'grouped_logs' %}active{% endif %}">Grouped Logs</a></li>
+                <li><a href="{% url 'system_config' %}" class="{% if request.resolver_match.url_name == 'system_config' %}active{% endif %}">System Config</a></li>
+                <li><a href="{% url 'log_sources' %}" class="{% if request.resolver_match.url_name == 'log_sources' %}active{% endif %}">Log Sources</a></li>
+                <li><a href="{% url 'log_management' %}" class="{% if request.resolver_match.url_name == 'log_management' %}active{% endif %}">Log Management</a></li>
+                
+                <!-- Admin-only navigation items -->
+                {% if user.is_authenticated and user.role.can_manage_users %}
+                <li>
+                    <details class="dropdown">
+                        <summary class="m-1 btn btn-sm btn-ghost">
+                            <i class="fas fa-users mr-1"></i>Users
+                            <i class="fas fa-chevron-down ml-1"></i>
+                        </summary>
+                        <ul class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                            <li><a href="{% url 'auth:user_list' %}">
+                                <i class="fas fa-list mr-2"></i>User List
+                            </a></li>
+                            <li><a href="{% url 'auth:user_create' %}">
+                                <i class="fas fa-user-plus mr-2"></i>Add User
+                            </a></li>
+                            <li><a href="{% url 'auth:audit_logs' %}">
+                                <i class="fas fa-history mr-2"></i>Audit Logs
+                            </a></li>
+                        </ul>
+                    </details>
+                </li>
+                {% endif %}
+            </ul>
         </div>
+        
+        <!-- Mobile menu button -->
+        <div class="dropdown lg:hidden">
+            <div tabindex="0" role="button" class="btn btn-ghost">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+                </svg>
+            </div>
+            <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+                <li><a href="{% url 'top_summary' %}">Top Summary</a></li>
+                <li><a href="{% url 'url_summary' %}">URL Summary</a></li>
+                <li><a href="{% url 'clickhouse_logs' %}">Logs</a></li>
+                <li><a href="{% url 'pa_url_logs' %}">PA URL Logs</a></li>
+                <li><a href="{% url 'grouped_logs' %}">Grouped Logs</a></li>
+                <li><a href="{% url 'system_config' %}">System Config</a></li>
+                <li><a href="{% url 'log_sources' %}">Log Sources</a></li>
+                <li><a href="{% url 'log_management' %}">Log Management</a></li>
+                {% if user.is_authenticated and user.role.can_manage_users %}
+                <li>
+                    <details>
+                        <summary>Users</summary>
+                        <ul>
+                            <li><a href="{% url 'auth:user_list' %}">User List</a></li>
+                            <li><a href="{% url 'auth:user_create' %}">Add User</a></li>
+                            <li><a href="{% url 'auth:audit_logs' %}">Audit Logs</a></li>
+                        </ul>
+                    </details>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    
+    <div class="navbar-end">
+        {% if user.is_authenticated %}
+            <div class="flex items-center gap-2">
+                <!-- Notifications -->
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-circle" id="notifications-btn">
+                        <div class="indicator">
+                            <i class="fas fa-bell"></i>
+                            {% if user.unread_notifications.count > 0 %}
+                            <span class="badge badge-sm badge-primary indicator-item" id="notification-count">{{ user.unread_notifications.count }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-80">
+                        <li class="menu-title">
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <h3 class="text-lg font-semibold">Notifications</h3>
+                                {% if user.unread_notifications.count > 0 %}
+                                <button class="btn btn-ghost btn-xs text-primary" onclick="markAllAsRead()">
+                                    Mark all read
+                                </button>
+                                {% endif %}
+                            </div>
+                        </li>
+                        <div class="divider my-0"></div>
+                        
+                        <div class="max-h-96 overflow-y-auto">
+                            {% for notification in user.recent_notifications|slice:":5" %}
+                            <li>
+                                <div class="flex items-start space-x-3 p-2 {% if not notification.is_read %}bg-base-200{% endif %}">
+                                    <div class="avatar">
+                                        <div class="w-8 h-8 rounded-full bg-{{ notification.type|default:'info' }}">
+                                            <div class="flex items-center justify-center h-full text-white">
+                                                <i class="fas fa-{{ notification.icon|default:'bell' }} text-xs"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="font-medium text-sm">{{ notification.title }}</p>
+                                        <p class="text-sm opacity-60 mt-1">{{ notification.message|truncatechars:80 }}</p>
+                                        <p class="text-xs opacity-40 mt-2">{{ notification.created_at|timesince }} ago</p>
+                                    </div>
+                                    {% if not notification.is_read %}
+                                    <div class="badge badge-primary badge-xs"></div>
+                                    {% endif %}
+                                </div>
+                            </li>
+                            {% empty %}
+                            <li>
+                                <div class="text-center py-8">
+                                    <i class="fas fa-bell-slash text-3xl opacity-30 mb-2"></i>
+                                    <p class="opacity-60">No notifications</p>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if user.notifications.count > 5 %}
+                        <div class="divider my-0"></div>
+                        <li>
+                            <a href="{% url 'auth:all_notifications' %}" class="text-center text-primary">
+                                View all notifications ({{ user.notifications.count }})
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <!-- Help -->
+                <div class="tooltip tooltip-bottom" data-tip="Help & Shortcuts">
+                    <button class="btn btn-ghost btn-circle" onclick="showKeyboardShortcuts()">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                </div>
+                
+                <!-- Settings (Admin only) -->
+                {% if user.is_staff %}
+                <div class="tooltip tooltip-bottom" data-tip="System Settings">
+                    <button class="btn btn-ghost btn-circle" onclick="window.location.href='{% url 'system_config' %}'">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+                {% endif %}
+                
+                <!-- User Menu Dropdown -->
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost" id="user-menu-toggle">
+                        <div class="flex items-center space-x-2">
+                            <div class="avatar">
+                                <div class="w-8 rounded-full bg-primary text-primary-content">
+                                    <div class="flex items-center justify-center h-full">
+                                        <i class="fas fa-user text-sm"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="hidden md:block">
+                                <div class="text-sm font-medium">{{ user.get_full_name|default:user.username }}</div>
+                                <div class="text-xs opacity-75">{{ user.role.display_name }}</div>
+                            </div>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <ul tabindex="0" class="dropdown-content z-[1] menu p-0 shadow-lg bg-base-100 rounded-box w-80">
+                        <!-- User Profile Section -->
+                        <li class="menu-title">
+                            <div class="flex items-center space-x-3 px-4 py-3">
+                                <div class="avatar">
+                                    <div class="w-10 rounded-full bg-primary text-primary-content">
+                                        <div class="flex items-center justify-center h-full">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium">{{ user.get_full_name|default:user.username }}</div>
+                                    <div class="text-sm opacity-60">{{ user.email|default:"No email" }}</div>
+                                    <div class="flex items-center space-x-2 mt-1">
+                                        <div class="badge badge-primary badge-xs">{{ user.role.display_name }}</div>
+                                        {% if user.is_online %}
+                                        <div class="badge badge-success badge-xs">
+                                            <div class="w-1 h-1 bg-white rounded-full mr-1"></div>
+                                            Online
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <div class="divider my-0"></div>
+                        
+                        <!-- Menu Items -->
+                        <li><a href="{% url 'auth:user_profile' %}">
+                            <i class="fas fa-user"></i>My Profile
+                        </a></li>
+                        
+                        <li><a href="{% url 'auth:profile_settings' %}">
+                            <i class="fas fa-cog"></i>Account Settings
+                        </a></li>
+                        
+                        <li><a href="{% url 'auth:user_sessions' %}">
+                            <i class="fas fa-desktop"></i>Active Sessions
+                            {% if user.active_sessions.count > 1 %}
+                            <div class="badge badge-info badge-sm ml-auto">{{ user.active_sessions.count }}</div>
+                            {% endif %}
+                        </a></li>
+                        
+                        <li><a href="{% url 'auth:security_log' %}">
+                            <i class="fas fa-shield-alt"></i>Security Activity
+                        </a></li>
+                        
+                        <!-- Admin Menu Items -->
+                        {% if user.is_staff or user.role.can_manage_users %}
+                        <div class="divider my-0"></div>
+                        
+                        {% if user.role.can_manage_users %}
+                        <li><a href="{% url 'auth:user_list' %}">
+                            <i class="fas fa-users"></i>Manage Users
+                        </a></li>
+                        {% endif %}
+                        
+                        {% if user.is_staff %}
+                        <li><a href="{% url 'auth:system_status' %}">
+                            <i class="fas fa-server"></i>System Status
+                        </a></li>
+                        
+                        <li><a href="{% url 'auth:audit_logs' %}">
+                            <i class="fas fa-history"></i>Audit Logs
+                        </a></li>
+                        {% endif %}
+                        {% endif %}
+                        
+                        <div class="divider my-0"></div>
+                        
+                        <!-- Theme Toggle -->
+                        <li><button class="justify-start" onclick="toggleTheme()">
+                            <i class="fas fa-moon" id="theme-icon"></i>
+                            <span id="theme-text">Dark Mode</span>
+                        </button></li>
+                        
+                        <li><button class="justify-start" onclick="showKeyboardShortcuts()">
+                            <i class="fas fa-keyboard"></i>Keyboard Shortcuts
+                        </button></li>
+                        
+                        <li><button class="justify-start" onclick="showAbout()">
+                            <i class="fas fa-info-circle"></i>About
+                        </button></li>
+                        
+                        <div class="divider my-0"></div>
+                        
+                        <!-- Logout -->
+                        <li><a href="{% url 'auth:logout' %}" class="text-error">
+                            <i class="fas fa-sign-out-alt"></i>Sign Out
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        {% else %}
+            <!-- Not authenticated - show login button -->
+            <a href="{% url 'auth:login' %}" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+            </a>
+        {% endif %}
     </div>
 </header>

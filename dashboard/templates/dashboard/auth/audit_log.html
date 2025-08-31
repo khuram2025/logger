@@ -1,0 +1,914 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Audit Logs - Network Analyzer{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<style>
+    .audit-row {
+        transition: all 0.2s ease;
+    }
+    .audit-row:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+    .action-badge {
+        @apply px-3 py-1 rounded-full text-xs font-medium;
+    }
+    .action-login { @apply bg-green-100 text-green-800; }
+    .action-logout { @apply bg-blue-100 text-blue-800; }
+    .action-create { @apply bg-purple-100 text-purple-800; }
+    .action-update { @apply bg-orange-100 text-orange-800; }
+    .action-delete { @apply bg-red-100 text-red-800; }
+    .action-view { @apply bg-gray-100 text-gray-800; }
+    .action-failed { @apply bg-red-100 text-red-800; }
+    .action-error { @apply bg-red-200 text-red-900; }
+    
+    .risk-low { @apply bg-green-100 text-green-800; }
+    .risk-medium { @apply bg-yellow-100 text-yellow-800; }
+    .risk-high { @apply bg-orange-100 text-orange-800; }
+    .risk-critical { @apply bg-red-100 text-red-800; }
+    
+    .details-panel {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+    }
+    .details-panel.expanded {
+        max-height: 800px;
+    }
+    
+    .filter-section {
+        @apply bg-base-100 rounded-lg shadow-sm border border-base-300 p-4 mb-6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 max-w-full">
+    <!-- Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-history mr-3 text-primary"></i>Audit Logs
+            </h1>
+            <p class="text-gray-600 mt-2">Security and activity monitoring for the system</p>
+        </div>
+        <div class="mt-4 lg:mt-0 flex space-x-3">
+            <button class="btn btn-outline btn-sm" onclick="refreshLogs()">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="exportLogs()">
+                <i class="fas fa-download mr-2"></i>Export
+            </button>
+            <div class="dropdown dropdown-end">
+                <label tabindex="0" class="btn btn-outline btn-sm">
+                    <i class="fas fa-cog mr-2"></i>Settings
+                </label>
+                <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+                    <li><a onclick="configureAlerts()">
+                        <i class="fas fa-bell"></i>Configure Alerts
+                    </a></li>
+                    <li><a onclick="manageRetention()">
+                        <i class="fas fa-clock"></i>Log Retention
+                    </a></li>
+                    <li><a onclick="viewStatistics()">
+                        <i class="fas fa-chart-bar"></i>Statistics
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="stat bg-base-100 shadow rounded-lg">
+            <div class="stat-figure text-info">
+                <i class="fas fa-list text-2xl"></i>
+            </div>
+            <div class="stat-title">Total Events</div>
+            <div class="stat-value text-info">{{ total_events|floatformat:0 }}</div>
+            <div class="stat-desc">{{ period_desc|default:"All time" }}</div>
+        </div>
+        
+        <div class="stat bg-base-100 shadow rounded-lg">
+            <div class="stat-figure text-success">
+                <i class="fas fa-sign-in-alt text-2xl"></i>
+            </div>
+            <div class="stat-title">Login Events</div>
+            <div class="stat-value text-success">{{ login_events|floatformat:0 }}</div>
+            <div class="stat-desc">{{ login_success_rate }}% successful</div>
+        </div>
+        
+        <div class="stat bg-base-100 shadow rounded-lg">
+            <div class="stat-figure text-warning">
+                <i class="fas fa-exclamation-triangle text-2xl"></i>
+            </div>
+            <div class="stat-title">Failed Attempts</div>
+            <div class="stat-value text-warning">{{ failed_events|floatformat:0 }}</div>
+            <div class="stat-desc">Security incidents</div>
+        </div>
+        
+        <div class="stat bg-base-100 shadow rounded-lg">
+            <div class="stat-figure text-error">
+                <i class="fas fa-shield-alt text-2xl"></i>
+            </div>
+            <div class="stat-title">High Risk</div>
+            <div class="stat-value text-error">{{ high_risk_events|floatformat:0 }}</div>
+            <div class="stat-desc">Critical activities</div>
+        </div>
+    </div>
+
+    <!-- Advanced Filters -->
+    <div class="filter-section">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
+            <h2 class="text-lg font-semibold flex items-center">
+                <i class="fas fa-filter mr-2 text-primary"></i>Filters
+            </h2>
+            <button class="btn btn-ghost btn-sm" onclick="resetFilters()">
+                <i class="fas fa-undo mr-2"></i>Reset All
+            </button>
+        </div>
+        
+        <form id="filter-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            <!-- Date Range -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-medium">Date Range</span>
+                </label>
+                <input type="text" class="input input-bordered input-sm" id="date-range" placeholder="Select date range">
+            </div>
+            
+            <!-- User Filter -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-medium">User</span>
+                </label>
+                <select class="select select-bordered select-sm" id="user-filter" name="user">
+                    <option value="">All Users</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Action Filter -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-medium">Action</span>
+                </label>
+                <select class="select select-bordered select-sm" id="action-filter" name="action">
+                    <option value="">All Actions</option>
+                    <option value="login">Login</option>
+                    <option value="logout">Logout</option>
+                    <option value="create">Create</option>
+                    <option value="update">Update</option>
+                    <option value="delete">Delete</option>
+                    <option value="view">View</option>
+                    <option value="failed">Failed Login</option>
+                    <option value="error">Error</option>
+                </select>
+            </div>
+            
+            <!-- Risk Level -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-medium">Risk Level</span>
+                </label>
+                <select class="select select-bordered select-sm" id="risk-filter" name="risk">
+                    <option value="">All Levels</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                </select>
+            </div>
+            
+            <!-- IP Address -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-medium">IP Address</span>
+                </label>
+                <input type="text" class="input input-bordered input-sm" id="ip-filter" name="ip" placeholder="IP address">
+            </div>
+            
+            <!-- Search -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-medium">Search</span>
+                </label>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="input input-bordered input-sm" id="search-filter" name="search" placeholder="Search logs...">
+                    <button type="button" class="btn btn-square btn-sm" onclick="applyFilters()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Quick Filters -->
+        <div class="flex flex-wrap gap-2 mt-4">
+            <button class="btn btn-outline btn-xs" onclick="quickFilter('today')">Today</button>
+            <button class="btn btn-outline btn-xs" onclick="quickFilter('yesterday')">Yesterday</button>
+            <button class="btn btn-outline btn-xs" onclick="quickFilter('week')">This Week</button>
+            <button class="btn btn-outline btn-xs" onclick="quickFilter('month')">This Month</button>
+            <button class="btn btn-outline btn-xs" onclick="quickFilter('failed-logins')">Failed Logins</button>
+            <button class="btn btn-outline btn-xs" onclick="quickFilter('admin-actions')">Admin Actions</button>
+            <button class="btn btn-outline btn-xs" onclick="quickFilter('high-risk')">High Risk</button>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="card bg-base-100 shadow">
+        <div class="card-body p-0">
+            <!-- Table Header -->
+            <div class="flex items-center justify-between p-4 border-b">
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600" id="results-count">
+                        Showing {{ logs.start_index }} - {{ logs.end_index }} of {{ logs.paginator.count }} results
+                    </span>
+                    <div class="form-control">
+                        <select class="select select-bordered select-sm" id="per-page" onchange="changePageSize()">
+                            <option value="25" {% if request.GET.per_page == '25' %}selected{% endif %}>25 per page</option>
+                            <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50 per page</option>
+                            <option value="100" {% if request.GET.per_page == '100' %}selected{% endif %}>100 per page</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <label class="cursor-pointer label">
+                        <input type="checkbox" class="toggle toggle-sm" id="real-time-toggle" onchange="toggleRealTime()">
+                        <span class="label-text ml-2 text-sm">Real-time</span>
+                    </label>
+                    <div class="dropdown dropdown-end">
+                        <label tabindex="0" class="btn btn-ghost btn-sm">
+                            <i class="fas fa-columns"></i>
+                        </label>
+                        <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-48">
+                            <li class="menu-title">Columns</li>
+                            <li><label class="cursor-pointer label"><input type="checkbox" class="checkbox checkbox-xs" checked>Timestamp</label></li>
+                            <li><label class="cursor-pointer label"><input type="checkbox" class="checkbox checkbox-xs" checked>User</label></li>
+                            <li><label class="cursor-pointer label"><input type="checkbox" class="checkbox checkbox-xs" checked>Action</label></li>
+                            <li><label class="cursor-pointer label"><input type="checkbox" class="checkbox checkbox-xs" checked>IP Address</label></li>
+                            <li><label class="cursor-pointer label"><input type="checkbox" class="checkbox checkbox-xs" checked>Risk</label></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="table table-hover w-full" id="audit-table">
+                    <thead>
+                        <tr class="border-b-2">
+                            <th class="text-left">
+                                <label>
+                                    <input type="checkbox" class="checkbox checkbox-sm" id="select-all" onchange="toggleSelectAll()">
+                                </label>
+                            </th>
+                            <th class="text-left cursor-pointer" onclick="sortBy('timestamp')">
+                                Timestamp
+                                <i class="fas fa-sort ml-1 text-gray-400"></i>
+                            </th>
+                            <th class="text-left cursor-pointer" onclick="sortBy('user')">
+                                User
+                                <i class="fas fa-sort ml-1 text-gray-400"></i>
+                            </th>
+                            <th class="text-center">Action</th>
+                            <th class="text-left">Description</th>
+                            <th class="text-center">IP Address</th>
+                            <th class="text-center">Risk</th>
+                            <th class="text-center">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-tbody">
+                        {% for log in logs %}
+                        <tr class="audit-row border-b log-row" data-risk="{{ log.risk_level }}" data-action="{{ log.action }}" data-user="{{ log.user.id }}">
+                            <th>
+                                <label>
+                                    <input type="checkbox" class="checkbox checkbox-sm log-checkbox" value="{{ log.id }}">
+                                </label>
+                            </th>
+                            <td class="text-sm">
+                                <div class="tooltip" data-tip="{{ log.timestamp|date:'c' }}">
+                                    <div class="font-medium">{{ log.timestamp|date:'M j, H:i' }}</div>
+                                    <div class="text-xs text-gray-500">{{ log.timestamp|timesince }} ago</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center space-x-3">
+                                    <div class="avatar">
+                                        <div class="mask mask-squircle w-8 h-8 bg-primary text-primary-content">
+                                            <div class="flex items-center justify-center h-full">
+                                                <i class="fas fa-user text-xs"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-sm">{{ log.user.username|default:"System" }}</div>
+                                        {% if log.user.email %}
+                                        <div class="text-xs text-gray-500">{{ log.user.email }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="action-badge action-{{ log.action }}">
+                                    <i class="fas fa-{{ log.get_action_icon }} mr-1"></i>
+                                    {{ log.get_action_display }}
+                                </span>
+                            </td>
+                            <td class="text-sm max-w-xs">
+                                <div class="truncate" title="{{ log.description }}">
+                                    {{ log.description }}
+                                </div>
+                                {% if log.resource %}
+                                <div class="text-xs text-gray-500 mt-1">
+                                    Resource: {{ log.resource }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="text-center text-sm">
+                                <div class="font-mono">{{ log.ip_address }}</div>
+                                {% if log.location %}
+                                <div class="text-xs text-gray-500">{{ log.location }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="action-badge risk-{{ log.risk_level }}">
+                                    <i class="fas fa-{{ log.get_risk_icon }} mr-1"></i>
+                                    {{ log.get_risk_level_display|capfirst }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-ghost btn-sm" onclick="toggleDetails('{{ log.id }}')">
+                                    <i class="fas fa-chevron-down" id="chevron-{{ log.id }}"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- Details Panel -->
+                        <tr class="details-panel" id="details-{{ log.id }}">
+                            <td colspan="8" class="bg-base-50 p-0">
+                                <div class="p-6">
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <!-- Event Details -->
+                                        <div>
+                                            <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+                                                <i class="fas fa-info-circle mr-2 text-primary"></i>Event Details
+                                            </h4>
+                                            <div class="space-y-2 text-sm">
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Event ID:</span>
+                                                    <span class="font-mono">{{ log.id }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Timestamp:</span>
+                                                    <span>{{ log.timestamp|date:'Y-m-d H:i:s T' }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">User Agent:</span>
+                                                    <span class="max-w-xs truncate" title="{{ log.user_agent }}">{{ log.user_agent|default:"Unknown" }}</span>
+                                                </div>
+                                                {% if log.session_key %}
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Session:</span>
+                                                    <span class="font-mono">{{ log.session_key|slice:":8" }}...</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Additional Information -->
+                                        <div>
+                                            <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+                                                <i class="fas fa-database mr-2 text-primary"></i>Additional Information
+                                            </h4>
+                                            {% if log.extra_data %}
+                                            <div class="text-sm">
+                                                <pre class="bg-gray-100 p-3 rounded text-xs overflow-auto max-h-40">{{ log.extra_data|pprint }}</pre>
+                                            </div>
+                                            {% else %}
+                                            <p class="text-sm text-gray-500 italic">No additional data available</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Actions -->
+                                    <div class="flex justify-end space-x-2 mt-6 pt-4 border-t">
+                                        {% if log.can_investigate %}
+                                        <button class="btn btn-outline btn-sm" onclick="investigate('{{ log.id }}')">
+                                            <i class="fas fa-search mr-2"></i>Investigate
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-outline btn-sm" onclick="viewRelated('{{ log.id }}')">
+                                            <i class="fas fa-link mr-2"></i>Related Events
+                                        </button>
+                                        {% if log.can_flag %}
+                                        <button class="btn btn-outline btn-sm text-warning" onclick="flagEvent('{{ log.id }}')">
+                                            <i class="fas fa-flag mr-2"></i>Flag
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-8">
+                                <div class="flex flex-col items-center space-y-3">
+                                    <i class="fas fa-history text-4xl text-gray-300"></i>
+                                    <p class="text-gray-500">No audit logs found</p>
+                                    <button class="btn btn-primary btn-sm" onclick="resetFilters()">
+                                        <i class="fas fa-refresh mr-2"></i>Reset Filters
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if logs.has_other_pages %}
+            <div class="flex justify-between items-center p-4 border-t">
+                <div class="text-sm text-gray-600">
+                    Page {{ logs.number }} of {{ logs.paginator.num_pages }}
+                </div>
+                <div class="btn-group">
+                    {% if logs.has_previous %}
+                        <button class="btn btn-sm" onclick="goToPage(1)">First</button>
+                        <button class="btn btn-sm" onclick="goToPage({{ logs.previous_page_number }})">Previous</button>
+                    {% endif %}
+                    
+                    {% for page_num in logs.paginator.page_range %}
+                        {% if page_num == logs.number %}
+                            <button class="btn btn-sm btn-active">{{ page_num }}</button>
+                        {% elif page_num > logs.number|add:'-3' and page_num < logs.number|add:'3' %}
+                            <button class="btn btn-sm" onclick="goToPage({{ page_num }})">{{ page_num }}</button>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if logs.has_next %}
+                        <button class="btn btn-sm" onclick="goToPage({{ logs.next_page_number }})">Next</button>
+                        <button class="btn btn-sm" onclick="goToPage({{ logs.paginator.num_pages }})">Last</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions Modal -->
+<dialog id="bulk-actions-modal" class="modal">
+    <form method="dialog" class="modal-box">
+        <h3 class="font-bold text-lg">Bulk Actions</h3>
+        <p class="py-4">Select an action to perform on <span id="selected-count">0</span> selected logs:</p>
+        <div class="space-y-2">
+            <button class="btn btn-outline w-full" onclick="bulkAction('export')">
+                <i class="fas fa-download mr-2"></i>Export Selected
+            </button>
+            <button class="btn btn-outline w-full" onclick="bulkAction('flag')">
+                <i class="fas fa-flag mr-2"></i>Flag for Review
+            </button>
+            <button class="btn btn-outline w-full text-error" onclick="bulkAction('archive')">
+                <i class="fas fa-archive mr-2"></i>Archive Selected
+            </button>
+        </div>
+        <div class="modal-action">
+            <button class="btn" type="button" onclick="document.getElementById('bulk-actions-modal').close()">Cancel</button>
+        </div>
+    </form>
+</dialog>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let realTimeEnabled = false;
+let realTimeInterval;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDatePicker();
+    initializeFilters();
+    bindEvents();
+    
+    // Auto-apply filters on input
+    document.getElementById('search-filter').addEventListener('input', debounce(applyFilters, 500));
+});
+
+function initializeDatePicker() {
+    flatpickr("#date-range", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        placeholder: "Select date range...",
+        onChange: function(selectedDates, dateStr, instance) {
+            applyFilters();
+        }
+    });
+}
+
+function initializeFilters() {
+    const filterInputs = document.querySelectorAll('#filter-form select, #filter-form input');
+    filterInputs.forEach(input => {
+        if (input.type !== 'text') {
+            input.addEventListener('change', applyFilters);
+        }
+    });
+}
+
+function bindEvents() {
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.key) {
+                case 'f':
+                    e.preventDefault();
+                    document.getElementById('search-filter').focus();
+                    break;
+                case 'r':
+                    e.preventDefault();
+                    refreshLogs();
+                    break;
+                case 'a':
+                    e.preventDefault();
+                    toggleSelectAll();
+                    break;
+            }
+        }
+        
+        if (e.key === 'Escape') {
+            // Close any open details panels
+            document.querySelectorAll('.details-panel.expanded').forEach(panel => {
+                panel.classList.remove('expanded');
+            });
+        }
+    });
+}
+
+function applyFilters() {
+    const formData = new FormData(document.getElementById('filter-form'));
+    const dateRange = document.getElementById('date-range').value;
+    
+    if (dateRange) {
+        const [startDate, endDate] = dateRange.split(' to ');
+        formData.append('start_date', startDate);
+        if (endDate) formData.append('end_date', endDate);
+    }
+    
+    const params = new URLSearchParams(formData);
+    const currentUrl = new URL(window.location);
+    currentUrl.search = params.toString();
+    
+    // Update URL without page reload
+    window.history.pushState({}, '', currentUrl);
+    
+    // Load filtered results
+    loadAuditLogs(params);
+}
+
+function loadAuditLogs(params) {
+    const tbody = document.getElementById('audit-tbody');
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8"><span class="loading loading-spinner loading-lg"></span></td></tr>';
+    
+    fetch(`/auth/audit-logs/?${params.toString()}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.html) {
+            tbody.innerHTML = data.html;
+            updateResultsCount(data.count, data.total);
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8">No logs found</td></tr>';
+        }
+    })
+    .catch(error => {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-error">Error loading logs</td></tr>';
+    });
+}
+
+function quickFilter(type) {
+    const now = new Date();
+    let startDate, endDate;
+    
+    switch(type) {
+        case 'today':
+            startDate = endDate = now.toISOString().split('T')[0];
+            break;
+        case 'yesterday':
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            startDate = endDate = yesterday.toISOString().split('T')[0];
+            break;
+        case 'week':
+            const weekStart = new Date(now);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+            startDate = weekStart.toISOString().split('T')[0];
+            endDate = now.toISOString().split('T')[0];
+            break;
+        case 'month':
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            endDate = now.toISOString().split('T')[0];
+            break;
+        case 'failed-logins':
+            document.getElementById('action-filter').value = 'failed';
+            break;
+        case 'admin-actions':
+            document.getElementById('action-filter').value = 'create,update,delete';
+            break;
+        case 'high-risk':
+            document.getElementById('risk-filter').value = 'high';
+            break;
+    }
+    
+    if (startDate) {
+        const dateStr = endDate && endDate !== startDate ? `${startDate} to ${endDate}` : startDate;
+        document.getElementById('date-range').value = dateStr;
+    }
+    
+    applyFilters();
+}
+
+function resetFilters() {
+    document.getElementById('filter-form').reset();
+    document.getElementById('date-range').value = '';
+    
+    const url = new URL(window.location);
+    url.search = '';
+    window.history.pushState({}, '', url);
+    
+    location.reload();
+}
+
+function toggleDetails(logId) {
+    const detailsRow = document.getElementById(`details-${logId}`);
+    const chevron = document.getElementById(`chevron-${logId}`);
+    
+    if (detailsRow.classList.contains('expanded')) {
+        detailsRow.classList.remove('expanded');
+        chevron.classList.remove('fa-chevron-up');
+        chevron.classList.add('fa-chevron-down');
+    } else {
+        // Close other open details
+        document.querySelectorAll('.details-panel.expanded').forEach(panel => {
+            if (panel !== detailsRow) {
+                panel.classList.remove('expanded');
+                const panelId = panel.id.replace('details-', '');
+                const panelChevron = document.getElementById(`chevron-${panelId}`);
+                if (panelChevron) {
+                    panelChevron.classList.remove('fa-chevron-up');
+                    panelChevron.classList.add('fa-chevron-down');
+                }
+            }
+        });
+        
+        detailsRow.classList.add('expanded');
+        chevron.classList.remove('fa-chevron-down');
+        chevron.classList.add('fa-chevron-up');
+    }
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.log-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateBulkActionsButton();
+}
+
+function updateBulkActionsButton() {
+    const selectedCount = document.querySelectorAll('.log-checkbox:checked').length;
+    document.getElementById('selected-count').textContent = selectedCount;
+    
+    // Show/hide bulk actions button
+    let bulkBtn = document.getElementById('bulk-actions-btn');
+    if (selectedCount > 0 && !bulkBtn) {
+        bulkBtn = document.createElement('button');
+        bulkBtn.id = 'bulk-actions-btn';
+        bulkBtn.className = 'btn btn-primary btn-sm';
+        bulkBtn.innerHTML = `<i class="fas fa-tasks mr-2"></i>Bulk Actions (${selectedCount})`;
+        bulkBtn.onclick = () => document.getElementById('bulk-actions-modal').showModal();
+        
+        document.querySelector('.card-body .flex').appendChild(bulkBtn);
+    } else if (selectedCount === 0 && bulkBtn) {
+        bulkBtn.remove();
+    } else if (bulkBtn) {
+        bulkBtn.innerHTML = `<i class="fas fa-tasks mr-2"></i>Bulk Actions (${selectedCount})`;
+    }
+}
+
+// Bind checkbox change events
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('log-checkbox')) {
+        updateBulkActionsButton();
+    }
+});
+
+function sortBy(column) {
+    const currentUrl = new URL(window.location);
+    const currentSort = currentUrl.searchParams.get('sort');
+    const currentOrder = currentUrl.searchParams.get('order');
+    
+    let newOrder = 'asc';
+    if (currentSort === column && currentOrder === 'asc') {
+        newOrder = 'desc';
+    }
+    
+    currentUrl.searchParams.set('sort', column);
+    currentUrl.searchParams.set('order', newOrder);
+    
+    window.location.href = currentUrl.toString();
+}
+
+function goToPage(pageNum) {
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('page', pageNum);
+    window.location.href = currentUrl.toString();
+}
+
+function changePageSize() {
+    const perPage = document.getElementById('per-page').value;
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('per_page', perPage);
+    currentUrl.searchParams.delete('page'); // Reset to first page
+    window.location.href = currentUrl.toString();
+}
+
+function toggleRealTime() {
+    const toggle = document.getElementById('real-time-toggle');
+    realTimeEnabled = toggle.checked;
+    
+    if (realTimeEnabled) {
+        realTimeInterval = setInterval(() => {
+            if (!document.hidden) {
+                loadLatestLogs();
+            }
+        }, 5000); // Refresh every 5 seconds
+        showToast('Real-time monitoring enabled', 'info');
+    } else {
+        clearInterval(realTimeInterval);
+        showToast('Real-time monitoring disabled', 'info');
+    }
+}
+
+function loadLatestLogs() {
+    const lastTimestamp = document.querySelector('.audit-row td:nth-child(2)')?.getAttribute('data-timestamp');
+    
+    fetch(`/auth/audit-logs/latest/?since=${lastTimestamp || ''}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.new_logs && data.new_logs.length > 0) {
+            // Prepend new logs to the table
+            const tbody = document.getElementById('audit-tbody');
+            data.new_logs.forEach(log => {
+                const row = createLogRow(log);
+                tbody.insertBefore(row, tbody.firstChild);
+            });
+            
+            showToast(`${data.new_logs.length} new log entries`, 'info');
+        }
+    })
+    .catch(error => {
+        console.error('Failed to load latest logs:', error);
+    });
+}
+
+function refreshLogs() {
+    location.reload();
+}
+
+function exportLogs() {
+    const selectedIds = Array.from(document.querySelectorAll('.log-checkbox:checked')).map(cb => cb.value);
+    
+    let url = '/auth/audit-logs/export/';
+    if (selectedIds.length > 0) {
+        url += '?ids=' + selectedIds.join(',');
+    } else {
+        // Export with current filters
+        const params = new URLSearchParams(window.location.search);
+        url += '?' + params.toString();
+    }
+    
+    window.open(url, '_blank');
+    showToast('Export started', 'success');
+}
+
+function investigate(logId) {
+    window.open(`/auth/audit-logs/${logId}/investigate/`, '_blank');
+}
+
+function viewRelated(logId) {
+    window.location.href = `/auth/audit-logs/?related=${logId}`;
+}
+
+function flagEvent(logId) {
+    fetch(`/auth/audit-logs/${logId}/flag/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Event flagged for review', 'success');
+        } else {
+            showToast('Failed to flag event', 'error');
+        }
+    });
+}
+
+function bulkAction(action) {
+    const selectedIds = Array.from(document.querySelectorAll('.log-checkbox:checked')).map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+        showToast('No items selected', 'warning');
+        return;
+    }
+    
+    fetch(`/auth/audit-logs/bulk-${action}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Bulk ${action} completed`, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(`Bulk ${action} failed`, 'error');
+        }
+    });
+    
+    document.getElementById('bulk-actions-modal').close();
+}
+
+function configureAlerts() {
+    window.location.href = '/auth/audit-logs/alerts/';
+}
+
+function manageRetention() {
+    window.location.href = '/auth/audit-logs/retention/';
+}
+
+function viewStatistics() {
+    window.location.href = '/auth/audit-logs/statistics/';
+}
+
+function updateResultsCount(showing, total) {
+    document.getElementById('results-count').textContent = `Showing ${showing} of ${total} results`;
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-end';
+    toast.innerHTML = `
+        <div class="alert alert-${type}">
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (realTimeInterval) {
+        clearInterval(realTimeInterval);
+    }
+});
+</script>
+{% endblock %}

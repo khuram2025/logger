@@ -1,0 +1,263 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}System Status - Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/auth.css' %}">
+<style>
+.status-card {
+    transition: transform 0.2s;
+}
+.status-card:hover {
+    transform: translateY(-2px);
+}
+.metric-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+.metric-card .card-body {
+    text-align: center;
+}
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="content-header">
+        <h1><i class="fas fa-server mr-3"></i>System Status</h1>
+        <p class="text-muted">Monitor system health and performance metrics</p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle mr-2"></i>{{ error }}
+    </div>
+    {% else %}
+
+    <!-- System Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="card-body">
+                    <h5 class="metric-value">{{ active_users_count }}</h5>
+                    <p class="mb-0">Active Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="card-body">
+                    <h5 class="metric-value">{{ total_users_count }}</h5>
+                    <p class="mb-0">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card status-card">
+                <div class="card-body text-center">
+                    {% if db_status == 'Connected' %}
+                    <i class="fas fa-database text-success fa-2x mb-2"></i>
+                    <h6 class="text-success">Database Online</h6>
+                    {% else %}
+                    <i class="fas fa-database text-danger fa-2x mb-2"></i>
+                    <h6 class="text-danger">Database Issue</h6>
+                    <small class="text-muted">{{ db_status }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card status-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line text-info fa-2x mb-2"></i>
+                    <h6 class="text-info">Monitoring</h6>
+                    <small class="text-muted">System Active</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Metrics -->
+    {% if system_info.error %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-chart-bar mr-2"></i>System Metrics
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle mr-2"></i>{{ system_info.error }}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-chart-bar mr-2"></i>System Metrics
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-primary">{{ system_info.cpu_percent|floatformat:1 }}%</h4>
+                        <p class="text-muted">CPU Usage</p>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ system_info.cpu_percent }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-warning">{{ system_info.memory.percent|floatformat:1 }}%</h4>
+                        <p class="text-muted">Memory Usage</p>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" style="width: {{ system_info.memory.percent }}%"></div>
+                        </div>
+                        <small class="text-muted">
+                            {{ system_info.memory.used|filesizeformat }} / {{ system_info.memory.total|filesizeformat }}
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-success">{{ system_info.disk.percent|floatformat:1 }}%</h4>
+                        <p class="text-muted">Disk Usage</p>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: {{ system_info.disk.percent }}%"></div>
+                        </div>
+                        <small class="text-muted">
+                            {{ system_info.disk.used|filesizeformat }} / {{ system_info.disk.total|filesizeformat }}
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-info">
+                            {% if system_info.load_avg != 'N/A' %}
+                            {{ system_info.load_avg.0|floatformat:2 }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </h4>
+                        <p class="text-muted">Load Average (1m)</p>
+                        {% if system_info.load_avg != 'N/A' %}
+                        <small class="text-muted">
+                            5m: {{ system_info.load_avg.1|floatformat:2 }}, 
+                            15m: {{ system_info.load_avg.2|floatformat:2 }}
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <div class="row">
+                <div class="col-md-12">
+                    <p><strong>System Boot Time:</strong> {{ system_info.boot_time|date:"M d, Y H:i:s" }}</p>
+                    <p><strong>Uptime:</strong> {{ system_info.boot_time|timesince }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Services Status -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-cogs mr-2"></i>Services Status
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if services %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Status</th>
+                            <th>Uptime</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for service in services %}
+                        <tr>
+                            <td>{{ service.name }}</td>
+                            <td>
+                                {% if service.status == 'Running' %}
+                                <span class="badge badge-success">{{ service.status }}</span>
+                                {% elif service.status == 'Stopped' %}
+                                <span class="badge badge-danger">{{ service.status }}</span>
+                                {% else %}
+                                <span class="badge badge-warning">{{ service.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ service.uptime }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-cogs text-muted fa-3x mb-3"></i>
+                <p class="text-muted">No service information available.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Activity Summary -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-activity mr-2"></i>System Health Summary
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Database Connection</h6>
+                    <p class="{% if db_status == 'Connected' %}text-success{% else %}text-danger{% endif %}">
+                        {{ db_status }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h6>System Performance</h6>
+                    {% if system_info.error %}
+                    <p class="text-warning">Monitoring unavailable</p>
+                    {% else %}
+                    <p class="text-success">Normal operation</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <button class="btn btn-primary" onclick="location.reload()">
+                    <i class="fas fa-sync-alt mr-2"></i>Refresh Status
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh every 30 seconds
+setTimeout(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

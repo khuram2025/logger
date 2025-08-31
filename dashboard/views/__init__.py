@@ -2,6 +2,7 @@
 # This file imports all views for backward compatibility
 
 # Import all views from the new modular structure
+from .base import uitest_view, header_test_view
 from .traffic import top_summary_view, clickhouse_logs_view
 from .system_config import (
     system_config_view, service_action_view, logs_config_view,
@@ -44,6 +45,9 @@ from ..constants import (
 
 # All views that can be imported from dashboard.views
 __all__ = [
+    # Base views
+    'uitest_view',
+    
     # Traffic views
     'top_summary_view', 'clickhouse_logs_view',
     

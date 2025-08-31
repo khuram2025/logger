@@ -1,0 +1,339 @@
+{% comment %}
+/**
+ * Logs Table Partial Template
+ * 
+ * Renders the main logs data table with:
+ * - Column headers for log fields
+ * - Log data rows with proper status styling
+ * - Expand/collapse functionality for detailed log view
+ * - Pagination controls
+ * 
+ * Dependencies:
+ * - logs.css for table styling
+ * - logs-table.js for expand/collapse functionality
+ * 
+ * Context Variables Required:
+ * - logs_for_display: List of log entries to display
+ * - total_pages: Total number of pages for pagination
+ * - current_page: Current page number
+ * - page_range: Range of pages to show in pagination
+ */
+{% endcomment %}
+
+<div class="logs-table-container">
+    <!-- Main Logs Data Table -->
+    <table class="logs-table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Action</th>
+                <th>Source IP</th>
+                <th>Destination IP</th>
+                <th>Destination Port</th>
+                <th>Protocol</th>
+                <th>Device</th>
+                <th>Received Bytes</th>
+                <th>Transmitted Bytes</th>
+                <th>Duration</th>
+                <th></th> <!-- Column for expand button -->
+            </tr>
+        </thead>
+        <tbody id="logsTableBody">
+            {% for log_item in logs_for_display %}
+            <tr>
+                <!-- Timestamp -->
+                <td>{{ log_item.ts_display }}</td>
+                
+                <!-- Action with Status Styling -->
+                <td>
+                    <span class="status-label 
+                        {% if log_item.action|default:""|lower == 'deny' %}status-deny
+                        {% elif log_item.action|default:""|lower == 'accept' or log_item.action|default:""|lower == 'allow' %}status-accept
+                        {% else %}status-other{% endif %}">
+                        {{ log_item.action|default:"N/A" }}
+                    </span>
+                </td>
+                
+                <!-- Network Information -->
+                <td>{{ log_item.srcip }}</td>
+                <td>{{ log_item.dstip }}</td>
+                <td>{{ log_item.dstport_val }}</td>
+                <td>{{ log_item.proto_str }}</td>
+                
+                <!-- Device Badge -->
+                <td>
+                    <span class="source-badge source-{{ log_item.log_source|default:'unknown' }}">
+                        {{ log_item.device_name|default:'Unknown' }}
+                    </span>
+                </td>
+                
+                <!-- Traffic Statistics -->
+                <td>{{ log_item.rcvdbyte_display }}</td>
+                <td>{{ log_item.sentbyte_display }}</td>
+                <td>{{ log_item.duration_display }}</td>
+                
+                <!-- Expand/Collapse Button -->
+                <td>
+                    <button class="expand-log-button" data-log-index="{{ forloop.counter0 }}">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <!-- No Logs Found Message -->
+            <tr>
+                <td colspan="11" style="text-align: center; padding: 40px; color: #6c757d;">
+                    <i class="fas fa-search" style="font-size: 2em; margin-bottom: 10px; display: block;"></i>
+                    No logs found matching your criteria.
+                    <br><small>Try adjusting your filters or time range.</small>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination Controls -->
+    {% if total_pages > 1 %}
+    <div class="pagination-bar">
+        <nav aria-label="Logs pagination" class="pagination-nav">
+            <ul class="pagination">
+                <!-- Previous Page Button -->
+                {% if current_page > 1 %}
+                <li class="pagination-item">
+                    <a class="pagination-link" href="?page={{ current_page|add:'-1' }}" 
+                       title="Go to previous page">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                </li>
+                {% else %}
+                <li class="pagination-item">
+                    <span class="pagination-link disabled">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </span>
+                </li>
+                {% endif %}
+                
+                <!-- Page Numbers -->
+                {% for page_num in page_range %}
+                    {% if page_num == current_page %}
+                    <li class="pagination-item">
+                        <span class="pagination-link active" aria-current="page">{{ page_num }}</span>
+                    </li>
+                    {% else %}
+                    <li class="pagination-item">
+                        <a class="pagination-link" href="?page={{ page_num }}" 
+                           title="Go to page {{ page_num }}">{{ page_num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Show ellipsis and last page if needed -->
+                {% if total_pages > 5 and current_page < total_pages|add:"-2" %}
+                <li class="pagination-item">
+                    <span class="pagination-ellipsis">...</span>
+                </li>
+                <li class="pagination-item">
+                    <a class="pagination-link" href="?page={{ total_pages }}" 
+                       title="Go to last page">{{ total_pages }}</a>
+                </li>
+                {% elif total_pages > 5 and current_page >= total_pages|add:"-2" and current_page != total_pages %}
+                <!-- Show last few pages if close to end -->
+                {% for _ in "123" %} 
+                    {% with page_num=forloop.counter0|add:total_pages|add:"-2" %}
+                        {% if page_num > 5 and page_num != current_page and page_num <= total_pages %}
+                        <li class="pagination-item">
+                            <a class="pagination-link" href="?page={{ page_num }}" 
+                               title="Go to page {{ page_num }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endwith %}
+                {% endfor %}
+                {% endif %}
+
+                <!-- Next Page Button -->
+                {% if current_page < total_pages %}
+                <li class="pagination-item">
+                    <a class="pagination-link" href="?page={{ current_page|add:'1' }}" 
+                       title="Go to next page">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="pagination-item">
+                    <span class="pagination-link disabled">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </span>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <!-- Page Information -->
+            <div class="pagination-info">
+                Page {{ current_page }} of {{ total_pages }}
+                <span class="text-muted">({{ logs_for_display|length }} entries)</span>
+            </div>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Additional pagination styles */
+.pagination-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.pagination-nav {
+    text-align: center;
+}
+
+.pagination {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 10px 0;
+    justify-content: center;
+}
+
+.pagination-item {
+    /* Individual pagination item styling handled by links */
+}
+
+.pagination-link {
+    display: inline-block;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #495057;
+    background: white;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.pagination-link:hover:not(.disabled) {
+    background: #f8f9fa;
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-1px);
+}
+
+.pagination-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+}
+
+.pagination-link.disabled {
+    background: #f8f9fa;
+    border-color: #e9ecef;
+    color: #adb5bd;
+    cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+    padding: 8px 4px;
+    color: #6c757d;
+    font-weight: bold;
+}
+
+.pagination-info {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 8px;
+}
+
+.pagination-info .text-muted {
+    color: #adb5bd;
+}
+
+/* Responsive pagination */
+@media (max-width: 600px) {
+    .pagination {
+        flex-wrap: wrap;
+        gap: 2px;
+    }
+    
+    .pagination-link {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+    
+    /* Hide page numbers on very small screens, keep only prev/next */
+    .pagination-item:not(:first-child):not(:last-child) {
+        display: none;
+    }
+    
+    .pagination-item:nth-child(2),
+    .pagination-item:nth-last-child(2) {
+        display: list-item;
+    }
+}
+
+/* Table styling */
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 13px;
+}
+
+.logs-table th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.logs-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: middle;
+}
+
+.logs-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.expand-log-button {
+    background: none;
+    border: 1px solid #dee2e6;
+    color: #667eea;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.expand-log-button:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+    .logs-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .logs-table {
+        min-width: 800px;
+    }
+}
+</style>

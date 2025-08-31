@@ -1,0 +1,114 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Notifications - Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="content-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-bell mr-3"></i>Notifications</h1>
+                <p class="text-muted">Stay updated with system alerts and messages</p>
+            </div>
+            <div>
+                {% if unread_count > 0 %}
+                <button class="btn btn-outline-primary" onclick="markAllAsRead()">
+                    <i class="fas fa-check-double mr-2"></i>Mark All as Read
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Stats -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ total_count }}</h3>
+                    <p class="text-muted mb-0">Total Notifications</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ unread_count }}</h3>
+                    <p class="text-muted mb-0">Unread Notifications</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list mr-2"></i>All Notifications
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if notifications %}
+            <div class="list-group list-group-flush">
+                {% for notification in notifications %}
+                <div class="list-group-item {% if not notification.is_read %}bg-light border-left-primary{% endif %}">
+                    <div class="d-flex align-items-start">
+                        <div class="notification-icon mr-3">
+                            <div class="avatar-sm bg-{{ notification.type|default:'info' }} text-white rounded-circle">
+                                <i class="fas fa-{{ notification.icon|default:'bell' }}"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h6 class="mb-1 {% if not notification.is_read %}font-weight-bold{% endif %}">
+                                    {{ notification.title }}
+                                </h6>
+                                <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                            </div>
+                            <p class="mb-1 text-muted">{{ notification.message }}</p>
+                            {% if notification.action_url %}
+                            <a href="{{ notification.action_url }}" class="btn btn-sm btn-outline-primary">
+                                {{ notification.action_text|default:"View" }}
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% if not notification.is_read %}
+                        <div class="notification-status">
+                            <span class="badge badge-primary">New</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination would go here if implemented -->
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-bell-slash text-muted fa-4x mb-3"></i>
+                <h5 class="text-muted">No Notifications</h5>
+                <p class="text-muted">You're all caught up! No new notifications at this time.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markAllAsRead() {
+    // This would make an AJAX call to mark all notifications as read
+    // For now, just show a message since notifications aren't fully implemented
+    if (confirm('Mark all notifications as read?')) {
+        // AJAX call would go here
+        window.location.reload();
+    }
+}
+</script>
+{% endblock %}

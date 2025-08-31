@@ -2,12 +2,15 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from clickhouse_driver import Client
 import os
 import json
 import logging
 from datetime import datetime, timedelta
 import ipaddress
+
+from dashboard.auth.decorators import require_permission, viewer_or_higher
 
 # ClickHouse connection settings
 CH_HOST = os.getenv('CH_HOST', 'localhost')
@@ -33,6 +36,7 @@ def format_bytes(num_bytes):
         num /= 1024.0
     return f"{num:.1f} PB"
 
+@require_permission('view_analytics')
 def top_summary_view(request):
     client = Client(
         host=CH_HOST,
@@ -314,6 +318,7 @@ def top_summary_view(request):
     })
 
 
+@require_permission('view_logs')
 def clickhouse_logs_view(request):
     client = Client(
         host=CH_HOST,
@@ -1048,4 +1053,4 @@ def clickhouse_logs_view(request):
         'time_to': request.GET.get('time_to', ''),
         'log_source_filter': log_source_filter,
     }
-    return render(request, 'dashboard/logs2.html', context)
+    return render(request, 'dashboard/logs2_new.html', context)

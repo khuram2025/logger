@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Header Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Override any conflicting styles */
+        .navbar {
+            min-height: 4rem;
+            padding: 0 1rem;
+        }
+        
+        /* Ensure dropdowns work */
+        .dropdown:hover .dropdown-content,
+        .dropdown:focus-within .dropdown-content {
+            display: block;
+        }
+        
+        /* Fix user menu positioning */
+        .navbar-end {
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Test Header -->
+    <header class="navbar bg-base-300 shadow-lg">
+        <div class="navbar-start">
+            <div class="hidden lg:flex">
+                <ul class="menu menu-horizontal px-1">
+                    <li><a href="#" class="hover:bg-base-100">Top Summary</a></li>
+                    <li><a href="#" class="hover:bg-base-100">URL Summary</a></li>
+                    <li><a href="#" class="hover:bg-base-100">Logs</a></li>
+                    <li><a href="#" class="hover:bg-base-100">PA URL Logs</a></li>
+                </ul>
+            </div>
+            
+            <!-- Mobile menu button -->
+            <div class="dropdown lg:hidden">
+                <div tabindex="0" role="button" class="btn btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+                    </svg>
+                </div>
+                <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+                    <li><a href="#">Top Summary</a></li>
+                    <li><a href="#">URL Summary</a></li>
+                    <li><a href="#">Logs</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="navbar-end">
+            <div class="flex items-center space-x-2">
+                <!-- Notifications -->
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+                        <div class="indicator">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge badge-sm badge-primary indicator-item">3</span>
+                        </div>
+                    </div>
+                    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-80">
+                        <li class="menu-title">
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <h3 class="text-lg font-semibold">Notifications</h3>
+                                <button class="btn btn-ghost btn-xs text-primary">Mark all read</button>
+                            </div>
+                        </li>
+                        <li><a href="#">Sample notification 1</a></li>
+                        <li><a href="#">Sample notification 2</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Help -->
+                <div class="tooltip tooltip-bottom" data-tip="Help & Shortcuts">
+                    <button class="btn btn-ghost btn-circle">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                </div>
+                
+                <!-- User Menu -->
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost">
+                        <div class="flex items-center space-x-2">
+                            <div class="avatar">
+                                <div class="w-8 rounded-full bg-primary text-primary-content">
+                                    <div class="flex items-center justify-center h-full">
+                                        <i class="fas fa-user text-sm"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="hidden md:block">
+                                <div class="text-sm font-medium">Admin User</div>
+                                <div class="text-xs opacity-75">Administrator</div>
+                            </div>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <ul tabindex="0" class="dropdown-content z-[1] menu p-0 shadow-lg bg-base-100 rounded-box w-80">
+                        <!-- User Profile Section -->
+                        <li class="menu-title">
+                            <div class="flex items-center space-x-3 px-4 py-3">
+                                <div class="avatar">
+                                    <div class="w-10 rounded-full bg-primary text-primary-content">
+                                        <div class="flex items-center justify-center h-full">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-medium">Admin User</div>
+                                    <div class="text-sm opacity-60">admin@example.com</div>
+                                    <div class="flex items-center space-x-2 mt-1">
+                                        <div class="badge badge-primary badge-xs">Administrator</div>
+                                        <div class="badge badge-success badge-xs">
+                                            <div class="w-1 h-1 bg-white rounded-full mr-1"></div>
+                                            Online
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <div class="divider my-0"></div>
+                        
+                        <!-- Menu Items -->
+                        <li><a href="#"><i class="fas fa-user"></i>My Profile</a></li>
+                        <li><a href="#"><i class="fas fa-cog"></i>Account Settings</a></li>
+                        <li><a href="#"><i class="fas fa-desktop"></i>Active Sessions</a></li>
+                        <div class="divider my-0"></div>
+                        <li><a href="#" class="text-error"><i class="fas fa-sign-out-alt"></i>Sign Out</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Test Content -->
+    <div class="p-8">
+        <h1 class="text-2xl font-bold mb-4">Header Test Page</h1>
+        <p>This page tests the header functionality. Try:</p>
+        <ul class="list-disc list-inside mt-2 space-y-1">
+            <li>Clicking the notification bell</li>
+            <li>Hovering over the help button (tooltip)</li>
+            <li>Clicking the user menu</li>
+            <li>Resizing the window to test mobile menu</li>
+        </ul>
+    </div>
+    
+    <!-- Test JavaScript functionality -->
+    <script>
+        // Theme toggle function
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+        }
+        
+        // Test dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Header test page loaded');
+            
+            // Test if dropdowns are working
+            const dropdowns = document.querySelectorAll('.dropdown');
+            console.log('Found dropdowns:', dropdowns.length);
+            
+            // Test FontAwesome icons
+            const icons = document.querySelectorAll('.fas');
+            console.log('Found FontAwesome icons:', icons.length);
+        });
+    </script>
+</body>
+</html>

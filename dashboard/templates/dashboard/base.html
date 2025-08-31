@@ -5,13 +5,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Network Analyzer{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind to work with Daisy UI themes
+        tailwind.config = {
+            darkMode: ['class', '[data-theme="dark"]']
+        }
+    </script>
     <link rel="stylesheet" href="{% static 'base.css' %}">
     <link rel="stylesheet" href="{% static 'dashboard/css/custom_filters.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/css/auth.css' %}">
+    <meta name="csrf-token" content="{% csrf_token %}">
+    {% if user.is_authenticated %}
+    <meta name="user-authenticated" content="true">
+    {% endif %}
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body{% if user.is_authenticated %} class="authenticated"{% endif %}>
     {% include 'dashboard/header.html' %}
     {% block subheader %}{% endblock %}
     <div class="page-container">
@@ -54,6 +67,7 @@
     });
     </script>
     
+    <script src="{% static 'dashboard/js/auth.js' %}"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

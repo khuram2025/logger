@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pool: WebVS-pool - Analytics Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #f5f5f5; }
+        .top-nav { background-color: #444; }
+        .health-score { 
+            width: 60px; 
+            height: 60px; 
+            background: #8bc34a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        .timeline-bar {
+            height: 6px;
+            border-radius: 3px;
+        }
+        .log-row:hover { background-color: #f9f9f9; }
+        .tab-custom {
+            padding: 8px 16px;
+            border-bottom: 3px solid transparent;
+            color: #666;
+            cursor: pointer;
+        }
+        .tab-custom.active {
+            border-bottom-color: #ff5722;
+            color: #333;
+        }
+        .sidebar-section {
+            background: white;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            padding: 12px;
+        }
+        .expand-icon {
+            transition: transform 0.2s;
+        }
+        .expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+        .highlight-match {
+            background-color: #fff3bf;
+            box-shadow: inset 0 -1px 0 rgba(0,0,0,0.06);
+        }
+        .chip-btn {
+            padding: 2px 6px;
+            border-radius: 12px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .chip-btn .invert {
+            color: #9333ea;
+        }
+        .hist-container {
+            height: 120px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <div class="navbar top-nav text-white">
+        <div class="navbar-start">
+            <button class="btn btn-ghost btn-sm text-white">
+                <i class="fas fa-bars"></i> Applications
+            </button>
+        </div>
+        <div class="navbar-center">
+            <div class="tabs">
+                <a class="tab text-white">Dashboard</a>
+                <a class="tab text-white">Virtual Services</a>
+                <a class="tab text-white bg-orange-500 rounded-t">Pools</a>
+                <a class="tab text-white">Pool Groups</a>
+            </div>
+        </div>
+        <div class="navbar-end">
+            <button class="btn btn-ghost btn-circle text-white">
+                <i class="fas fa-question-circle"></i>
+            </button>
+            <div class="dropdown dropdown-end">
+                <label tabindex="0" class="btn btn-ghost text-white">
+                    <i class="fas fa-user-circle mr-2"></i> admin (admin)
+                </label>
+                <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 text-black">
+                    <li><a>Profile</a></li>
+                    <li><a>Settings</a></li>
+                    <li><a>Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Main Content -->
+    <div class="flex">
+        <!-- Left Content Area -->
+        <div class="flex-1 p-4">
+            <!-- Tabs -->
+            <div class="bg-white rounded-lg shadow-sm mb-4">
+                <div class="flex border-b">
+                    <div class="tab-custom">Analytics</div>
+                    <div class="tab-custom active">Logs</div>
+                    <div class="tab-custom">Health</div>
+                    <div class="tab-custom">Servers</div>
+                    <div class="tab-custom">Events</div>
+                    <div class="tab-custom">Alerts</div>
+                </div>
+            </div>
+
+            <!-- Time Range + Search + Actions -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="join">
+                            <button class="btn btn-xs join-item" onclick="setQuickRange('15m')">Last 15m</button>
+                            <button class="btn btn-xs join-item" onclick="setQuickRange('1h')">1h</button>
+                            <button class="btn btn-xs join-item" onclick="setQuickRange('24h')">24h</button>
+                            <button class="btn btn-xs join-item" onclick="setQuickRange('7d')">7d</button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input id="fromInput" type="datetime-local" class="input input-bordered input-xs" onchange="setCustomRange()" />
+                            <span class="text-xs">to</span>
+                            <input id="toInput" type="datetime-local" class="input input-bordered input-xs" onchange="setCustomRange()" />
+                        </div>
+                        <!-- Live tail -->
+                        <label class="label cursor-pointer gap-2">
+                            <span class="label-text text-xs">Live tail</span>
+                            <input id="liveTailToggle" type="checkbox" class="toggle toggle-success toggle-xs" onchange="toggleLiveTail(this.checked)" />
+                        </label>
+                        <select id="refreshInterval" class="select select-bordered select-xs" onchange="changeRefreshInterval(this.value)">
+                            <option value="5000">5s</option>
+                            <option value="10000">10s</option>
+                            <option value="30000">30s</option>
+                            <option value="60000">1m</option>
+                        </select>
+                    </div>
+                    <!-- Advanced Search -->
+                    <div class="flex-1 max-w-xl">
+                        <div class="relative" id="searchContainer">
+                            <div class="join w-full">
+                                <div class="dropdown dropdown-open w-full" id="searchDropdown">
+                                    <input 
+                                        type="text" 
+                                        id="searchInput"
+                                        class="input input-bordered input-sm join-item w-full"
+                                        placeholder="Search (e.g., action:deny AND dstport:443)"
+                                        autocomplete="off"
+                                        onkeyup="handleAdvancedSearch(this.value)"
+                                        onfocus="showAdvancedDropdown()"
+                                        onblur="hideAdvancedDropdown()"
+                                    />
+                                    <!-- Advanced Search Dropdown Content -->
+                                    <div id="advancedSearchContent" class="dropdown-content menu bg-base-100 rounded-box z-50 w-full p-2 shadow-lg border max-h-96 overflow-y-auto hidden">
+                                        <li class="menu-title px-2 py-1">
+                                            <span id="searchForText">Search for</span>
+                                        </li>
+                                        <div id="filterSuggestions"></div>
+                                        <li class="menu-title px-2 py-1 mt-2">
+                                            <span>Filter field:</span>
+                                        </li>
+                                        <li><button type="button" onclick="selectColumnFilter('timestamp')" class="text-left">Timestamp</button></li>
+                                        <li><button type="button" onclick="selectColumnFilter('action')" class="text-left">Action</button></li>
+                                        <li><button type="button" onclick="selectColumnFilter('srcip')" class="text-left">Source IP</button></li>
+                                        <li><button type="button" onclick="selectColumnFilter('dstip')" class="text-left">Destination IP</button></li>
+                                        <li><button type="button" onclick="selectColumnFilter('dstport')" class="text-left">Destination Port</button></li>
+                                        <li><button type="button" onclick="selectColumnFilter('protocol')" class="text-left">Protocol</button></li>
+                                        <li><button type="button" onclick="selectColumnFilter('device')" class="text-left">Device</button></li>
+                                        <li><button type="button" onclick="selectColumnFilter('severity')" class="text-left">Severity</button></li>
+                                    </div>
+                                </div>
+                                <button class="btn btn-success btn-sm join-item px-4" onclick="executeAdvancedSearch()">
+                                    <i class="fas fa-search text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="dropdown dropdown-end">
+                            <label tabindex="0" class="btn btn-ghost btn-sm"><i class="fas fa-columns mr-1"></i>Columns</label>
+                            <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-56 text-sm" id="columnManager">
+                                <!-- dynamic column toggles -->
+                            </ul>
+                        </div>
+                        <button class="btn btn-ghost btn-sm" onclick="saveCurrentSearch()"><i class="fas fa-bookmark mr-1"></i>Save</button>
+                        <button class="btn btn-ghost btn-sm" onclick="shareCurrentState()"><i class="fas fa-link mr-1"></i>Share</button>
+                        <button class="btn btn-ghost btn-sm" onclick="exportCSV()"><i class="fas fa-download mr-1"></i>Export</button>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center justify-between text-sm text-gray-600">
+                    <div id="totalCountLabel">Total <strong>0</strong> Logs</div>
+                    <div id="timeRangeLabel">-</div>
+                </div>
+            </div>
+
+            <!-- Histogram Timeline -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="font-semibold text-sm">Events over time</div>
+                    <div class="text-xs text-gray-500">Click a bar to zoom</div>
+                </div>
+                <div class="hist-container">
+                    <canvas id="histChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Selected Filter Tags - chips -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-4" id="filterTagsContainer">
+                <div class="flex items-center gap-2 flex-wrap" id="selectedFilterTags">
+                    <!-- Filter tags will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Logs Table -->
+            <div class="bg-white rounded-lg shadow-sm">
+                <table class="table table-sm w-full" id="logsTable">
+                    <thead>
+                        <tr class="bg-slate-600 text-white">
+                            <th class="text-white font-semibold" data-col="timestamp">Timestamp</th>
+                            <th class="text-white font-semibold" data-col="severity">Severity</th>
+                            <th class="text-white font-semibold" data-col="action">Action</th>
+                            <th class="text-white font-semibold" data-col="srcip">Source IP</th>
+                            <th class="text-white font-semibold" data-col="dstip">Destination IP</th>
+                            <th class="text-white font-semibold" data-col="dstport">Destination Port</th>
+                            <th class="text-white font-semibold" data-col="protocol">Protocol</th>
+                            <th class="text-white font-semibold" data-col="device">Device</th>
+                            <th class="text-white font-semibold" data-col="bytesIn">Received Bytes</th>
+                            <th class="text-white font-semibold" data-col="bytesOut">Transmitted Bytes</th>
+                            <th class="text-white font-semibold" data-col="duration">Duration</th>
+                            <th class="text-white font-semibold w-8"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTbody">
+                        <!-- dynamic rows -->
+                    </tbody>
+                </table>
+                <div class="flex items-center justify-between p-3 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span>Rows per page</span>
+                        <select id="pageSize" class="select select-bordered select-xs w-20" onchange="changePageSize(this.value)">
+                            <option>25</option>
+                            <option>50</option>
+                            <option>100</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="pageLabel">Page 1/1</span>
+                        <div class="join">
+                            <button class="btn btn-xs join-item" onclick="prevPage()">Prev</button>
+                            <button class="btn btn-xs join-item" onclick="nextPage()">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Details Modal -->
+            <dialog id="detailsDialog" class="modal">
+                <div class="modal-box max-w-3xl">
+                    <h3 class="font-bold text-lg">Event details</h3>
+                    <pre id="detailsJson" class="mt-3 text-xs bg-base-200 p-3 rounded overflow-x-auto"></pre>
+                    <div class="modal-action">
+                        <form method="dialog">
+                            <button class="btn btn-sm">Close</button>
+                        </form>
+                    </div>
+                </div>
+            </dialog>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="w-80 p-4">
+            <!-- Summaries Dropdown -->
+            <div class="sidebar-section">
+                <div class="flex justify-between items-center cursor-pointer" onclick="toggleSection('summaries')">
+                    <h3 class="font-semibold">Summaries</h3>
+                    <i class="fas fa-chevron-down expand-icon"></i>
+                </div>
+                <div id="summaries-content" class="mt-3">
+                    <div class="text-xs text-gray-500 mb-2">Facets</div>
+                    <div class="mb-3">
+                        <div class="font-semibold text-sm mb-1">Action</div>
+                        <div id="facet-action" class="flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="font-semibold text-sm mb-1">Severity</div>
+                        <div id="facet-severity" class="flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="font-semibold text-sm mb-1">Protocol</div>
+                        <div id="facet-protocol" class="flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="font-semibold text-sm mb-1">Device</div>
+                        <div id="facet-device" class="flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="font-semibold text-sm mb-1">Dst Port</div>
+                        <div id="facet-dstport" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log Analytics Section -->
+            <div class="sidebar-section">
+                <div class="flex justify-between items-center cursor-pointer mb-3" onclick="toggleSection('log-analytics')">
+                    <h3 class="font-semibold">Log Analytics</h3>
+                    <i class="fas fa-chevron-up expand-icon"></i>
+                </div>
+                <div id="log-analytics-content">
+                    <h4 class="font-semibold text-sm mt-3 mb-2">WAF Analytics</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li class="cursor-pointer hover:text-blue-600">WAF Tags</li>
+                        <li class="cursor-pointer hover:text-blue-600">WAF Rules</li>
+                        <li class="cursor-pointer hover:text-blue-600">WAF Groups</li>
+                        <li class="cursor-pointer hover:text-blue-600">WAF Latency</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Client Analytics Section -->
+            <div class="sidebar-section">
+                <div class="flex justify-between items-center cursor-pointer mb-3" onclick="toggleSection('client-analytics')">
+                    <h3 class="font-semibold">Client Analytics</h3>
+                    <i class="fas fa-chevron-up expand-icon"></i>
+                </div>
+                <div id="client-analytics-content">
+                    <ul class="space-y-2 text-sm">
+                        <li class="cursor-pointer hover:text-blue-600">Browser</li>
+                        <li class="cursor-pointer hover:text-blue-600">Client OS</li>
+                        <li class="cursor-pointer hover:text-blue-600">Device</li>
+                        <li class="cursor-pointer hover:text-blue-600">IP Address</li>
+                        <li class="cursor-pointer hover:text-blue-600">Location</li>
+                        <li class="cursor-pointer hover:text-blue-600">End to End</li>
+                        <li class="cursor-pointer hover:text-blue-600">User ID</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Load Balancer Analytics Section -->
+            <div class="sidebar-section">
+                <div class="flex justify-between items-center cursor-pointer mb-3" onclick="toggleSection('lb-analytics')">
+                    <h3 class="font-semibold">Load Balancer Analytics</h3>
+                    <i class="fas fa-chevron-up expand-icon"></i>
+                </div>
+                <div id="lb-analytics-content">
+                    <ul class="space-y-2 text-sm">
+                        <li class="cursor-pointer hover:text-blue-600">VS IP Address</li>
+                        <li class="cursor-pointer hover:text-blue-600">Server IP Address</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Table header-based search data - UI03 Style
+        const tableHeaderSearchData = {
+            // Based on actual table headers and their values
+            timestamp: ['2025-08-14 17:18:00'],
+            action: ['Accept', 'Allow'],
+            sourceIP: ['10.16.5.254', '192.168.199.101', '172.20.145.50'],
+            destinationIP: ['192.168.199.40', '10.30.1.19', '172.18.3.35'],
+            destinationPort: ['0', '8061', '3389'],
+            protocol: ['ICMP', 'TCP'],
+            device: ['SMO-JED-FG-02', 'SMO-DMZ-PA-01', 'FGT-FW02'],
+            receivedBytes: ['0 B', '272 B', '1.4 MB'],
+            transmittedBytes: ['200 B', '478 B', '547.8 KB'],
+            duration: ['63ms', '0ms', '13273ms']
+        };
+
+        let selectedAdvancedFilters = [];
+
+        // Toggle sidebar sections
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + '-content');
+            const parent = content ? content.parentElement : null;
+            if (parent) {
+                parent.classList.toggle('expanded');
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                } else {
+                    content.style.display = 'none';
+                }
+            }
+        }
+        
+        // Toggle log details expand/collapse
+        function toggleLogDetails(logId) {
+            const detailsRow = document.getElementById(logId + '-details');
+            const button = document.querySelector(`[data-target="${logId}"]`);
+            const icon = button.querySelector('i');
+            
+            if (detailsRow.classList.contains('hidden')) {
+                // Expand
+                detailsRow.classList.remove('hidden');
+                icon.className = 'fas fa-minus';
+            } else {
+                // Collapse
+                detailsRow.classList.add('hidden');
+                icon.className = 'fas fa-plus';
+            }
+        }
+
+        // Advanced Search Functions - UI03 Style
+        function showAdvancedDropdown() {
+            const dropdown = document.getElementById('searchDropdown');
+            const content = document.getElementById('advancedSearchContent');
+            dropdown.classList.add('dropdown-open');
+            content.classList.remove('hidden');
+        }
+
+        function hideAdvancedDropdown() {
+            setTimeout(() => {
+                const dropdown = document.getElementById('searchDropdown');
+                const content = document.getElementById('advancedSearchContent');
+                dropdown.classList.remove('dropdown-open');
+                content.classList.add('hidden');
+            }, 200);
+        }
+
+        function handleAdvancedSearch(value) {
+            const searchForText = document.getElementById('searchForText');
+            const filterSuggestions = document.getElementById('filterSuggestions');
+            
+            // Update search header
+            searchForText.textContent = value.trim() ? `Search for ${value}` : 'Search for';
+            
+            // Clear previous suggestions
+            filterSuggestions.innerHTML = '';
+            
+            if (!value.trim()) {
+                document.getElementById('advancedSearchContent').classList.add('hidden');
+                return;
+            }
+
+            // Show dropdown
+            document.getElementById('advancedSearchContent').classList.remove('hidden');
+            
+            const lowerValue = value.toLowerCase().trim();
+            let allMatches = [];
+
+            // Search only in table header values
+            // Timestamp suggestions
+            const matchingTimestamps = tableHeaderSearchData.timestamp.filter(ts => 
+                ts.toLowerCase().includes(lowerValue)
+            ).map(ts => ({
+                type: 'Timestamp',
+                value: ts,
+                display: `Timestamp equals: ${ts}`,
+                score: ts.toLowerCase().startsWith(lowerValue) ? 1 : 2
+            }));
+            allMatches.push(...matchingTimestamps);
+
+            // Action suggestions
+            const matchingActions = tableHeaderSearchData.action.filter(action => 
+                action.toLowerCase().includes(lowerValue)
+            ).map(action => ({
+                type: 'Action',
+                value: action,
+                display: `Action equals: ${action}`,
+                score: action.toLowerCase().startsWith(lowerValue) ? 1 : 2
+            }));
+            allMatches.push(...matchingActions);
+
+            // Source IP suggestions
+            const matchingSourceIPs = tableHeaderSearchData.sourceIP.filter(ip => 
+                ip.toLowerCase().includes(lowerValue)
+            ).map(ip => ({
+                type: 'Source IP',
+                value: ip,
+                display: `Source IP equals: ${ip}`,
+                score: ip.toLowerCase().startsWith(lowerValue) ? 1 : 2
+            }));
+            allMatches.push(...matchingSourceIPs);
+
+            // Destination IP suggestions
+            const matchingDestIPs = tableHeaderSearchData.destinationIP.filter(ip => 
+                ip.toLowerCase().includes(lowerValue)
+            ).map(ip => ({
+                type: 'Destination IP',
+                value: ip,
+                display: `Destination IP equals: ${ip}`,
+                score: ip.toLowerCase().startsWith(lowerValue) ? 1 : 2
+            }));
+            allMatches.push(...matchingDestIPs);
+
+            // Destination Port suggestions
+            const matchingDestPorts = tableHeaderSearchData.destinationPort.filter(port => 
+                port.toLowerCase().includes(lowerValue)
+            ).map(port => ({
+                type: 'Destination Port',
+                value: port,
+                display: `Destination Port equals: ${port}`,
+                score: port.toLowerCase().startsWith(lowerValue) ? 1 : 2
+            }));
+            allMatches.push(...matchingDestPorts);
+
+            // Protocol suggestions
+            const matchingProtocols = tableHeaderSearchData.protocol.filter(protocol => 
+                protocol.toLowerCase().includes(lowerValue)
+            ).map(protocol => ({
+                type: 'Protocol',
+                value: protocol,
+                display: `Protocol equals: ${protocol}`,
+                score: protocol.toLowerCase().startsWith(lowerValue) ? 1 : 2
+            }));
+            allMatches.push(...matchingProtocols);
+
+            // Device suggestions
+            const matchingDevices = tableHeaderSearchData.device.filter(device => 
+                device.toLowerCase().includes(lowerValue)
+            ).map(device => ({
+                type: 'Device',
+                value: device,
+                display: `Device equals: ${device}`,
+                score: device.toLowerCase().startsWith(lowerValue) ? 1 : 2
+            }));
+            allMatches.push(...matchingDevices);
+
+            // Received Bytes suggestions
+            const matchingReceivedBytes = tableHeaderSearchData.receivedBytes.filter(bytes => 
+                bytes.toLowerCase().includes(lowerValue)
+            ).map(bytes => ({
+                type: 'Received Bytes',
+                value: bytes,
+                display: `Received Bytes equals: ${bytes}`,
+                score: bytes.toLowerCase().startsWith(lowerValue) ? 1 : 2
+            }));
+            allMatches.push(...matchingReceivedBytes);
+
+            // Transmitted Bytes suggestions
+            const matchingTransmittedBytes = tableHeaderSearchData.transmittedBytes.filter(bytes => 
+                bytes.toLowerCase().includes(lowerValue)
+            ).map(bytes => ({
+                type: 'Transmitted Bytes',
+                value: bytes,
+                display: `Transmitted Bytes equals: ${bytes}`,
+                score: bytes.toLowerCase().startsWith(lowerValue) ? 1 : 2
+            }));
+            allMatches.push(...matchingTransmittedBytes);
+
+            // Duration suggestions
+            const matchingDurations = tableHeaderSearchData.duration.filter(duration => 
+                duration.toLowerCase().includes(lowerValue)
+            ).map(duration => ({
+                type: 'Duration',
+                value: duration,
+                display: `Duration equals: ${duration}`,
+                score: duration.toLowerCase().startsWith(lowerValue) ? 1 : 2
+            }));
+            allMatches.push(...matchingDurations);
+
+            // Sort all matches: starts-with matches first (score 1), then contains matches (score 2)
+            allMatches.sort((a, b) => {
+                if (a.score !== b.score) return a.score - b.score;
+                return a.display.localeCompare(b.display);
+            });
+
+            // Display all sorted matches
+            allMatches.forEach(match => {
+                const li = document.createElement('li');
+                li.innerHTML = `<button type="button" onclick="selectAdvancedFilter('${match.type}', '${match.value}')" class="text-left w-full hover:bg-base-200 py-2 px-2">${match.display}</button>`;
+                filterSuggestions.appendChild(li);
+            });
+        }
+
+        function selectAdvancedFilter(type, value) {
+            const filter = { type: type, value: value, operator: 'equals' };
+            selectedAdvancedFilters.push(filter);
+            updateAdvancedFilterTags();
+            document.getElementById('searchInput').value = '';
+            hideAdvancedDropdown();
+        }
+
+        function selectColumnFilter(column) {
+            // Use actual table header values for examples
+            let exampleValue = 'Example';
+            
+            switch(column) {
+                case 'Timestamp':
+                    exampleValue = tableHeaderSearchData.timestamp[0];
+                    break;
+                case 'Action':
+                    exampleValue = tableHeaderSearchData.action[0];
+                    break;
+                case 'Source IP':
+                    exampleValue = tableHeaderSearchData.sourceIP[0];
+                    break;
+                case 'Destination IP':
+                    exampleValue = tableHeaderSearchData.destinationIP[0];
+                    break;
+                case 'Destination Port':
+                    exampleValue = tableHeaderSearchData.destinationPort[0];
+                    break;
+                case 'Protocol':
+                    exampleValue = tableHeaderSearchData.protocol[0];
+                    break;
+                case 'Device':
+                    exampleValue = tableHeaderSearchData.device[0];
+                    break;
+                case 'Received Bytes':
+                    exampleValue = tableHeaderSearchData.receivedBytes[0];
+                    break;
+                case 'Transmitted Bytes':
+                    exampleValue = tableHeaderSearchData.transmittedBytes[0];
+                    break;
+                case 'Duration':
+                    exampleValue = tableHeaderSearchData.duration[0];
+                    break;
+            }
+            
+            selectAdvancedFilter(column, exampleValue);
+        }
+
+        function updateAdvancedFilterTags() {
+            const container = document.getElementById('selectedFilterTags');
+            const tagsContainer = document.getElementById('filterTagsContainer');
+            
+            // Show/hide the container based on whether there are filters
+            if (selectedAdvancedFilters.length > 0) {
+                tagsContainer.classList.remove('hidden');
+            } else {
+                tagsContainer.classList.add('hidden');
+            }
+            
+            container.innerHTML = '';
+            
+            selectedAdvancedFilters.forEach((filter, index) => {
+                const tag = document.createElement('div');
+                tag.className = 'badge badge-neutral gap-2 py-2 px-3 text-sm';
+                tag.innerHTML = `
+                    <span>${filter.type} ∩ ${filter.value}</span>
+                    <button class="btn btn-ghost btn-xs ml-1" onclick="removeAdvancedFilter(${index})">
+                        ×
+                    </button>
+                `;
+                container.appendChild(tag);
+            });
+        }
+
+        function removeAdvancedFilter(index) {
+            selectedAdvancedFilters.splice(index, 1);
+            updateAdvancedFilterTags();
+        }
+
+        function executeAdvancedSearch() {
+            const searchInput = document.getElementById('searchInput').value;
+            const filters = selectedAdvancedFilters.map(f => `${f.type}:${f.value}`).join(' AND ');
+            const fullQuery = [searchInput, filters].filter(Boolean).join(' ');
+            
+            if (fullQuery.trim()) {
+                console.log('Executing advanced search with query:', fullQuery);
+                alert(`Advanced search executed with: ${fullQuery}`);
+            } else {
+                alert('Please enter search criteria or select filters');
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('searchDropdown');
+            const searchInput = document.getElementById('searchInput');
+            
+            if (!dropdown.contains(event.target) && event.target !== searchInput) {
+                hideAdvancedDropdown();
+            }
+        });
+
+        // Initialize - hide filter tags container initially
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('filterTagsContainer').classList.add('hidden');
+        });
+    </script>
+</body>
+</html>

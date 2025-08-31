@@ -1,0 +1,587 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.id %}Edit User{% else %}Create User{% endif %} - Network Analyzer
+{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+<style>
+    .password-strength {
+        height: 4px;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+    }
+    .strength-weak { background-color: #ef4444; width: 25%; }
+    .strength-fair { background-color: #f59e0b; width: 50%; }
+    .strength-good { background-color: #10b981; width: 75%; }
+    .strength-strong { background-color: #059669; width: 100%; }
+    
+    .form-section {
+        @apply bg-base-100 rounded-lg shadow-sm border border-base-300 p-6 mb-6;
+    }
+    
+    .section-title {
+        @apply text-lg font-semibold text-base-content mb-4 flex items-center;
+    }
+    
+    .form-grid {
+        @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+    }
+    
+    .form-grid-full {
+        @apply col-span-1 md:col-span-2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 max-w-4xl">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center space-x-4">
+            <a href="{% url 'auth:user_list' %}" class="btn btn-ghost btn-sm">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Users
+            </a>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">
+                    {% if form.instance.id %}
+                        <i class="fas fa-user-edit mr-3 text-primary"></i>Edit User
+                    {% else %}
+                        <i class="fas fa-user-plus mr-3 text-primary"></i>Create User
+                    {% endif %}
+                </h1>
+                <p class="text-gray-600 mt-1">
+                    {% if form.instance.id %}
+                        Modify user account settings and permissions
+                    {% else %}
+                        Add a new user to the system
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" id="user-form" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Information Section -->
+        <div class="form-section">
+            <h2 class="section-title">
+                <i class="fas fa-user mr-2 text-primary"></i>Basic Information
+            </h2>
+            
+            <div class="form-grid">
+                <!-- Username -->
+                <div class="form-control">
+                    <label class="label" for="{{ form.username.id_for_label }}">
+                        <span class="label-text font-medium">
+                            <i class="fas fa-at mr-2"></i>Username *
+                        </span>
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">
+                                {% for error in form.username.errors %}{{ error }}{% endfor %}
+                            </span>
+                        </label>
+                    {% endif %}
+                    <label class="label">
+                        <span class="label-text-alt">Used for login and system identification</span>
+                    </label>
+                </div>
+
+                <!-- Email -->
+                <div class="form-control">
+                    <label class="label" for="{{ form.email.id_for_label }}">
+                        <span class="label-text font-medium">
+                            <i class="fas fa-envelope mr-2"></i>Email Address *
+                        </span>
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">
+                                {% for error in form.email.errors %}{{ error }}{% endfor %}
+                            </span>
+                        </label>
+                    {% endif %}
+                    <label class="label">
+                        <span class="label-text-alt">Used for notifications and password recovery</span>
+                    </label>
+                </div>
+
+                <!-- First Name -->
+                <div class="form-control">
+                    <label class="label" for="{{ form.first_name.id_for_label }}">
+                        <span class="label-text font-medium">
+                            <i class="fas fa-user mr-2"></i>First Name
+                        </span>
+                    </label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">
+                                {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                            </span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                <!-- Last Name -->
+                <div class="form-control">
+                    <label class="label" for="{{ form.last_name.id_for_label }}">
+                        <span class="label-text font-medium">
+                            <i class="fas fa-user mr-2"></i>Last Name
+                        </span>
+                    </label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">
+                                {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                            </span>
+                        </label>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Section -->
+        {% if not form.instance.id %}
+        <div class="form-section">
+            <h2 class="section-title">
+                <i class="fas fa-lock mr-2 text-primary"></i>Password Settings
+            </h2>
+            
+            <div class="form-grid">
+                <!-- Password -->
+                <div class="form-control">
+                    <label class="label" for="{{ form.password1.id_for_label }}">
+                        <span class="label-text font-medium">
+                            <i class="fas fa-key mr-2"></i>Password *
+                        </span>
+                    </label>
+                    <div class="relative">
+                        {{ form.password1 }}
+                        <button type="button" class="btn btn-ghost btn-sm absolute inset-y-0 right-0 pr-3" onclick="togglePassword('{{ form.password1.id_for_label }}')">
+                            <i class="fas fa-eye" id="password1-eye"></i>
+                        </button>
+                    </div>
+                    <!-- Password Strength Indicator -->
+                    <div class="mt-2">
+                        <div class="password-strength" id="password-strength"></div>
+                        <div class="text-sm text-gray-600 mt-1" id="password-strength-text">
+                            Enter a password to see strength
+                        </div>
+                    </div>
+                    {% if form.password1.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">
+                                {% for error in form.password1.errors %}{{ error }}{% endfor %}
+                            </span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="form-control">
+                    <label class="label" for="{{ form.password2.id_for_label }}">
+                        <span class="label-text font-medium">
+                            <i class="fas fa-key mr-2"></i>Confirm Password *
+                        </span>
+                    </label>
+                    <div class="relative">
+                        {{ form.password2 }}
+                        <button type="button" class="btn btn-ghost btn-sm absolute inset-y-0 right-0 pr-3" onclick="togglePassword('{{ form.password2.id_for_label }}')">
+                            <i class="fas fa-eye" id="password2-eye"></i>
+                        </button>
+                        <div class="absolute inset-y-0 right-12 pr-3 flex items-center" id="password-match-icon">
+                        </div>
+                    </div>
+                    {% if form.password2.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">
+                                {% for error in form.password2.errors %}{{ error }}{% endfor %}
+                            </span>
+                        </label>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Password Requirements -->
+            <div class="alert alert-info mt-4">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <h3 class="font-bold">Password Requirements:</h3>
+                    <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                        <li>At least 8 characters long</li>
+                        <li>Must contain uppercase and lowercase letters</li>
+                        <li>Must contain at least one number</li>
+                        <li>Must contain at least one special character</li>
+                        <li>Cannot be too similar to your personal information</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Role and Permissions Section -->
+        <div class="form-section">
+            <h2 class="section-title">
+                <i class="fas fa-shield-alt mr-2 text-primary"></i>Role and Permissions
+            </h2>
+            
+            <div class="form-grid">
+                <!-- Role Selection -->
+                <div class="form-control form-grid-full">
+                    <label class="label" for="{{ form.role.id_for_label }}">
+                        <span class="label-text font-medium">
+                            <i class="fas fa-user-tag mr-2"></i>User Role *
+                        </span>
+                    </label>
+                    {{ form.role }}
+                    {% if form.role.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">
+                                {% for error in form.role.errors %}{{ error }}{% endfor %}
+                            </span>
+                        </label>
+                    {% endif %}
+                    
+                    <!-- Role Description -->
+                    <div class="mt-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="role-descriptions">
+                            <div class="card bg-base-200 role-card" data-role="viewer">
+                                <div class="card-body p-4">
+                                    <h3 class="card-title text-sm">
+                                        <i class="fas fa-eye text-gray-600"></i>Viewer
+                                    </h3>
+                                    <p class="text-xs text-gray-600">Read-only access to logs and reports. Cannot modify any settings.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="card bg-base-200 role-card" data-role="analyst">
+                                <div class="card-body p-4">
+                                    <h3 class="card-title text-sm">
+                                        <i class="fas fa-chart-line text-blue-600"></i>Analyst
+                                    </h3>
+                                    <p class="text-xs text-gray-600">Can create reports, export data, and manage personal preferences.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="card bg-base-200 role-card" data-role="admin">
+                                <div class="card-body p-4">
+                                    <h3 class="card-title text-sm">
+                                        <i class="fas fa-cogs text-red-600"></i>Administrator
+                                    </h3>
+                                    <p class="text-xs text-gray-600">Can manage users, configure system settings, and access all features.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="card bg-base-200 role-card" data-role="super_admin">
+                                <div class="card-body p-4">
+                                    <h3 class="card-title text-sm">
+                                        <i class="fas fa-crown text-purple-600"></i>Super Admin
+                                    </h3>
+                                    <p class="text-xs text-gray-600">Full system access including security settings and user roles.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Status Section -->
+        <div class="form-section">
+            <h2 class="section-title">
+                <i class="fas fa-toggle-on mr-2 text-primary"></i>Account Status
+            </h2>
+            
+            <div class="space-y-4">
+                <!-- Active Status -->
+                <div class="form-control">
+                    <label class="cursor-pointer label justify-start">
+                        {{ form.is_active }}
+                        <span class="label-text ml-3">
+                            <i class="fas fa-user-check mr-2"></i>Active Account
+                            <div class="text-sm text-gray-500 mt-1">User can log in and access the system</div>
+                        </span>
+                    </label>
+                    {% if form.is_active.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">
+                                {% for error in form.is_active.errors %}{{ error }}{% endfor %}
+                            </span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                <!-- Staff Status -->
+                <div class="form-control">
+                    <label class="cursor-pointer label justify-start">
+                        {{ form.is_staff }}
+                        <span class="label-text ml-3">
+                            <i class="fas fa-user-tie mr-2"></i>Staff Access
+                            <div class="text-sm text-gray-500 mt-1">User can access the administration interface</div>
+                        </span>
+                    </label>
+                    {% if form.is_staff.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">
+                                {% for error in form.is_staff.errors %}{{ error }}{% endfor %}
+                            </span>
+                        </label>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0 pt-6 border-t">
+            <div class="text-sm text-gray-500">
+                * Required fields
+            </div>
+            
+            <div class="flex space-x-3">
+                <a href="{% url 'auth:user_list' %}" class="btn btn-outline">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </a>
+                
+                {% if form.instance.id %}
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                    <i class="fas fa-save mr-2"></i>Update User
+                    <span class="loading loading-spinner loading-sm hidden" id="submit-loading"></span>
+                </button>
+                {% else %}
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                    <i class="fas fa-user-plus mr-2"></i>Create User
+                    <span class="loading loading-spinner loading-sm hidden" id="submit-loading"></span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Apply proper classes to form fields
+    applyFormClasses();
+    
+    // Initialize role highlighting
+    initializeRoleSelection();
+    
+    {% if not form.instance.id %}
+    // Initialize password validation for new users
+    initializePasswordValidation();
+    {% endif %}
+    
+    // Form submission handling
+    initializeFormSubmission();
+});
+
+function applyFormClasses() {
+    // Apply input classes
+    const inputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]');
+    inputs.forEach(input => {
+        input.classList.add('input', 'input-bordered', 'w-full');
+        if (input.hasAttribute('required')) {
+            input.parentElement.querySelector('label span').innerHTML += ' *';
+        }
+    });
+    
+    // Apply select classes
+    const selects = document.querySelectorAll('select');
+    selects.forEach(select => {
+        select.classList.add('select', 'select-bordered', 'w-full');
+    });
+    
+    // Apply checkbox classes
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.classList.add('checkbox', 'checkbox-primary');
+    });
+}
+
+function initializeRoleSelection() {
+    const roleSelect = document.getElementById('{{ form.role.id_for_label }}');
+    const roleCards = document.querySelectorAll('.role-card');
+    
+    function highlightSelectedRole() {
+        const selectedRole = roleSelect.value;
+        roleCards.forEach(card => {
+            if (card.getAttribute('data-role') === selectedRole) {
+                card.classList.remove('bg-base-200');
+                card.classList.add('bg-primary', 'text-primary-content');
+            } else {
+                card.classList.remove('bg-primary', 'text-primary-content');
+                card.classList.add('bg-base-200');
+            }
+        });
+    }
+    
+    // Initial highlight
+    highlightSelectedRole();
+    
+    // Update on change
+    roleSelect.addEventListener('change', highlightSelectedRole);
+}
+
+{% if not form.instance.id %}
+function initializePasswordValidation() {
+    const password1 = document.getElementById('{{ form.password1.id_for_label }}');
+    const password2 = document.getElementById('{{ form.password2.id_for_label }}');
+    const strengthBar = document.getElementById('password-strength');
+    const strengthText = document.getElementById('password-strength-text');
+    const matchIcon = document.getElementById('password-match-icon');
+    
+    password1.addEventListener('input', function() {
+        const password = this.value;
+        const strength = calculatePasswordStrength(password);
+        updatePasswordStrength(strength, strengthBar, strengthText);
+        checkPasswordMatch();
+    });
+    
+    password2.addEventListener('input', checkPasswordMatch);
+    
+    function calculatePasswordStrength(password) {
+        let score = 0;
+        const checks = {
+            length: password.length >= 8,
+            lowercase: /[a-z]/.test(password),
+            uppercase: /[A-Z]/.test(password),
+            numbers: /\d/.test(password),
+            symbols: /[^A-Za-z0-9]/.test(password)
+        };
+        
+        score = Object.values(checks).filter(check => check).length;
+        
+        if (score < 3) return { level: 'weak', score };
+        if (score < 4) return { level: 'fair', score };
+        if (score < 5) return { level: 'good', score };
+        return { level: 'strong', score };
+    }
+    
+    function updatePasswordStrength(strength, bar, text) {
+        bar.className = `password-strength strength-${strength.level}`;
+        
+        const messages = {
+            weak: 'Weak password - add more variety',
+            fair: 'Fair password - consider adding symbols',
+            good: 'Good password - very secure',
+            strong: 'Strong password - excellent!'
+        };
+        
+        text.textContent = messages[strength.level];
+        text.className = `text-sm mt-1 ${strength.level === 'weak' ? 'text-error' : strength.level === 'fair' ? 'text-warning' : 'text-success'}`;
+    }
+    
+    function checkPasswordMatch() {
+        const match = password1.value && password2.value && password1.value === password2.value;
+        
+        if (password2.value) {
+            matchIcon.innerHTML = match
+                ? '<i class="fas fa-check text-success"></i>'
+                : '<i class="fas fa-times text-error"></i>';
+        } else {
+            matchIcon.innerHTML = '';
+        }
+    }
+}
+{% endif %}
+
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    const icon = document.getElementById(fieldId.replace('id_', '') + '-eye');
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        field.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+function initializeFormSubmission() {
+    const form = document.getElementById('user-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const submitLoading = document.getElementById('submit-loading');
+    
+    form.addEventListener('submit', function(e) {
+        // Basic validation
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('input-error');
+                isValid = false;
+            } else {
+                field.classList.remove('input-error');
+            }
+        });
+        
+        {% if not form.instance.id %}
+        // Password validation for new users
+        const password1 = document.getElementById('{{ form.password1.id_for_label }}');
+        const password2 = document.getElementById('{{ form.password2.id_for_label }}');
+        
+        if (password1.value !== password2.value) {
+            password2.classList.add('input-error');
+            showToast('Passwords do not match', 'error');
+            isValid = false;
+        }
+        {% endif %}
+        
+        if (!isValid) {
+            e.preventDefault();
+            showToast('Please fill in all required fields correctly', 'error');
+            return;
+        }
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.querySelector('i').classList.add('hidden');
+        submitLoading.classList.remove('hidden');
+    });
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-end';
+    toast.innerHTML = `
+        <div class="alert alert-${type}">
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Auto-save draft functionality (optional)
+function initializeAutoSave() {
+    const form = document.getElementById('user-form');
+    const formData = new FormData(form);
+    
+    // Save form data to localStorage every 30 seconds
+    setInterval(() => {
+        const currentData = new FormData(form);
+        localStorage.setItem('user_form_draft', JSON.stringify(Object.fromEntries(currentData)));
+    }, 30000);
+}
+</script>
+{% endblock %}

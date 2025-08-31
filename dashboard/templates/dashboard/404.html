@@ -139,7 +139,7 @@
     </p>
     
     <div class="error-actions">
-        <a href="{% url 'dashboard' %}" class="btn-primary">
+        <a href="{% url 'index' %}" class="btn-primary">
             <i class="fas fa-home"></i>
             Go to Dashboard
         </a>
@@ -161,7 +161,7 @@
 setTimeout(function() {
     const redirect = confirm('Would you like to be redirected to the dashboard?');
     if (redirect) {
-        window.location.href = "{% url 'dashboard' %}";
+        window.location.href = "{% url 'index' %}";
     }
 }, 10000);
 </script>

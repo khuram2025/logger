@@ -1,0 +1,613 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ user.get_full_name|default:user.username }} - User Details - Network Analyzer{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+<style>
+    .activity-timeline {
+        position: relative;
+    }
+    .activity-timeline::before {
+        content: '';
+        position: absolute;
+        left: 20px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e5e7eb;
+    }
+    .timeline-item {
+        position: relative;
+        padding-left: 50px;
+        margin-bottom: 1rem;
+    }
+    .timeline-dot {
+        position: absolute;
+        left: 15px;
+        top: 6px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px #e5e7eb;
+    }
+    .session-card:hover {
+        transform: translateY(-2px);
+        transition: transform 0.2s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 max-w-7xl">
+    <!-- Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div class="flex items-center space-x-4">
+            <a href="{% url 'auth:user_list' %}" class="btn btn-ghost btn-sm">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Users
+            </a>
+            <div class="flex items-center space-x-4">
+                <div class="avatar">
+                    <div class="w-16 rounded-full bg-primary text-primary-content">
+                        <div class="flex items-center justify-center h-full">
+                            <i class="fas fa-user text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        {{ user.get_full_name|default:user.username }}
+                    </h1>
+                    <div class="flex items-center space-x-3 mt-2">
+                        <span class="badge badge-primary">{{ user.role.display_name }}</span>
+                        {% if user.is_active %}
+                            <span class="badge badge-success">Active</span>
+                        {% else %}
+                            <span class="badge badge-warning">Inactive</span>
+                        {% endif %}
+                        {% if user.is_online %}
+                            <span class="badge badge-info">Online</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 lg:mt-0 flex space-x-3">
+            <a href="{% url 'auth:user_edit' user.id %}" class="btn btn-outline btn-sm">
+                <i class="fas fa-edit mr-2"></i>Edit
+            </a>
+            <div class="dropdown dropdown-end">
+                <label tabindex="0" class="btn btn-outline btn-sm">
+                    <i class="fas fa-ellipsis-v mr-2"></i>Actions
+                </label>
+                <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+                    <li><a onclick="resetPassword()">
+                        <i class="fas fa-key"></i>Reset Password
+                    </a></li>
+                    <li><a onclick="sendNotification()">
+                        <i class="fas fa-bell"></i>Send Notification
+                    </a></li>
+                    <li><a onclick="viewAuditLog()">
+                        <i class="fas fa-history"></i>View Audit Log
+                    </a></li>
+                    <li class="divider"></li>
+                    {% if user.is_active %}
+                    <li><a onclick="deactivateUser()" class="text-warning">
+                        <i class="fas fa-user-times"></i>Deactivate
+                    </a></li>
+                    {% else %}
+                    <li><a onclick="activateUser()" class="text-success">
+                        <i class="fas fa-user-check"></i>Activate
+                    </a></li>
+                    {% endif %}
+                    <li><a onclick="deleteUser()" class="text-error">
+                        <i class="fas fa-trash"></i>Delete User
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column - User Information -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Basic Information Card -->
+            <div class="card bg-base-100 shadow">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-user mr-2 text-primary"></i>Basic Information
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Username</label>
+                                <p class="text-lg font-medium">{{ user.username }}</p>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Email</label>
+                                <p class="text-lg">{{ user.email|default:"Not provided" }}</p>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Full Name</label>
+                                <p class="text-lg">
+                                    {% if user.first_name or user.last_name %}
+                                        {{ user.first_name }} {{ user.last_name }}
+                                    {% else %}
+                                        Not provided
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">User ID</label>
+                                <p class="text-lg font-mono">#{{ user.id }}</p>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Date Joined</label>
+                                <p class="text-lg">{{ user.date_joined|date:"F j, Y" }}</p>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Last Login</label>
+                                <p class="text-lg">
+                                    {% if user.last_login %}
+                                        {{ user.last_login|timesince }} ago
+                                    {% else %}
+                                        Never
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role and Permissions Card -->
+            <div class="card bg-base-100 shadow">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-shield-alt mr-2 text-primary"></i>Role and Permissions
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Current Role</label>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <span class="badge badge-primary badge-lg">
+                                    <i class="fas fa-{{ user.role.icon|default:'user' }} mr-2"></i>
+                                    {{ user.role.display_name }}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-2">{{ user.role.description }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Account Flags</label>
+                            <div class="flex flex-wrap gap-2 mt-1">
+                                {% if user.is_staff %}
+                                    <span class="badge badge-info">Staff Access</span>
+                                {% endif %}
+                                {% if user.is_superuser %}
+                                    <span class="badge badge-error">Superuser</span>
+                                {% endif %}
+                                {% if user.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                {% else %}
+                                    <span class="badge badge-warning">Inactive</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Permissions List -->
+                    {% if user.role.permissions.exists %}
+                    <div class="mt-6">
+                        <label class="text-sm font-medium text-gray-500 mb-3 block">Permissions</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {% for permission in user.role.permissions.all %}
+                            <div class="flex items-center space-x-2 text-sm">
+                                <i class="fas fa-check text-success"></i>
+                                <span>{{ permission.name }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card bg-base-100 shadow">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-history mr-2 text-primary"></i>Recent Activity
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="activity-timeline">
+                        {% for activity in recent_activities %}
+                        <div class="timeline-item">
+                            <div class="timeline-dot bg-{{ activity.type|default:'primary' }}"></div>
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p class="font-medium">{{ activity.description }}</p>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        {{ activity.timestamp|timesince }} ago
+                                    </p>
+                                    {% if activity.ip_address %}
+                                    <p class="text-xs text-gray-400 mt-1">
+                                        <i class="fas fa-map-marker-alt mr-1"></i>
+                                        {{ activity.ip_address }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                <span class="badge badge-outline badge-sm">{{ activity.get_action_display }}</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-8">
+                            <i class="fas fa-history text-4xl text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No recent activity</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if recent_activities %}
+                    <div class="text-center mt-6">
+                        <a href="{% url 'auth:audit_logs' %}?user={{ user.id }}" class="btn btn-outline btn-sm">
+                            <i class="fas fa-list mr-2"></i>View Full Activity Log
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Stats and Sessions -->
+        <div class="space-y-6">
+            <!-- User Statistics -->
+            <div class="card bg-base-100 shadow">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-chart-bar mr-2 text-primary"></i>Statistics
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="space-y-4">
+                        <div class="stat">
+                            <div class="stat-title">Total Logins</div>
+                            <div class="stat-value text-2xl">{{ user_stats.total_logins }}</div>
+                            <div class="stat-desc">Since account creation</div>
+                        </div>
+                        
+                        <div class="stat">
+                            <div class="stat-title">Failed Attempts</div>
+                            <div class="stat-value text-2xl text-warning">{{ user_stats.failed_logins }}</div>
+                            <div class="stat-desc">Last 30 days</div>
+                        </div>
+                        
+                        <div class="stat">
+                            <div class="stat-title">Average Session</div>
+                            <div class="stat-value text-2xl">{{ user_stats.avg_session_duration }}</div>
+                            <div class="stat-desc">Duration in minutes</div>
+                        </div>
+                        
+                        <div class="stat">
+                            <div class="stat-title">Last Location</div>
+                            <div class="stat-value text-sm">{{ user_stats.last_ip|default:"Unknown" }}</div>
+                            <div class="stat-desc">{{ user_stats.last_location|default:"Not available" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Sessions -->
+            <div class="card bg-base-100 shadow">
+                <div class="card-header">
+                    <div class="flex items-center justify-between w-full">
+                        <h2 class="card-title">
+                            <i class="fas fa-desktop mr-2 text-primary"></i>Active Sessions
+                        </h2>
+                        <span class="badge badge-info">{{ active_sessions.count }}</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% for session in active_sessions %}
+                    <div class="session-card p-4 border-b border-base-300 hover:bg-base-50">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-{{ session.device_type|default:'desktop' }} text-gray-500"></i>
+                                    <span class="font-medium">{{ session.device_name|default:"Unknown Device" }}</span>
+                                    {% if session.is_current %}
+                                        <span class="badge badge-success badge-sm">Current</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>
+                                    {{ session.ip_address }} - {{ session.location|default:"Unknown location" }}
+                                </p>
+                                <p class="text-sm text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    Started {{ session.created_at|timesince }} ago
+                                </p>
+                                <p class="text-sm text-gray-500">
+                                    <i class="fas fa-heart-pulse mr-1"></i>
+                                    Last seen {{ session.last_activity|timesince }} ago
+                                </p>
+                            </div>
+                            {% if not session.is_current %}
+                            <button class="btn btn-ghost btn-sm text-error" onclick="terminateSession('{{ session.id }}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-desktop text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No active sessions</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if active_sessions %}
+                <div class="card-footer">
+                    <button class="btn btn-outline btn-sm w-full" onclick="terminateAllSessions()">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Terminate All Other Sessions
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Security Information -->
+            <div class="card bg-base-100 shadow">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-shield-alt mr-2 text-primary"></i>Security
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Password Last Changed</span>
+                            <span class="text-sm font-medium">
+                                {% if user.password_changed_at %}
+                                    {{ user.password_changed_at|timesince }} ago
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Failed Login Attempts</span>
+                            <span class="badge badge-warning badge-sm">{{ user.failed_login_attempts }}</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Account Locked</span>
+                            <span class="badge {{ user.is_locked|yesno:'badge-error,badge-success' }} badge-sm">
+                                {{ user.is_locked|yesno:'Yes,No' }}
+                            </span>
+                        </div>
+                        
+                        {% if user.locked_until %}
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Locked Until</span>
+                            <span class="text-sm font-medium">{{ user.locked_until|date:"M j, Y H:i" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="space-y-2">
+                        <button class="btn btn-outline btn-sm w-full" onclick="resetPassword()">
+                            <i class="fas fa-key mr-2"></i>Force Password Reset
+                        </button>
+                        
+                        {% if user.is_locked %}
+                        <button class="btn btn-success btn-sm w-full" onclick="unlockAccount()">
+                            <i class="fas fa-unlock mr-2"></i>Unlock Account
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<dialog id="confirmation-modal" class="modal">
+    <form method="dialog" class="modal-box">
+        <h3 class="font-bold text-lg" id="modal-title">Confirm Action</h3>
+        <p class="py-4" id="modal-message">Are you sure you want to perform this action?</p>
+        <div class="modal-action">
+            <button class="btn" type="button" onclick="document.getElementById('confirmation-modal').close()">Cancel</button>
+            <button class="btn btn-primary" id="modal-confirm" type="button">Confirm</button>
+        </div>
+    </form>
+</dialog>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Action handlers
+function resetPassword() {
+    showConfirmModal(
+        'Reset Password',
+        'Are you sure you want to reset {{ user.username }}\'s password? They will receive instructions via email.',
+        () => performAction('reset-password')
+    );
+}
+
+function activateUser() {
+    showConfirmModal(
+        'Activate User',
+        'Are you sure you want to activate {{ user.username }}\'s account?',
+        () => performAction('activate')
+    );
+}
+
+function deactivateUser() {
+    showConfirmModal(
+        'Deactivate User',
+        'Are you sure you want to deactivate {{ user.username }}\'s account? They will no longer be able to log in.',
+        () => performAction('deactivate')
+    );
+}
+
+function deleteUser() {
+    showConfirmModal(
+        'Delete User',
+        'Are you sure you want to delete {{ user.username }}? This action cannot be undone.',
+        () => performAction('delete'),
+        'btn-error'
+    );
+}
+
+function unlockAccount() {
+    showConfirmModal(
+        'Unlock Account',
+        'Are you sure you want to unlock {{ user.username }}\'s account?',
+        () => performAction('unlock')
+    );
+}
+
+function terminateSession(sessionId) {
+    showConfirmModal(
+        'Terminate Session',
+        'Are you sure you want to terminate this session? The user will be logged out from that device.',
+        () => performSessionAction('terminate', sessionId)
+    );
+}
+
+function terminateAllSessions() {
+    showConfirmModal(
+        'Terminate All Sessions',
+        'Are you sure you want to terminate all other sessions for {{ user.username }}? They will be logged out from all other devices.',
+        () => performSessionAction('terminate-all')
+    );
+}
+
+function sendNotification() {
+    // Open a simple prompt or modal for notification
+    const message = prompt('Enter notification message for {{ user.username }}:');
+    if (message) {
+        performAction('send-notification', { message: message });
+    }
+}
+
+function viewAuditLog() {
+    window.location.href = '{% url "auth:audit_logs" %}?user={{ user.id }}';
+}
+
+// Helper functions
+function showConfirmModal(title, message, onConfirm, buttonClass = 'btn-primary') {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-message').textContent = message;
+    
+    const confirmBtn = document.getElementById('modal-confirm');
+    confirmBtn.className = `btn ${buttonClass}`;
+    confirmBtn.onclick = () => {
+        onConfirm();
+        document.getElementById('confirmation-modal').close();
+    };
+    
+    document.getElementById('confirmation-modal').showModal();
+}
+
+function performAction(action, data = {}) {
+    fetch(`/auth/users/{{ user.id }}/${action}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message || 'Action completed successfully', 'success');
+            if (action === 'delete') {
+                setTimeout(() => window.location.href = '{% url "auth:user_list" %}', 1000);
+            } else {
+                setTimeout(() => location.reload(), 1000);
+            }
+        } else {
+            showToast(data.error || 'Action failed', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Network error occurred', 'error');
+    });
+}
+
+function performSessionAction(action, sessionId = null) {
+    const url = sessionId 
+        ? `/auth/sessions/${sessionId}/${action}/`
+        : `/auth/users/{{ user.id }}/sessions/${action}/`;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message || 'Session action completed', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(data.error || 'Session action failed', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Network error occurred', 'error');
+    });
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-end';
+    toast.innerHTML = `
+        <div class="alert alert-${type}">
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Auto-refresh active sessions every 2 minutes
+setInterval(() => {
+    if (!document.hidden) {
+        // Refresh only the sessions section
+        fetch(`/auth/users/{{ user.id }}/sessions/`)
+        .then(response => response.text())
+        .then(html => {
+            // Update sessions section
+            // This would require a partial template update implementation
+        })
+        .catch(error => {
+            console.log('Failed to refresh sessions:', error);
+        });
+    }
+}, 120000);
+</script>
+{% endblock %}

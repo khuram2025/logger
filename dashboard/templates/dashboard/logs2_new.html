@@ -1,0 +1,299 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% comment %}<!-- Page Title and Meta Information -->{% endcomment %}
+{% block title %}Network Traffic Logs - Dashboard{% endblock %}
+
+{% comment %}<!-- Additional CSS and Meta Tags -->{% endcomment %}
+{% block extra_head %}
+    <!-- Core Logs Stylesheet -->
+    <link rel="stylesheet" href="{% static 'dashboard/css/logs.css' %}">
+    
+    <!-- Feature-specific stylesheets -->
+    <link rel="stylesheet" href="{% static 'dashboard/css/tag-search.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/css/context-menu.css' %}">
+    
+    <!-- Page-specific meta tags -->
+    <meta name="description" content="Real-time network traffic logs dashboard with advanced filtering and analysis tools">
+    <meta name="keywords" content="network logs, traffic analysis, firewall logs, security monitoring">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="{% static 'dashboard/js/logs-init.js' %}" as="script">
+    <link rel="preload" href="{% static 'dashboard/js/filters.js' %}" as="script">
+{% endblock %}
+
+{% comment %}<!-- Sub-header Navigation -->{% endcomment %}
+{% block subheader %}
+    {% with active_tab='logs' %}
+        {% include 'dashboard/partials/sub_header.html' %}
+    {% endwith %}
+{% endblock %}
+
+{% comment %}<!-- Main Page Content -->{% endcomment %}
+{% block content %}
+<!-- Main Logs Page Container -->
+<div class="logs-page-container" role="main">
+    
+    {% comment %}<!-- Main Content Area -->{% endcomment %}
+    <div class="logs-main-content" id="logsMainContent">
+        
+        {% comment %}<!-- Page Header with Controls -->{% endcomment %}
+        <div class="logs-content-header">
+            <div class="controls-bar logs-controls-row">
+                <div class="logs-controls-group">
+                    
+                    {% comment %}<!-- Search Component -->{% endcomment %}
+                    <div class="search-container" role="search">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <div class="search-tags" id="searchTags"></div>
+                        <input type="text" 
+                               placeholder="Type to search logs..." 
+                               id="sourceIpSearch" 
+                               name="srcip" 
+                               autocomplete="off"
+                               aria-label="Search logs by IP address or keyword" />
+                        <div class="search-suggestions" id="searchSuggestions" role="listbox"></div>
+                    </div>
+                    
+                    {% comment %}<!-- Log Summary Information -->{% endcomment %}
+                    <div class="log-summary" role="status" aria-live="polite">
+                        <span class="summary-label">Total:</span>
+                        <span id="total-logs" class="summary-value">{{ total_logs_count|default:"0" }}</span>
+                        <span class="summary-unit">Logs</span>
+                        {% if total_logs_count|default:0 > 10000 %}
+                        <span class="throttling-notice" title="Performance optimization active">
+                            <i class="fas fa-info-circle" aria-hidden="true"></i>
+                            (Throttled)
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    {% comment %}<!-- Time Range Display -->{% endcomment %}
+                    <div class="date-range-display" role="status">
+                        <i class="fas fa-clock" aria-hidden="true"></i>
+                        <span>{{ time_range_display|default:"Last Hour" }}</span>
+                        <span class="last-update" id="lastUpdateTime" title="Last updated time">
+                            {{ "now"|date:"H:i:s" }}
+                        </span>
+                    </div>
+                    
+                </div>
+                
+                {% comment %}<!-- Action Buttons -->{% endcomment %}
+                <div class="logs-controls-filter">
+                    <div class="action-buttons" role="toolbar" aria-label="Log actions">
+                        
+                        <!-- Refresh Button -->
+                        <button class="icon-text-button refresh-btn" 
+                                onclick="refreshLogs()" 
+                                title="Refresh logs (Ctrl+R)"
+                                aria-label="Refresh log data">
+                            <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                            <span class="btn-text">Refresh</span>
+                        </button>
+                        
+                        <!-- Filter Toggle Button -->
+                        <button class="icon-text-button filter-toggle-btn" 
+                                onclick="toggleFilters()" 
+                                title="Toggle filter sidebar (T)"
+                                aria-label="Toggle filter panel"
+                                aria-expanded="true"
+                                aria-controls="filterSidebar">
+                            <i class="fas fa-filter" aria-hidden="true"></i>
+                            <span class="btn-text">Filters</span>
+                            {% if active_filters_count > 0 %}
+                            <span class="filter-count-badge">{{ active_filters_count }}</span>
+                            {% endif %}
+                        </button>
+                        
+                        <!-- Export Button -->
+                        <button class="icon-text-button export-btn" 
+                                onclick="exportLogs()" 
+                                title="Export current log view"
+                                aria-label="Export filtered logs">
+                            <i class="fas fa-download" aria-hidden="true"></i>
+                            <span class="btn-text">Export</span>
+                        </button>
+                        
+                        <!-- Auto-refresh Toggle -->
+                        <div class="auto-refresh-control" title="Auto-refresh settings">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="autoRefresh" aria-label="Enable auto-refresh">
+                                <i class="fas fa-redo-alt" aria-hidden="true"></i>
+                                <span class="sr-only">Auto-refresh</span>
+                            </label>
+                            <select id="refreshInterval" class="refresh-interval-select" aria-label="Refresh interval">
+                                <option value="30">30s</option>
+                                <option value="60">1m</option>
+                                <option value="300">5m</option>
+                                <option value="600">10m</option>
+                            </select>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% comment %}<!-- Active Filters Display -->{% endcomment %}
+        {% if active_filters_count > 0 %}
+        <div class="active-filters-bar" role="status" aria-label="Active filters">
+            <span class="active-filters-label">
+                <i class="fas fa-filter" aria-hidden="true"></i>
+                Active Filters:
+            </span>
+            <div class="active-filters-list" id="activeFiltersList">
+                <!-- Active filters will be populated by JavaScript -->
+            </div>
+            <button class="clear-all-filters-btn" onclick="resetFilters()" title="Clear all active filters">
+                <i class="fas fa-times" aria-hidden="true"></i>
+                Clear All
+            </button>
+        </div>
+        {% endif %}
+        
+        {% comment %}<!-- Loading Indicator -->{% endcomment %}
+        <div class="loading-overlay hidden" id="logsLoadingOverlay" role="status" aria-label="Loading logs">
+            <div class="loading-spinner"></div>
+            <span class="loading-text">Loading logs...</span>
+        </div>
+        
+        {% comment %}<!-- Main Logs Table Component -->{% endcomment %}
+        {% include 'dashboard/partials/logs_table.html' %}
+        
+        {% comment %}<!-- No Results Message -->{% endcomment %}
+        {% if not logs_for_display %}
+        <div class="no-results-message" role="status">
+            <div class="no-results-icon">
+                <i class="fas fa-search" aria-hidden="true"></i>
+            </div>
+            <h3>No logs found</h3>
+            <p>Try adjusting your filters or time range to see more results.</p>
+            <div class="no-results-actions">
+                <button class="btn btn-primary" onclick="resetFilters()">
+                    <i class="fas fa-undo" aria-hidden="true"></i>
+                    Clear Filters
+                </button>
+                <button class="btn btn-secondary" onclick="refreshLogs()">
+                    <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                    Refresh
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+    {% comment %}<!-- Filter Sidebar Component (moved to right) -->{% endcomment %}
+    {% include 'dashboard/partials/filter_sidebar.html' %}
+</div>
+
+{% comment %}<!-- Keyboard Shortcuts Help Modal -->{% endcomment %}
+<div class="modal fade" id="keyboardShortcutsModal" tabindex="-1" role="dialog" aria-labelledby="keyboardShortcutsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="keyboardShortcutsModalLabel">
+                    <i class="fas fa-keyboard" aria-hidden="true"></i>
+                    Keyboard Shortcuts
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcuts-list">
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>F</kbd>
+                        <span>Focus filter search</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>R</kbd>
+                        <span>Refresh logs</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>C</kbd>
+                        <span>Clear all filters</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>T</kbd>
+                        <span>Toggle filter sidebar</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>E</kbd>
+                        <span>Expand/collapse all logs</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Esc</kbd>
+                        <span>Close modals and sidebars</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% comment %}<!-- JavaScript Dependencies -->{% endcomment %}
+{% block extra_scripts %}
+    <!-- Core JavaScript modules - load in dependency order -->
+    <script src="{% static 'dashboard/js/logs-validation.js' %}" defer></script>
+    <script src="{% static 'dashboard/js/filters.js' %}" defer></script>
+    <script src="{% static 'dashboard/js/logs-table.js' %}" defer></script>
+    <script src="{% static 'dashboard/js/logs-init.js' %}" defer></script>
+    
+    <!-- Page-specific configuration -->
+    <script>
+        // Configuration object for JavaScript modules
+        window.LogsConfig = {
+            totalLogsCount: {{ total_logs_count|default:0 }},
+            currentPage: {{ current_page|default:1 }},
+            totalPages: {{ total_pages|default:1 }},
+            autoRefreshEnabled: false,
+            defaultRefreshInterval: 30,
+            maxLogDetailsExpanded: 10,
+            enableKeyboardShortcuts: true,
+            
+            // API endpoints for AJAX operations
+            endpoints: {
+                refresh: '{% url "clickhouse_logs" %}',
+                export: '',
+                search: ''
+            },
+            
+            // Current filter state
+            currentFilters: {
+                {% for key, value in request.GET.items %}
+                    {% if value %}
+                        '{{ key|escapejs }}': '{{ value|escapejs }}',
+                    {% endif %}
+                {% endfor %}
+            }
+        };
+        
+        // Initialize page when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Logs dashboard initialized with config:', window.LogsConfig);
+        });
+    </script>
+    
+    <!-- Analytics and monitoring -->
+    {% if debug %}
+    <script>
+        // Development-only debugging
+        console.log('Logs page loaded in debug mode');
+        console.log('Total logs:', {{ total_logs_count|default:0 }});
+        console.log('Active filters:', Object.keys(window.LogsConfig.currentFilters));
+    </script>
+    {% endif %}
+{% endblock %}
+
+{% comment %}
+<!-- Template Performance Notes -->
+- Uses template partials to reduce complexity
+- Defers JavaScript loading for better performance
+- Includes proper ARIA labels for accessibility
+- Separates concerns with modular architecture
+- Provides comprehensive configuration for JavaScript
+- Includes proper error handling and fallbacks
+{% endcomment %}

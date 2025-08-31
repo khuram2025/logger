@@ -7,7 +7,9 @@ from django.shortcuts import render
 from django.http import JsonResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 from dashboard.models import LogSource, LogSourceEvent
+from dashboard.auth.decorators import require_permission, admin_required
 
 import re
 import logging
@@ -169,6 +171,7 @@ if ($fromhost-ip == '{ip_address}') then {{
         }
 
 
+@require_permission('configure_sources')
 def log_sources_view(request):
     """Main log sources management view"""
     from datetime import datetime, timedelta
@@ -670,6 +673,7 @@ def add_log_source_view(request):
     return JsonResponse({'success': False, 'error': 'Method not allowed'})
 
 
+@require_permission('manage_devices')
 def device_registration_view(request):
     """Device registration view with ClickHouse integration"""
     if request.method == 'GET':
